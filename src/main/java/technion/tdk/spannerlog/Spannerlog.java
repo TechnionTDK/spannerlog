@@ -35,9 +35,8 @@ public class Spannerlog {
         try {
             CommandLine line = new DefaultParser().parse(options, args);
 
-            int numArgs = line.getArgs().length;
-            if (numArgs % 2 != 0) {
-                System.err.println("Missing or a required option or an argument");
+            if (line.getArgs().length % 2 != 0) {
+                System.err.println("Missing a required option or an argument");
                 printHelp(options);
                 exit(1);
             }
