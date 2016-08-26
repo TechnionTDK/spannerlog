@@ -4,19 +4,29 @@ import org.apache.commons.cli.*;
 
 import java.io.IOException;
 
+import static java.lang.System.exit;
+
 public class Spannerlog {
 
-    private void initCompilation(String programFilePath) throws IOException {
+    private void init(CommandLine line) throws IOException {
+
+        SpannerlogSchema schema = new SpannerlogSchema();
+
+        schema.readSchemaFromJsonFile(line.getOptionValue("edb"));
+        schema.readSchemaFromJsonFile(line.getOptionValue("udf"));
+
         // parse program
         SpannerlogInputParser parser = new SpannerlogInputParser();
-        Program program = parser.parseProgram(programFilePath);
+        Program program = parser.parseProgram(line.getOptionValue("program"));
 
         // desugar
         program = new SpannerlogDesugarRewriter().derive(program);
 
+        schema.extractRelationSchemas(program);
+
         // compile
         SpannerlogCompiler compiler = new SpannerlogCompiler();
-        compiler.compile(program);
+        compiler.compile(program, schema);
     }
 
     public static void main(String[] args) {
@@ -24,27 +34,59 @@ public class Spannerlog {
 
         try {
             CommandLine line = new DefaultParser().parse(options, args);
+
+            int numArgs = line.getArgs().length;
+            if (numArgs % 2 != 0) {
+                System.err.println("Missing or a required option or an argument");
+                printHelp(options);
+                exit(1);
+            }
+
             Spannerlog sp = new Spannerlog();
-
-            if (line.hasOption("compile"))  sp.initCompilation(line.getOptionValue("compile"));
-            else printHelp(options);
-
+            sp.init(line);
         } catch (ParseException e) {
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
             printHelp(options);
+            exit(1);
         } catch (IOException e) {
             e.printStackTrace();
+            exit(1);
         }
     }
 
     private static void printHelp(Options options) {
         HelpFormatter formatter = new HelpFormatter();
-        formatter.printHelp("splog", options);
+        formatter.setOptionComparator(null);
+        System.setOut(System.err);
+        formatter.printHelp("splog", options, true);
     }
 
     private static Options setCommandLineOptions() {
         Options options = new Options();
-        options.addOption(new Option("compile", true, "Compile app.splog"));
+
+        options.addOption(Option
+                .builder("program")
+                .required(true)
+                .hasArg()
+                .numberOfArgs(1)
+                .desc("the program to compile"
+                ).build());
+
+        options.addOption(Option
+                .builder("edb")
+                .required(false)
+                .hasArg()
+                .numberOfArgs(1)
+                .desc("the EDB schema of the program (required if EDB is not empty)")
+                .build());
+
+        options.addOption(Option
+                .builder("udf")
+                .required(false)
+                .hasArg()
+                .numberOfArgs(1)
+                .desc("the UDF schemas (required if UDFs are used)")
+                .build());
 
         return options;
     }
