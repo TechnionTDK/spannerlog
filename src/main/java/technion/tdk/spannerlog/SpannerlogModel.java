@@ -95,7 +95,7 @@ class DBAtom extends Atom {
     }
 }
 
-abstract class IEAtom extends Atom {
+class IEAtom extends Atom {
     private Term inputTerm;
 
     IEAtom(String schemaName, List<Term> terms, Term inputTerm) {
@@ -105,12 +105,6 @@ abstract class IEAtom extends Atom {
 
     Term getInputTerm() {
         return inputTerm;
-    }
-}
-
-class IEFunction extends IEAtom {
-    IEFunction(String schemaName, List<Term> terms, Term inputTerm) {
-        super(schemaName, terms, inputTerm);
     }
 }
 

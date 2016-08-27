@@ -94,7 +94,7 @@ class TreeVisitor {
 
         @Override
         public Atom visitIEFunction(SpannerlogParser.IEFunctionContext ctx) {
-            return ctx.accept(new IEFunctionVisitor());
+            return ctx.accept(new IEAtomVisitor());
         }
 
         @Override
@@ -104,9 +104,9 @@ class TreeVisitor {
 
     }
 
-    private class IEFunctionVisitor extends SpannerlogBaseVisitor<IEFunction> {
+    private class IEAtomVisitor extends SpannerlogBaseVisitor<IEAtom> {
         @Override
-        public IEFunction visitIEFunction(SpannerlogParser.IEFunctionContext ctx) {
+        public IEAtom visitIEFunction(SpannerlogParser.IEFunctionContext ctx) {
             String relationSchemaName = ctx.relationSchemaName().getText();
             Term inputTerm = ctx.term().accept(new TermVisitor());
             TermVisitor termVisitor = new TermVisitor();
@@ -115,7 +115,7 @@ class TreeVisitor {
                     .map(term -> term.accept(termVisitor))
                     .collect(Collectors.toList());
             terms.add(0, inputTerm);
-            return new IEFunction(relationSchemaName, terms, inputTerm);
+            return new IEAtom(relationSchemaName, terms, inputTerm);
         }
 
     }

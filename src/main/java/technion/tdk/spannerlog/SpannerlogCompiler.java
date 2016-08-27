@@ -45,6 +45,8 @@ class SpannerlogCompiler {
     }
 
     private String compile(RelationSchema relationSchema) {
+        assert(!(relationSchema instanceof AmbiguousRelationSchema));
+
         return relationSchema.getName() +
                 "(\n\t" +
                 relationSchema.getAttrs()
@@ -100,7 +102,7 @@ class SpannerlogCompiler {
     private String compile(Atom atom) {
         return (String) new PatternMatching(
                 inCaseOf(DBAtom.class, this::compile),
-                inCaseOf(IEFunction.class, this::compile)
+                inCaseOf(IEAtom.class, this::compile)
         ).matchFor(atom);
     }
 
@@ -108,8 +110,8 @@ class SpannerlogCompiler {
         return compile(head.getHeadAtom());
     }
 
-    private String compile(IEFunction ieFunction) {
-        return ieFunction.getSchemaName() + "(" + compile(ieFunction.getTerms()) + ")";
+    private String compile(IEAtom ieAtom) {
+        return ieAtom.getSchemaName() + "(" + compile(ieAtom.getTerms()) + ")";
     }
 
     private String compile(DBAtom atom) {

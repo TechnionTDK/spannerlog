@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 
 public class CompilationTests {
 
+    @Ignore
     @Test
     public void compileBooleanCQ() {
 
@@ -31,6 +32,31 @@ public class CompilationTests {
 
     }
 
+    @Ignore
+    @Test
+    public void failCompilationForQueryWithUndefinedSchema() {
+
+        try {
+            String splogSrc = "Q(x) :- S(x), Q(3).";
+
+            SpannerlogInputParser parser = new SpannerlogInputParser();
+            Program program = parser.parseProgram(new ByteArrayInputStream(splogSrc.getBytes(StandardCharsets.UTF_8)));
+
+            SpannerlogSchema schema = SpannerlogSchema
+                    .builder()
+                    .extractRelationSchemas(program)
+                    .build();
+
+            SpannerlogCompiler compiler = new SpannerlogCompiler();
+            compiler.compile(program, schema);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+//    @Ignore
     @Test
     public void compileNonBooleanCQ() {
         try {
@@ -101,16 +127,17 @@ public class CompilationTests {
 //            e.printStackTrace();
 //        }
 //    }
+//
+//    @BeforeClass
+//    public static void setUpStreams() {
+//        System.setOut(new PrintStream(new OutputStream() {
+//            public void write(int b) {
+//                //DO NOTHING
+//            }
+//        }));
+//    }
 
-    @BeforeClass
-    public static void setUpStreams() {
-        System.setOut(new PrintStream(new OutputStream() {
-            public void write(int b) {
-                //DO NOTHING
-            }
-        }));
-    }
-
+    @Ignore
     @Test(expected = AttributeTypeCannotBeInferredException.class)
     public void failCompilationForQueryWithUntypedVar() {
         try {
@@ -139,6 +166,7 @@ public class CompilationTests {
 
     }
 
+    @Ignore
     @Test
     public void compileAnbnQuery() {
         try {
