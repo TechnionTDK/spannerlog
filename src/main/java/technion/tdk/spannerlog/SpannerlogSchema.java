@@ -24,11 +24,7 @@ import static technion.tdk.spannerlog.utils.match.OtherwisePattern.otherwise;
 class SpannerlogSchema {
 
     static class Builder {
-        private SpannerlogSchema spannerlogSchema;
-
-        Builder() {
-            this.spannerlogSchema = new SpannerlogSchema();
-        }
+        private SpannerlogSchema spannerlogSchema = new SpannerlogSchema();
 
         Builder readSchemaFromJson(Reader reader, RelationSchemaBuilder builder) throws IOException {
             spannerlogSchema.readSchemaFromJson(reader, builder);

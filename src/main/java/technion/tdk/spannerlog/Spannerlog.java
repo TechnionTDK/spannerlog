@@ -10,14 +10,13 @@ import static java.lang.System.exit;
 public class Spannerlog {
 
     private void init(CommandLine line) throws IOException {
-
         // parse program
-        SpannerlogInputParser parser = new SpannerlogInputParser();
-        Program program = parser.parseProgram(line.getOptionValue("program"));
+        Program program = new SpannerlogInputParser().parseProgram(line.getOptionValue("program"));
 
         // desugar
         program = new SpannerlogDesugarRewriter().derive(program);
 
+        // build schema
         SpannerlogSchema schema = SpannerlogSchema
                 .builder()
                 .readSchemaFromJson(new FileReader(line.getOptionValue("edb")),
@@ -28,8 +27,7 @@ public class Spannerlog {
                 .build();
 
         // compile
-        SpannerlogCompiler compiler = new SpannerlogCompiler();
-        compiler.compile(program, schema);
+        new SpannerlogCompiler().compile(program, schema);
     }
 
     public static void main(String[] args) {
@@ -44,8 +42,7 @@ public class Spannerlog {
                 exit(1);
             }
 
-            Spannerlog sp = new Spannerlog();
-            sp.init(line);
+            new Spannerlog().init(line);
         } catch (ParseException e) {
             System.err.println(e.getMessage());
             printHelp(options);
@@ -71,8 +68,8 @@ public class Spannerlog {
                 .required(true)
                 .hasArg()
                 .numberOfArgs(1)
-                .desc("the program to compile"
-                ).build());
+                .desc("the program to compile")
+                .build());
 
         options.addOption(Option
                 .builder("edb")
