@@ -3,11 +3,15 @@ package technion.tdk.spannerlog;
 
 import com.google.gson.stream.JsonReader;
 import org.apache.commons.lang3.ObjectUtils;
+import technion.tdk.spannerlog.utils.DependenciesGraph;
 import technion.tdk.spannerlog.utils.match.PatternMatching;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -51,13 +55,13 @@ class SpannerlogSchema {
     }
 
     private void inferAttributeTypes() {
-        List<IntensionalRelationSchema> iSchemas = relationSchemas
+        relationSchemas
                 .stream()
                 .filter(s -> s instanceof IntensionalRelationSchema)
                 .map(s -> (IntensionalRelationSchema) s)
-                .collect(Collectors.toList());
-
-        System.out.println(iSchemas);
+                .forEach(IntensionalRelationSchema::inferAttributeTypes);
+//                .collect(Collectors.toList());
+//        System.out.println(iSchemas);
     }
 
     private void readSchemaFromJson(Reader reader, RelationSchemaBuilder builder) throws IOException {
@@ -404,7 +408,7 @@ class ExtensionalRelationSchema extends RelationSchema {
 class IntensionalRelationSchema extends RelationSchema {
     private List<Atom> inputAtoms;
 
-    public List<Atom> getInputAtoms() {
+    List<Atom> getInputAtoms() {
         return inputAtoms;
     }
 
@@ -415,6 +419,21 @@ class IntensionalRelationSchema extends RelationSchema {
     IntensionalRelationSchema(String name, List<Attribute> attrs) {
         super(name, attrs);
         this.inputAtoms = new ArrayList<>();
+    }
+
+    void inferAttributeTypes() {
+        this.getAttrs()
+                .stream()
+                .filter(attr -> attr.getType() != null)
+                .forEach(this::inferAttributeTypes);
+    }
+
+    private void inferAttributeTypes(Attribute attr) {
+        DependenciesGraph depGraph = createDependenciesGraph(attr);
+    }
+
+    private DependenciesGraph createDependenciesGraph(Attribute attr) {
+        return null;
     }
 }
 
@@ -552,48 +571,6 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
                 inCaseOf(VarTerm.class, varTerm -> Stream.of(varTerm.getVarName()).collect(Collectors.toList())),
                 otherwise(t -> Collections.<String>emptyList())
         ).matchFor(spanTerm);
-    }
-}
-
-class DependenciesGraph {
-    private Map<Integer, List<Integer>> adjacencyList;
-
-    DependenciesGraph(Map<Integer, List<Integer>> adjacencyList) {
-        this.adjacencyList = adjacencyList;
-    }
-
-    private List<Integer> outEdges(int i) {
-        return adjacencyList.get(i);
-    }
-
-    private int nVertices() {
-        return adjacencyList.size();
-    }
-
-    List<Integer> getDependencies(int startIdx) {
-
-        Boolean[] visited = new Boolean[this.nVertices()];
-        Arrays.fill(visited, Boolean.FALSE);
-        Stack<Integer> s = new Stack<>();
-        s.push(startIdx);
-        while (!s.isEmpty()) {
-            int i = s.pop();
-            if (!visited[i]) {
-                visited[i] = true;
-                for (int j : this.outEdges(i)) {
-                    if (visited[j])
-                        throw new CircularDependencyException();
-                    s.push(j);
-                }
-            }
-        }
-        return IntStream.range(0, visited.length)
-                .filter(i -> visited[i] && i != startIdx)
-                .boxed()
-                .collect(Collectors.toList());
-    }
-
-    private class CircularDependencyException extends RuntimeException {
     }
 }
 
