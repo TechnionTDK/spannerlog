@@ -73,6 +73,9 @@ class SpannerlogCompiler {
     }
 
     private String compile(Attribute attribute) {
+        if (attribute.getType() == null)
+            throw new AttributeTypeCannotBeInferred();
+
         return attribute.getName() + "\t\t" + attribute.getType();
     }
 
@@ -210,8 +213,8 @@ class SpannerlogCompiler {
 
     private String compile(BooleanConstExpr booleanConstExpr) {
         if (booleanConstExpr.getValue())
-            return "True";
-        return "False";
+            return "TRUE";
+        return "FALSE";
     }
 
     private String compile(StringConstExpr stringConstExpr) {

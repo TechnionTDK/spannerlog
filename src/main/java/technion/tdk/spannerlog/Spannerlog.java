@@ -2,6 +2,7 @@ package technion.tdk.spannerlog;
 
 import org.apache.commons.cli.*;
 
+import java.io.FileReader;
 import java.io.IOException;
 
 import static java.lang.System.exit;
@@ -12,8 +13,11 @@ public class Spannerlog {
 
         SpannerlogSchema schema = new SpannerlogSchema();
 
-        schema.readSchemaFromJsonFile(line.getOptionValue("edb"));
-        schema.readSchemaFromJsonFile(line.getOptionValue("udf"));
+        schema.readSchemaFromJsonFile(new FileReader(line.getOptionValue("edb")),
+                RelationSchema.builder().type(RelationSchemaType.EXTENSIONAL));
+
+        schema.readSchemaFromJsonFile(new FileReader(line.getOptionValue("udf")),
+                RelationSchema.builder().type(RelationSchemaType.IEFUNCTION));
 
         // parse program
         SpannerlogInputParser parser = new SpannerlogInputParser();
