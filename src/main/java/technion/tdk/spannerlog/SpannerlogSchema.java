@@ -51,13 +51,19 @@ class SpannerlogSchema {
     }
 
     private void inferAttributeTypes() {
-        relationSchemas
+        List<IntensionalRelationSchema> iSchemas = relationSchemas
                 .stream()
                 .filter(s -> s instanceof IntensionalRelationSchema)
                 .map(s -> (IntensionalRelationSchema) s)
-                .forEach(IntensionalRelationSchema::inferAttributeTypes);
-//                .collect(Collectors.toList());
-//        System.out.println(iSchemas);
+                .collect(Collectors.toList());
+
+        DependenciesGraph depGraph = createDependenciesGraph(iSchemas);
+
+        System.out.println(iSchemas);
+    }
+
+    private DependenciesGraph createDependenciesGraph(List<IntensionalRelationSchema> iSchemas) {
+        return null;
     }
 
     private void readSchemaFromJson(Reader reader, RelationSchemaBuilder builder) throws IOException {
@@ -415,21 +421,6 @@ class IntensionalRelationSchema extends RelationSchema {
     IntensionalRelationSchema(String name, List<Attribute> attrs) {
         super(name, attrs);
         this.inputAtoms = new ArrayList<>();
-    }
-
-    void inferAttributeTypes() {
-        this.getAttrs()
-                .stream()
-                .filter(attr -> attr.getType() != null)
-                .forEach(this::inferAttributeTypes);
-    }
-
-    private void inferAttributeTypes(Attribute attr) {
-        DependenciesGraph depGraph = createDependenciesGraph(attr);
-    }
-
-    private DependenciesGraph createDependenciesGraph(Attribute attr) {
-        return null;
     }
 }
 
