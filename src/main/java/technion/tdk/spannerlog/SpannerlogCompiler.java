@@ -74,7 +74,7 @@ class SpannerlogCompiler {
 
     private String compile(Attribute attribute) {
         if (attribute.getType() == null)
-            throw new AttributeTypeCannotBeInferred();
+            throw new AttributeTypeCannotBeInferredException();
 
         return attribute.getName() + "\t\t" + attribute.getType();
     }

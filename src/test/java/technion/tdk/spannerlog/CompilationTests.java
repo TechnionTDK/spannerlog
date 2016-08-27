@@ -17,8 +17,10 @@ public class CompilationTests {
             SpannerlogInputParser parser = new SpannerlogInputParser();
             Program program = parser.parseProgram(new ByteArrayInputStream(splogSrc.getBytes(StandardCharsets.UTF_8)));
 
-            SpannerlogSchema schema = new SpannerlogSchema();
-            schema.extractRelationSchemas(program);
+            SpannerlogSchema schema = SpannerlogSchema
+                    .builder()
+                    .extractRelationSchemas(program)
+                    .build();
 
             SpannerlogCompiler compiler = new SpannerlogCompiler();
             compiler.compile(program, schema);
@@ -39,10 +41,12 @@ public class CompilationTests {
             SpannerlogInputParser parser = new SpannerlogInputParser();
             Program program = parser.parseProgram(new ByteArrayInputStream(splogSrc.getBytes(StandardCharsets.UTF_8)));
 
-            SpannerlogSchema schema = new SpannerlogSchema();
-            schema.readSchemaFromJsonFile(new StringReader(edbSchema),
-                    RelationSchema.builder().type(RelationSchemaType.EXTENSIONAL));
-            schema.extractRelationSchemas(program);
+            SpannerlogSchema schema = SpannerlogSchema
+                    .builder()
+                    .readSchemaFromJson(new StringReader(edbSchema),
+                            RelationSchema.builder().type(RelationSchemaType.EXTENSIONAL))
+                    .extractRelationSchemas(program)
+                    .build();
 
             SpannerlogCompiler compiler = new SpannerlogCompiler();
             compiler.compile(program, schema);
@@ -107,7 +111,7 @@ public class CompilationTests {
         }));
     }
 
-    @Test(expected = AttributeTypeCannotBeInferred.class)
+    @Test(expected = AttributeTypeCannotBeInferredException.class)
     public void failCompilationForQueryWithUntypedVar() {
         try {
             String splogSrc = "Q(z) :- doc(s), rgx1<s>(x,y), rgx2<s[y]>(x).";
@@ -117,13 +121,14 @@ public class CompilationTests {
             SpannerlogInputParser parser = new SpannerlogInputParser();
             Program program = parser.parseProgram(new ByteArrayInputStream(splogSrc.getBytes(StandardCharsets.UTF_8)));
 
-            SpannerlogSchema schema = new SpannerlogSchema();
-            schema.readSchemaFromJsonFile(new StringReader(edbSchema),
-                    RelationSchema.builder().type(RelationSchemaType.EXTENSIONAL));
-            schema.readSchemaFromJsonFile(new StringReader(udfSchema),
-                    RelationSchema.builder().type(RelationSchemaType.IEFUNCTION));
-
-            schema.extractRelationSchemas(program);
+            SpannerlogSchema schema = SpannerlogSchema
+                    .builder()
+                    .readSchemaFromJson(new StringReader(edbSchema),
+                            RelationSchema.builder().type(RelationSchemaType.EXTENSIONAL))
+                    .readSchemaFromJson(new StringReader(udfSchema),
+                            RelationSchema.builder().type(RelationSchemaType.IEFUNCTION))
+                    .extractRelationSchemas(program)
+                    .build();
 
             SpannerlogCompiler compiler = new SpannerlogCompiler();
             compiler.compile(program, schema);
@@ -144,13 +149,14 @@ public class CompilationTests {
             SpannerlogInputParser parser = new SpannerlogInputParser();
             Program program = parser.parseProgram(new ByteArrayInputStream(splogSrc.getBytes(StandardCharsets.UTF_8)));
 
-            SpannerlogSchema schema = new SpannerlogSchema();
-            schema.readSchemaFromJsonFile(new StringReader(edbSchema),
-                    RelationSchema.builder().type(RelationSchemaType.EXTENSIONAL));
-            schema.readSchemaFromJsonFile(new StringReader(udfSchema),
-                    RelationSchema.builder().type(RelationSchemaType.IEFUNCTION));
-
-            schema.extractRelationSchemas(program);
+            SpannerlogSchema schema = SpannerlogSchema
+                    .builder()
+                    .readSchemaFromJson(new StringReader(edbSchema),
+                            RelationSchema.builder().type(RelationSchemaType.EXTENSIONAL))
+                    .readSchemaFromJson(new StringReader(udfSchema),
+                            RelationSchema.builder().type(RelationSchemaType.IEFUNCTION))
+                    .extractRelationSchemas(program)
+                    .build();
 
             SpannerlogCompiler compiler = new SpannerlogCompiler();
             compiler.compile(program, schema);

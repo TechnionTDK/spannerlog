@@ -19,9 +19,42 @@ import static technion.tdk.spannerlog.utils.match.OtherwisePattern.otherwise;
 
 class SpannerlogSchema {
 
+    static class Builder {
+        private SpannerlogSchema spannerlogSchema;
+
+        Builder() {
+            this.spannerlogSchema = new SpannerlogSchema();
+        }
+
+        Builder readSchemaFromJson(Reader reader, RelationSchemaBuilder builder) throws IOException {
+            spannerlogSchema.readSchemaFromJson(reader, builder);
+            return this;
+        }
+
+        Builder extractRelationSchemas(Program program) {
+            spannerlogSchema.extractRelationSchemas(program);
+            return this;
+        }
+
+        SpannerlogSchema build() {
+            spannerlogSchema.inferAttributeTypes();
+            return spannerlogSchema;
+        }
+    }
+
+    private SpannerlogSchema() {}
+
     private List<RelationSchema> relationSchemas = new ArrayList<>();
 
-    void readSchemaFromJsonFile(Reader reader, RelationSchemaBuilder builder) throws IOException {
+    static Builder builder() {
+        return new Builder();
+    }
+
+    private void inferAttributeTypes() {
+
+    }
+
+    private void readSchemaFromJson(Reader reader, RelationSchemaBuilder builder) throws IOException {
         try (JsonReader jsonReader = new JsonReader(reader)){
             List<RelationSchema> relationSchemas = new ArrayList<>();
 
@@ -63,11 +96,13 @@ class SpannerlogSchema {
         this.relationSchemas = new ArrayList<>(relationSchemaMap.values());
     }
 
+    @SuppressWarnings("unchecked")
     private RelationSchema mergeRelationSchemas(RelationSchema oldSchema, RelationSchema newSchema) {
         if (!oldSchema.getClass().equals(newSchema.getClass()))
             throw new RelationSchemaNameConflictException();
 
         oldSchema.setAttrs(mergeAttributes(oldSchema.getAttrs(), newSchema.getAttrs()));
+        newSchema.getAtoms().forEach(atom -> atom.setSchema(oldSchema));
 
         if (oldSchema instanceof IEFunctionSchema) {
             IEFunctionSchema oldIESchema = (IEFunctionSchema) oldSchema;
@@ -118,7 +153,7 @@ class SpannerlogSchema {
         return this.relationSchemas;
     }
 
-    void extractRelationSchemas(Program program) {
+    private void extractRelationSchemas(Program program) {
         List<RelationSchema> relationSchemas = program.getStatements()
                 .stream()
                 .flatMap(stmt -> extractRelationSchemas(stmt).stream())
@@ -143,23 +178,45 @@ class SpannerlogSchema {
     private List<RelationSchema> extractRelationSchemas(ConjunctiveQueryBody body) {
         return body.getBodyAtoms()
                 .stream()
-                .filter(atom -> atom instanceof IEAtom)
-                .map(atom -> extractRelationSchema((IEAtom) atom, body))
+                .map(atom -> extractRelationSchema(atom, body))
                 .collect(Collectors.toList());
     }
 
-    private RelationSchema extractRelationSchema(IEAtom ieAtom, ConjunctiveQueryBody body) {
+    private RelationSchema extractRelationSchema(Atom atom, ConjunctiveQueryBody body) {
+        return (RelationSchema) new PatternMatching(
+                inCaseOf(DBAtom.class, this::extractExtensionalRelationSchema),
+                inCaseOf(IEAtom.class, a -> extractIEFunctionSchema(a, body))
+        ).matchFor(atom);
+    }
+
+    private RelationSchema extractIEFunctionSchema(IEAtom ieAtom, ConjunctiveQueryBody body) {
         IEFunctionSchema schema = new IEFunctionSchema(ieAtom.getSchemaName(),
                 extractAttributes(ieAtom.getTerms()));
         schema.setInputTerm(ieAtom.getInputTerm());
         schema.determineInputAtoms(body, ieAtom);
+        ieAtom.setSchema(schema);
+        schema.getAtoms().add(ieAtom);
+        return schema;
+    }
+
+    private RelationSchema extractExtensionalRelationSchema(DBAtom dbAtom) {
+        ExtensionalRelationSchema schema = new ExtensionalRelationSchema(dbAtom.getSchemaName(),
+                extractAttributes(dbAtom.getTerms()));
+        dbAtom.setSchema(schema);
+        schema.getAtoms().add(dbAtom);
+        return schema;
+    }
+
+    private RelationSchema extractIntensionalRelationSchema(DBAtom dbAtom) {
+        IntensionalRelationSchema schema = new IntensionalRelationSchema(dbAtom.getSchemaName(),
+                extractAttributesAndGenColumnNames(dbAtom.getTerms()));
+        dbAtom.setSchema(schema);
+        schema.getAtoms().add(dbAtom);
         return schema;
     }
 
     private RelationSchema extractRelationSchema(ConjunctiveQueryHead head) {
-        DBAtom headAtom = head.getHeadAtom();
-        return new IntensionalRelationSchema(headAtom.getSchemaName(),
-                extractAttributesAndGenColumnNames(headAtom.getTerms()));
+        return extractIntensionalRelationSchema(head.getHeadAtom());
     }
 
     private List<Attribute> extractAttributes(List<Term> terms) {
@@ -227,10 +284,16 @@ class SpannerlogSchema {
 abstract class RelationSchema {
     private String name;
     private List<Attribute> attrs;
+    private List<Atom> atoms;
 
     RelationSchema(String name, List<Attribute> attrs) {
         this.name = name;
         this.attrs = attrs;
+        this.atoms = new ArrayList<>();
+    }
+
+    List<Atom> getAtoms() {
+        return atoms;
     }
 
     public String getName() {
@@ -519,6 +582,5 @@ class Attribute {
     }
 }
 
-class AttributeTypeCannotBeInferred extends RuntimeException {}
-
+class AttributeTypeCannotBeInferredException extends RuntimeException {}
 

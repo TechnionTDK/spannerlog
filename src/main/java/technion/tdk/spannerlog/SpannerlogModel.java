@@ -65,10 +65,19 @@ class ConjunctiveQueryBody {
 abstract class Atom {
     private String schemaName;
     private List<Term> terms;
+    private RelationSchema schema;
 
     Atom(String schemaName, List<Term> terms) {
         this.schemaName = schemaName;
         this.terms = terms;
+    }
+
+    public RelationSchema getSchema() {
+        return schema;
+    }
+
+    public void setSchema(RelationSchema schema) {
+        this.schema = schema;
     }
 
     String getSchemaName() {
@@ -99,25 +108,25 @@ abstract class IEAtom extends Atom {
     }
 }
 
-class Regex extends IEAtom {
-    private String regex;
-
-    public Regex(String schemaName, List<Term> terms, Term inputTerm, String regex) {
-        super(schemaName, terms, inputTerm);
-        this.regex = regex;
-    }
-
-    public String getRegex() {
-        return regex;
-    }
-}
-
 class IEFunction extends IEAtom {
     IEFunction(String schemaName, List<Term> terms, Term inputTerm) {
         super(schemaName, terms, inputTerm);
     }
 }
 
+class Regex extends IEAtom {
+
+    private String regex;
+
+    public Regex(String schemaName, List<Term> terms, Term inputTerm, String regex) {
+        super(schemaName, terms, inputTerm);
+        this.regex = regex;
+    }
+    public String getRegex() {
+        return regex;
+    }
+
+}
 
 abstract class Term {
 }

@@ -11,14 +11,6 @@ public class Spannerlog {
 
     private void init(CommandLine line) throws IOException {
 
-        SpannerlogSchema schema = new SpannerlogSchema();
-
-        schema.readSchemaFromJsonFile(new FileReader(line.getOptionValue("edb")),
-                RelationSchema.builder().type(RelationSchemaType.EXTENSIONAL));
-
-        schema.readSchemaFromJsonFile(new FileReader(line.getOptionValue("udf")),
-                RelationSchema.builder().type(RelationSchemaType.IEFUNCTION));
-
         // parse program
         SpannerlogInputParser parser = new SpannerlogInputParser();
         Program program = parser.parseProgram(line.getOptionValue("program"));
@@ -26,7 +18,14 @@ public class Spannerlog {
         // desugar
         program = new SpannerlogDesugarRewriter().derive(program);
 
-        schema.extractRelationSchemas(program);
+        SpannerlogSchema schema = SpannerlogSchema
+                .builder()
+                .readSchemaFromJson(new FileReader(line.getOptionValue("edb")),
+                        RelationSchema.builder().type(RelationSchemaType.EXTENSIONAL))
+                .readSchemaFromJson(new FileReader(line.getOptionValue("udf")),
+                        RelationSchema.builder().type(RelationSchemaType.IEFUNCTION))
+                .extractRelationSchemas(program)
+                .build();
 
         // compile
         SpannerlogCompiler compiler = new SpannerlogCompiler();
