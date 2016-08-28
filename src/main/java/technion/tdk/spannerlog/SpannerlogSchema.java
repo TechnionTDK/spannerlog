@@ -8,10 +8,7 @@ import technion.tdk.spannerlog.utils.match.PatternMatching;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -48,22 +45,6 @@ class SpannerlogSchema {
 
     static Builder builder() {
         return new Builder();
-    }
-
-    private void inferAttributeTypes() {
-        List<IntensionalRelationSchema> iSchemas = relationSchemas
-                .stream()
-                .filter(s -> s instanceof IntensionalRelationSchema)
-                .map(s -> (IntensionalRelationSchema) s)
-                .collect(Collectors.toList());
-
-        DependenciesGraph depGraph = createDependenciesGraph(iSchemas);
-
-        System.out.println(iSchemas);
-    }
-
-    private DependenciesGraph createDependenciesGraph(List<IntensionalRelationSchema> iSchemas) {
-        return null;
     }
 
     private void readSchemaFromJson(Reader reader, RelationSchemaBuilder builder) throws IOException {
@@ -313,6 +294,103 @@ class SpannerlogSchema {
     private class AttributeNameConflictException extends RuntimeException {}
 
     private class RelationSchemaNameConflictException extends RuntimeException {}
+
+    private void inferAttributeTypes() {
+        List<IntensionalRelationSchema> iSchemas = relationSchemas
+                .stream()
+                .filter(s -> s instanceof IntensionalRelationSchema)
+                .map(s -> (IntensionalRelationSchema) s)
+                .collect(Collectors.toList());
+
+        Map<Attribute, List<Attribute>> dependenciesMap = new HashMap<>();
+        for (IntensionalRelationSchema schema : iSchemas) {
+            List<Attribute> attrs = schema.getAttrs()
+                    .stream()
+                    .filter(attr -> attr.getType() != null)
+                    .collect(Collectors.toList());
+
+            List<Atom> inputAtoms = schema.getInputAtoms();
+            for (Attribute attr : attrs) {
+                List<Attribute> dependencies = dependenciesMap.getOrDefault(attr, new ArrayList<>());
+                for (Atom inputAtom : inputAtoms) {
+                    List<Attribute> inputAtomAttrs = inputAtom.getSchema().getAttrs();
+                    for (Attribute inputAtomAttr : inputAtomAttrs) {
+                        if (attr.getName().equals(inputAtomAttr.getName())) {
+                            dependencies.add(inputAtomAttr);
+                        }
+                    }
+                }
+                dependenciesMap.put(attr, dependencies);
+            }
+        }
+
+        DependenciesGraphTemp<Attribute> depGraph = new DependenciesGraphTemp<>(dependenciesMap);
+
+        Set<Attribute> attrs = dependenciesMap.keySet();
+        for (Attribute attr : attrs) {
+            List<String> possibleTypes = depGraph.getDependencies(attr)
+                .stream()
+                .filter(a -> a.getType() != null)
+                .map(Attribute::getType)
+                .collect(Collectors.toList());
+
+            if (possibleTypes.size() != 1) {
+                throw new AttributeTypeCannotBeInferredException();
+            }
+
+            attr.setType(possibleTypes.get(0));
+        }
+
+//        DependenciesGraphTemp depGraph = createDependenciesGraph(iSchemas);
+
+        System.out.println(iSchemas);
+    }
+
+//    private DependenciesGraphTemp createDependenciesGraph(List<IntensionalRelationSchema> iSchemas) {
+//        return null;
+//    }
+}
+
+class DependenciesGraphTemp<T> {
+    private Map<T, List<T>> adjacencyList;
+
+    DependenciesGraphTemp(Map<T, List<T>> adjacencyList) {
+        this.adjacencyList = adjacencyList;
+    }
+
+    private List<T> outEdges(T t) {
+        return adjacencyList.get(t);
+    }
+
+    List<T> getDependencies(T root) {
+
+        Map<T, Boolean> visited = adjacencyList.keySet()
+                .stream()
+                .collect(Collectors.toMap(t -> t, t -> Boolean.FALSE));
+
+        Stack<T> stack = new Stack<>();
+        stack.push(root);
+        while (!stack.isEmpty()) {
+            T t = stack.pop();
+            if (!visited.get(t)) {
+                visited.put(t, Boolean.TRUE);
+                for (T s : this.outEdges(t)) {
+                    if (visited.get(s))
+                        throw new CircularDependencyException();
+                    stack.push(s);
+                }
+            }
+        }
+
+        return visited.entrySet()
+                .stream()
+                .filter(Map.Entry::getValue)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+    }
+
+    private class CircularDependencyException extends RuntimeException {
+    }
 }
 
 abstract class RelationSchema {
@@ -580,6 +658,10 @@ class Attribute {
 
     public String getType() {
         return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     @Override
