@@ -45,7 +45,8 @@ class SpannerlogCompiler {
     }
 
     private String compile(RelationSchema relationSchema) {
-        assert(!(relationSchema instanceof AmbiguousRelationSchema));
+        if (relationSchema instanceof AmbiguousRelationSchema)
+            throw new undefinedRelationSchema(relationSchema.getName());
 
         return relationSchema.getName() +
                 "(\n\t" +
@@ -74,11 +75,11 @@ class SpannerlogCompiler {
         return blocks;
     }
 
-    private String compile(Attribute attribute) {
+    private String compile(Attribute attribute) { // TODO handle case where attribute is of type span
         if (attribute.getType() == null)
             throw new AttributeTypeCannotBeInferredException();
 
-        return attribute.getName() + "\t\t" + attribute.getType();
+        return attribute.getName() + "\t\t" + attribute.getType(); // TODO check if type is legal?
     }
 
     private String compile(Statement statement) {
@@ -209,7 +210,7 @@ class SpannerlogCompiler {
         return Float.toString(floatConstExpr.getValue());
     }
 
-    private String compile(SpanConstExpr spanConstExpr) {
+    private String compile(SpanConstExpr spanConstExpr) { // TODO use integers instead of strings to module spans
         return "\"" + Integer.toString(spanConstExpr.getStart()) + "," + Integer.toString(spanConstExpr.getEnd()) + "\"";
     }
 

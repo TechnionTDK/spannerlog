@@ -1,196 +1,121 @@
 package technion.tdk.spannerlog;
 
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 
+import static org.junit.Assert.*;
+
+
 public class CompilationTests {
 
-    @Ignore
-    @Test
-    public void compileBooleanCQ() {
-
+    private boolean checkCompilation(String splogSrc, String edbSchema, String udfSchema) {
         try {
-            String splogSrc = "Q() :- R(True).";
 
             SpannerlogInputParser parser = new SpannerlogInputParser();
             Program program = parser.parseProgram(new ByteArrayInputStream(splogSrc.getBytes(StandardCharsets.UTF_8)));
 
-            SpannerlogSchema schema = SpannerlogSchema
-                    .builder()
-                    .extractRelationSchemas(program)
-                    .build();
+            SpannerlogSchema.Builder builder = SpannerlogSchema
+                    .builder();
+            if (!StringUtils.isEmpty(edbSchema))
+                    builder.readSchemaFromJson(new StringReader(edbSchema),
+                            RelationSchema.builder().type(RelationSchemaType.EXTENSIONAL));
+            if (!StringUtils.isEmpty(udfSchema))
+                    builder.readSchemaFromJson(new StringReader(udfSchema),
+                            RelationSchema.builder().type(RelationSchemaType.IEFUNCTION));
 
-            SpannerlogCompiler compiler = new SpannerlogCompiler();
-            compiler.compile(program, schema);
+            SpannerlogSchema schema = builder.extractRelationSchemas(program).build();
+
+            new SpannerlogCompiler().compile(program, schema);
 
         } catch (IOException e) {
             e.printStackTrace();
+            return false;
         }
 
+        return true;
     }
 
-    @Ignore
-    @Test
+    @BeforeClass
+    public static void setUpStreams() {
+        System.setOut(new PrintStream(new OutputStream() {
+            public void write(int b) {
+                // DO NOTHING
+            }
+        }));
+    }
+
+//    @Ignore
+    @Test(expected = undefinedRelationSchema.class)
+    public void compileBooleanCQ() {
+
+        String splogSrc = "Q() :- R(True).";
+        assertTrue(checkCompilation(splogSrc, null, null));
+    }
+
+//    @Ignore
+    @Test(expected = undefinedRelationSchema.class)
     public void failCompilationForQueryWithUndefinedSchema() {
 
-        try {
-            String splogSrc = "Q(x) :- S(x), Q(3).";
-
-            SpannerlogInputParser parser = new SpannerlogInputParser();
-            Program program = parser.parseProgram(new ByteArrayInputStream(splogSrc.getBytes(StandardCharsets.UTF_8)));
-
-            SpannerlogSchema schema = SpannerlogSchema
-                    .builder()
-                    .extractRelationSchemas(program)
-                    .build();
-
-            SpannerlogCompiler compiler = new SpannerlogCompiler();
-            compiler.compile(program, schema);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+        String splogSrc = "Q(x) :- S(x), Q(3).";
+        assertTrue(checkCompilation(splogSrc, null, null));
     }
 
 //    @Ignore
     @Test
     public void compileNonBooleanCQ() {
-        try {
-            String splogSrc = "Path(x,y) :- Edge(x,y).\n" +
-                              "Path(x,z) :- Edge(x,y),Path(y,z).";
-            String edbSchema = "{\"Edge\":{\"node1\":\"int\", \"node2\":\"int\"}}";
+        String splogSrc = "Path(x,y) :- Edge(x,y).\n" +
+                "Path(x,z) :- Edge(x,y),Path(y,z).";
+        String edbSchema = "{\"Edge\":{\"node1\":\"int\", \"node2\":\"int\"}}";
 
-            SpannerlogInputParser parser = new SpannerlogInputParser();
-            Program program = parser.parseProgram(new ByteArrayInputStream(splogSrc.getBytes(StandardCharsets.UTF_8)));
-
-            SpannerlogSchema schema = SpannerlogSchema
-                    .builder()
-                    .readSchemaFromJson(new StringReader(edbSchema),
-                            RelationSchema.builder().type(RelationSchemaType.EXTENSIONAL))
-                    .extractRelationSchemas(program)
-                    .build();
-
-            SpannerlogCompiler compiler = new SpannerlogCompiler();
-            compiler.compile(program, schema);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-//
-//    @Test
-//    public void compileQueryWithLiterals() {
-//        try {
-//            String splogSrc = "Q() :- R(False, \"Hello\", 4, -2, 0.01, - 1.0,  [3,4]).";
-//            SpannerlogInputParser parser = new SpannerlogInputParser();
-//            Program program = parser.parseProgram(new ByteArrayInputStream(splogSrc.getBytes(StandardCharsets.UTF_8)));
-//
-//            SpannerlogCompiler compiler = new SpannerlogCompiler();
-//            compiler.compile(program);
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
-//
-//
-//    @Test
-//    public void compileQueryWithSpans() {
-//        try {
-//            String splogSrc = "Q(\"Hello World\"[1,6][2,4], s[t]) :- R(s,t).";
-//            SpannerlogInputParser parser = new SpannerlogInputParser();
-//            Program program = parser.parseProgram(new ByteArrayInputStream(splogSrc.getBytes(StandardCharsets.UTF_8)));
-//
-//            SpannerlogCompiler compiler = new SpannerlogCompiler();
-//            compiler.compile(program);
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
-//
-//    @Test
-//    public void compileQueryWithIEFunctions() {
-//        try {
-//            String splogSrc = "Q() :- Doc(s), R<s[y]>(x).";
-//            SpannerlogInputParser parser = new SpannerlogInputParser();
-//            Program program = parser.parseProgram(new ByteArrayInputStream(splogSrc.getBytes(StandardCharsets.UTF_8)));
-//
-//            SpannerlogCompiler compiler = new SpannerlogCompiler();
-//            compiler.compile(program);
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
-//
-//    @BeforeClass
-//    public static void setUpStreams() {
-//        System.setOut(new PrintStream(new OutputStream() {
-//            public void write(int b) {
-//                //DO NOTHING
-//            }
-//        }));
-//    }
-
-    @Ignore
-    @Test(expected = AttributeTypeCannotBeInferredException.class)
-    public void failCompilationForQueryWithUntypedVar() {
-        try {
-            String splogSrc = "Q(z) :- doc(s), rgx1<s>(x,y), rgx2<s[y]>(x).";
-            String edbSchema = "{\"doc\":{\"column1\":\"text\"}}";
-            String udfSchema = "{\"rgx1\":{\"s\":\"text\",\"x\":\"span\",\"y\":\"span\"},\"rgx2\":{\"s\":\"text\",\"x\":\"span\"}}";
-
-            SpannerlogInputParser parser = new SpannerlogInputParser();
-            Program program = parser.parseProgram(new ByteArrayInputStream(splogSrc.getBytes(StandardCharsets.UTF_8)));
-
-            SpannerlogSchema schema = SpannerlogSchema
-                    .builder()
-                    .readSchemaFromJson(new StringReader(edbSchema),
-                            RelationSchema.builder().type(RelationSchemaType.EXTENSIONAL))
-                    .readSchemaFromJson(new StringReader(udfSchema),
-                            RelationSchema.builder().type(RelationSchemaType.IEFUNCTION))
-                    .extractRelationSchemas(program)
-                    .build();
-
-            SpannerlogCompiler compiler = new SpannerlogCompiler();
-            compiler.compile(program, schema);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+        assertTrue(checkCompilation(splogSrc, edbSchema, null));
     }
 
-    @Ignore
+    @Test
+    public void compileQueryWithLiterals() {
+        String splogSrc = "Q() :- R(False, \"Hello\", 4, -2, 0.01, - 1.0,  [3,4]).";
+        String edbSchema = "{\"R\":{\"a1\":\"boolean\", \"a2\":\"text\", \"a3\":\"int\", \"a4\":\"int\", \"a5\":\"float8\", \"a6\":\"float8\", \"a7\":\"span\"}}";
+        assertTrue(checkCompilation(splogSrc, edbSchema, null));
+    }
+
+
+    @Test
+    public void compileQueryWithSpans() {
+        String splogSrc = "Q(\"Hello World\"[1,6][2,4], s[t]) :- R(s,t).";
+        String edbSchema = "{\"R\":{\"a1\":\"int\", \"a2\":\"span\"}}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null));
+    }
+
+    @Test
+    public void compileQueryWithIEFunctions() {
+        String splogSrc = "Q() :- Doc(s), R<s[y]>(x).";  // TODO This should fail
+        String edbSchema = "{\"Doc\":{\"column1\":\"text\"}}";
+        String udfSchema = "{\"R\":{\"s\":\"text\",\"x\":\"span\"}}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema));
+    }
+
+//    @Ignore
+    @Test(expected = unboundVariableException.class)
+    public void failCompilationForQueryWithUnboundVar() {
+        String splogSrc = "Q(z) :- doc(s), rgx1<s>(x,y), rgx2<s[y]>(x).";
+        String edbSchema = "{\"doc\":{\"column1\":\"text\"}}";
+        String udfSchema = "{\"rgx1\":{\"s\":\"text\",\"x\":\"span\",\"y\":\"span\"},\"rgx2\":{\"s\":\"text\",\"x\":\"span\"}}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema));
+    }
+
+//    @Ignore
     @Test
     public void compileAnbnQuery() {
-        try {
-            String splogSrc = "Q() :- doc(s), rgx1<s>(x,y), rgx2<s[y]>(x).";
-            String edbSchema = "{\"doc\":{\"column1\":\"text\"}}";
-            String udfSchema = "{\"rgx1\":{\"s\":\"text\",\"x\":\"span\",\"y\":\"span\"},\"rgx2\":{\"s\":\"text\",\"x\":\"span\"}}";
+        String splogSrc = "Q() :- doc(s), rgx1<s>(x,y), rgx2<s[y]>(x).";
+        String edbSchema = "{\"doc\":{\"column1\":\"text\"}}";
+        String udfSchema = "{\"rgx1\":{\"s\":\"text\",\"x\":\"span\",\"y\":\"span\"},\"rgx2\":{\"s\":\"text\",\"x\":\"span\"}}";
 
-            SpannerlogInputParser parser = new SpannerlogInputParser();
-            Program program = parser.parseProgram(new ByteArrayInputStream(splogSrc.getBytes(StandardCharsets.UTF_8)));
-
-            SpannerlogSchema schema = SpannerlogSchema
-                    .builder()
-                    .readSchemaFromJson(new StringReader(edbSchema),
-                            RelationSchema.builder().type(RelationSchemaType.EXTENSIONAL))
-                    .readSchemaFromJson(new StringReader(udfSchema),
-                            RelationSchema.builder().type(RelationSchemaType.IEFUNCTION))
-                    .extractRelationSchemas(program)
-                    .build();
-
-            SpannerlogCompiler compiler = new SpannerlogCompiler();
-            compiler.compile(program, schema);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema));
     }
 }
