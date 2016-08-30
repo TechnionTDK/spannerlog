@@ -3,7 +3,7 @@ package technion.tdk.spannerlog;
 
 import com.google.gson.stream.JsonReader;
 import org.apache.commons.lang3.ObjectUtils;
-import technion.tdk.spannerlog.utils.DependenciesGraph;
+import technion.tdk.spannerlog.utils.dependencies.DependenciesGraph;
 import technion.tdk.spannerlog.utils.match.PatternMatching;
 
 import java.io.IOException;
@@ -129,7 +129,8 @@ class SpannerlogSchema {
     }
 
     private List<Attribute> mergeAttributes(List<Attribute> oldAttrs, List<Attribute> newAttrs) {
-        assert (oldAttrs.size() == newAttrs.size());
+        if (oldAttrs.size() != newAttrs.size())
+            throw new AttributeSchemaConflictException(oldAttrs.get(0));
 
         List<Attribute> mergedAttrs = new ArrayList<>();
 
@@ -289,7 +290,7 @@ class SpannerlogSchema {
                 .collect(Collectors.toList());
 
             if (possibleTypes.size() != 1) {
-                throw new AttributeTypeCannotBeInferredException();
+                throw new AttributeTypeCannotBeInferredException(rootAttr);
             }
 
             rootAttr.setType(possibleTypes.get(0));
@@ -716,9 +717,19 @@ class AttributeTypeConflictException extends RuntimeException {
 
 class AttributeNameConflictException extends RuntimeException {}
 
+class AttributeSchemaConflictException extends RuntimeException {
+    AttributeSchemaConflictException(Attribute attr) {
+        super("The schema of " + attr.getSchema().getName() + " is inconsistent");
+    }
+}
+
 class RelationSchemaNameConflictException extends RuntimeException {}
 
-class AttributeTypeCannotBeInferredException extends RuntimeException {}
+class AttributeTypeCannotBeInferredException extends RuntimeException {
+    AttributeTypeCannotBeInferredException(Attribute attr) {
+        super("The type of attribute '" + attr.getName() + "' in " + attr.getSchema().getName() + " cannot be inferred");
+    }
+}
 
 class UnboundVariableException extends RuntimeException {
     UnboundVariableException(String varName, String schemaName) {

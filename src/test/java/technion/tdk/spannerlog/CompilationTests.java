@@ -3,6 +3,7 @@ package technion.tdk.spannerlog;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
+import technion.tdk.spannerlog.utils.dependencies.CircularDependencyException;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -49,17 +50,64 @@ public class CompilationTests {
 //    }
 
     @Test(expected = UndefinedRelationSchema.class)
-    public void compileBooleanCQ() {
+    public void programWithUndefinedSchemaShouldFail() {
 
         String splogSrc = "Q() :- R(True).";
         assertTrue(checkCompilation(splogSrc, null, null));
     }
 
     @Test(expected = UndefinedRelationSchema.class)
-    public void failCompilationForQueryWithUndefinedSchema() {
+    public void programWithUndefinedSchemaShouldFail2() {
 
         String splogSrc = "Q(x) :- S(x), Q(3).";
         assertTrue(checkCompilation(splogSrc, null, null));
+    }
+
+    @Ignore
+    @Test
+    public void inferBasicDependency() {
+
+        String splogSrc = "Q(x) :- S(x), T(3).";
+        String edbSchema = "{\"S\":{\"col\":\"int\"}, \"T\":{\"col\":\"int\"}}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null));
+    }
+
+    @Test(expected = AttributeTypeConflictException.class)
+    public void programWithConflictingAttrTypesShouldFail() {
+
+        String splogSrc = "Q(x) :- S(x), T(\"3\").";
+        String edbSchema = "{\"S\":{\"col\":\"int\"}, \"T\":{\"col\":\"int\"}}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null));
+    }
+
+    @Test(expected = AttributeTypeCannotBeInferredException.class)
+    public void programWithConflictingAttrTypesShouldFail2() {
+
+        String splogSrc = "Q(x) :- S(x), T(x).";
+        String edbSchema = "{\"S\":{\"col\":\"int\"}, \"T\":{\"col\":\"text\"}}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null));
+    }
+//
+//    @Test(expected = AttributeTypeConflictException.class)
+//    public void programWithAmbiguousAttrTypesShouldFail() {
+//
+//        String splogSrc = "Q(x) :- S(x), V(x).\n" +
+//                          "V(x) :- ";
+//        String edbSchema = "{\"S\":{\"col\":\"int\"}, \"T\":{\"col\":\"int\"}}";
+//
+//        assertTrue(checkCompilation(splogSrc, edbSchema, null));
+//    }
+
+    @Test(expected = AttributeSchemaConflictException.class)
+    public void programWithInCosistentSchemaShouldFail() {
+        String splogSrc = "Path(x,y) :- Edge(x,y).\n" +
+                          "Path(x) :- Edge(x,y),Path(y).";
+        String edbSchema = "{\"Edge\":{\"node1\":\"int\", \"node2\":\"int\"}}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null));
     }
 
     @Ignore
@@ -72,6 +120,33 @@ public class CompilationTests {
         assertTrue(checkCompilation(splogSrc, edbSchema, null));
     }
 
+    @Test(expected = CircularDependencyException.class)
+    public void programWithCircularDependencyShouldFail() {
+        String splogSrc = "R(x,y) :- S(x), T(y).\n" +
+                          "T(z) :- R(x,z), S(x).";
+        String edbSchema = "{\"S\":{\"col\":\"int\"}}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null));
+    }
+
+    @Test(expected = UnboundVariableException.class)
+    public void programWithUnboundVarShouldFail() {
+        String splogSrc = "R(x,y) :- S(x).";
+        String edbSchema = "{\"S\":{\"col\":\"int\"}}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null));
+    }
+
+    @Test(expected = UnboundVariableException.class)
+    public void programWithUnboundVarShouldFail2() {
+        String splogSrc = "Q(z) :- doc(s), rgx1<s>(x,y), rgx2<s[y]>(x).";
+        String edbSchema = "{\"doc\":{\"column1\":\"text\"}}";
+        String udfSchema = "{\"rgx1\":{\"s\":\"text\",\"x\":\"span\",\"y\":\"span\"},\"rgx2\":{\"s\":\"text\",\"x\":\"span\"}}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema));
+    }
+
+
     @Ignore
     @Test
     public void compileQueryWithLiterals() {
@@ -79,7 +154,6 @@ public class CompilationTests {
         String edbSchema = "{\"R\":{\"a1\":\"boolean\", \"a2\":\"text\", \"a3\":\"int\", \"a4\":\"int\", \"a5\":\"float8\", \"a6\":\"float8\", \"a7\":\"span\"}}";
         assertTrue(checkCompilation(splogSrc, edbSchema, null));
     }
-
 
     @Ignore
     @Test
@@ -91,19 +165,10 @@ public class CompilationTests {
     }
 
     @Test(expected = UnboundVariableException.class)
-    public void compileQueryWithIEFunctions() {
+    public void programWithUnboundSpanVarShouldFail() {
         String splogSrc = "Q() :- Doc(s), R<s[y]>(x).";
         String edbSchema = "{\"Doc\":{\"column1\":\"text\"}}";
         String udfSchema = "{\"R\":{\"s\":\"text\",\"x\":\"span\"}}";
-
-        assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema));
-    }
-
-    @Test(expected = UnboundVariableException.class)
-    public void failCompilationForQueryWithUnboundVar() {
-        String splogSrc = "Q(z) :- doc(s), rgx1<s>(x,y), rgx2<s[y]>(x).";
-        String edbSchema = "{\"doc\":{\"column1\":\"text\"}}";
-        String udfSchema = "{\"rgx1\":{\"s\":\"text\",\"x\":\"span\",\"y\":\"span\"},\"rgx2\":{\"s\":\"text\",\"x\":\"span\"}}";
 
         assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema));
     }

@@ -52,7 +52,7 @@ class SpannerlogCompiler {
                 "(\n\t" +
                 relationSchema.getAttrs()
                         .stream()
-                        .map(this::compile)
+                        .flatMap(attribute -> compile(attribute).stream())
                         .collect(Collectors.joining(",\n\t")) +
                 "\n\t).";
     }
@@ -69,17 +69,27 @@ class SpannerlogCompiler {
                 .stream()
                 .map(this::compile)
                 .collect(Collectors.joining(", "));
-        blocks.add(name + " += " + name + "(" + compile(ieFunctionSchema.getInputTerm()) + ") :- " + inputAtomsBlock
+        blocks.add(name + " += " + name + "(" + compile(ieFunctionSchema.getInputTerm(),
+                ieFunctionSchema.getAttrs().get(0)) + ") :- " + inputAtomsBlock
                 + ".");
 
         return blocks;
     }
 
-    private String compile(Attribute attribute) { // TODO handle case where attribute is of type span
+    private List<String> compile(Attribute attribute) {
         if (attribute.getType() == null)
-            throw new AttributeTypeCannotBeInferredException();
+            throw new AttributeTypeCannotBeInferredException(attribute);
 
-        return attribute.getName() + "\t\t" + attribute.getType(); // TODO check if type is legal?
+        List<String> attrBlock = new ArrayList<>();
+
+        if (attribute.getType().equals("span")) {
+            attrBlock.add(String.format("%-15s int", (attribute.getName()+"_start")));
+            attrBlock.add(String.format("%-15s int", (attribute.getName()+"_end")));
+        } else {
+            attrBlock.add(String.format("%-15s %s", attribute.getName(), attribute.getType()));
+        }
+
+        return attrBlock;
     }
 
     private String compile(Statement statement) {
@@ -112,82 +122,80 @@ class SpannerlogCompiler {
     }
 
     private String compile(IEAtom ieAtom) {
-        return ieAtom.getSchemaName() + "(" + compile(ieAtom.getTerms()) + ")";
+        return ieAtom.getSchemaName() + "(" + compile(ieAtom.getTerms(), ieAtom.getSchema()) + ")";
     }
 
-    private String compile(DBAtom atom) {
-        return atom.getSchemaName() + "(" + compile(atom.getTerms()) + ")";
+    private String compile(DBAtom dbAtom) {
+        return dbAtom.getSchemaName() + "(" + compile(dbAtom.getTerms(), dbAtom.getSchema()) + ")";
     }
 
-    private String compile(List<Term> terms) {
+    private String compile(List<Term> terms, RelationSchema schema) {
         if (terms.isEmpty())
             return "TRUE";
 
         return terms
                 .stream()
-                .map(this::compile)
+                .map(term -> compile(term, schema.getAttrs().get(terms.indexOf(term))))
                 .collect(Collectors.joining(", "));
     }
 
-    private String compile(Term term) {
+    private String compile(Term term, Attribute attr) {
         return (String) new PatternMatching(
                 inCaseOf(PlaceHolderTerm.class, t -> "_"),
-                inCaseOf(ExprTerm.class, this::compile)
+                inCaseOf(ExprTerm.class, t -> compile(t, attr))
         ).matchFor(term);
     }
 
-    private String compile(ExprTerm exprTerm) {
+    private String compile(ExprTerm exprTerm, Attribute attr) {
         if (exprTerm instanceof StringTerm) {
             List<SpanTerm> spans = ((StringTerm) exprTerm).getSpans();
             if (spans != null && !spans.isEmpty()) {
                 SpanTerm spanTerm = spans.get(spans.size() - 1);
                 spans.remove(spans.size() - 1);
-                return compile(exprTerm, spanTerm);
+                return compile(exprTerm, spanTerm, attr);
             }
         }
 
         return (String) new PatternMatching(
                 inCaseOf(ConstExprTerm.class, this::compile),
-                inCaseOf(VarTerm.class, this::compile)
+                inCaseOf(VarTerm.class, t -> compile(t, attr))
         ).matchFor(exprTerm);
     }
 
-    private String compile(ExprTerm exprTerm, SpanTerm spanTerm) {
+    private String compile(ExprTerm exprTerm, SpanTerm spanTerm, Attribute attr) {
         return (String) new PatternMatching(
-                inCaseOf(SpanConstExpr.class, spanConstExpr -> compile(exprTerm, spanConstExpr)),
-                inCaseOf(VarTerm.class, varTerm -> compile(exprTerm, varTerm))
+                inCaseOf(SpanConstExpr.class, spanConstExpr -> compile(exprTerm, spanConstExpr, attr)),
+                inCaseOf(VarTerm.class, varTerm -> compile(exprTerm, varTerm, attr))
         ).matchFor(spanTerm);
     }
 
-    private String compile(ExprTerm exprTerm, VarTerm varTerm) {
+    private String compile(ExprTerm exprTerm, VarTerm varTerm, Attribute attr) {
         String varName = varTerm.getVarName();
 
         String block = "substr(" +
-                compile(exprTerm) +
-                ", split_part(" + varName + ", \",\", 1)::int" +
-                ", (split_part(" + varName + ", \",\", 2)::int) - (split_part(" + varName + ", \",\", 1)::int)" +
+                compile(exprTerm, attr) +
+                ", " + varName + "_start" +
+                ", (" + varName + "_end - " + varName + "_start)" +
                 ')';
 
-//        assert (exprTerm instanceof StringTerm);
-        ((StringTerm) exprTerm).getSpans().add(varTerm); // adding the span term that was removed
-        // in compile(ExprTerm exprTerm)
+        // adding the span term that was removed in compile(ExprTerm exprTerm)
+        ((StringTerm) exprTerm).getSpans().add(varTerm);
 
         return block;
     }
 
-    private String compile(ExprTerm exprTerm, SpanConstExpr spanConstExpr) {
+    private String compile(ExprTerm exprTerm, SpanConstExpr spanConstExpr, Attribute attr) {
         int start = spanConstExpr.getStart();
         int end = spanConstExpr.getEnd();
 
         String block = "substr(" +
-                compile(exprTerm) +
+                compile(exprTerm, attr) +
                 ", " + start +
                 ", " + (end - start) +
                 ')';
 
-//        assert (exprTerm instanceof StringTerm);
-        ((StringTerm) exprTerm).getSpans().add(spanConstExpr); // adding the span term that was removed
-        // in compile(ExprTerm exprTerm)
+        // adding the span term that was removed in compile(ExprTerm exprTerm)
+        ((StringTerm) exprTerm).getSpans().add(spanConstExpr);
 
         return block;
     }
@@ -210,8 +218,8 @@ class SpannerlogCompiler {
         return Float.toString(floatConstExpr.getValue());
     }
 
-    private String compile(SpanConstExpr spanConstExpr) { // TODO use integers instead of strings to module spans
-        return "\"" + Integer.toString(spanConstExpr.getStart()) + "," + Integer.toString(spanConstExpr.getEnd()) + "\"";
+    private String compile(SpanConstExpr spanConstExpr) {
+        return Integer.toString(spanConstExpr.getStart()) + ", " + Integer.toString(spanConstExpr.getEnd());
     }
 
     private String compile(BooleanConstExpr booleanConstExpr) {
@@ -224,7 +232,10 @@ class SpannerlogCompiler {
         return "\"" + stringConstExpr.getValue() + "\"";
     }
 
-    private String compile(VarTerm varTerm) {
+    private String compile(VarTerm varTerm, Attribute attr) {
+        if (attr.getType().equals("span"))
+            return varTerm.getVarName() + "_start, " + varTerm.getVarName() + "_end";
+
         return varTerm.getVarName();
     }
 }
