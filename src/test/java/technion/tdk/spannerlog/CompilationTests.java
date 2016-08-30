@@ -49,7 +49,7 @@ public class CompilationTests {
     }
 
 //    @Ignore
-    @Test(expected = undefinedRelationSchema.class)
+    @Test(expected = UndefinedRelationSchema.class)
     public void compileBooleanCQ() {
 
         String splogSrc = "Q() :- R(True).";
@@ -57,7 +57,7 @@ public class CompilationTests {
     }
 
 //    @Ignore
-    @Test(expected = undefinedRelationSchema.class)
+    @Test(expected = UndefinedRelationSchema.class)
     public void failCompilationForQueryWithUndefinedSchema() {
 
         String splogSrc = "Q(x) :- S(x), Q(3).";
@@ -90,9 +90,9 @@ public class CompilationTests {
         assertTrue(checkCompilation(splogSrc, edbSchema, null));
     }
 
-    @Test
+    @Test(expected = UnboundVariableException.class)
     public void compileQueryWithIEFunctions() {
-        String splogSrc = "Q() :- Doc(s), R<s[y]>(x).";  // TODO This should fail
+        String splogSrc = "Q() :- Doc(s), R<s[y]>(x).";
         String edbSchema = "{\"Doc\":{\"column1\":\"text\"}}";
         String udfSchema = "{\"R\":{\"s\":\"text\",\"x\":\"span\"}}";
 
@@ -100,7 +100,7 @@ public class CompilationTests {
     }
 
 //    @Ignore
-    @Test(expected = unboundVariableException.class)
+    @Test(expected = UnboundVariableException.class)
     public void failCompilationForQueryWithUnboundVar() {
         String splogSrc = "Q(z) :- doc(s), rgx1<s>(x,y), rgx2<s[y]>(x).";
         String edbSchema = "{\"doc\":{\"column1\":\"text\"}}";

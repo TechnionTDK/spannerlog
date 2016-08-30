@@ -46,7 +46,7 @@ class SpannerlogCompiler {
 
     private String compile(RelationSchema relationSchema) {
         if (relationSchema instanceof AmbiguousRelationSchema)
-            throw new undefinedRelationSchema(relationSchema.getName());
+            throw new UndefinedRelationSchema(relationSchema.getName());
 
         return relationSchema.getName() +
                 "(\n\t" +

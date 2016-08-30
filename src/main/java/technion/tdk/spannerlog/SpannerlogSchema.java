@@ -203,14 +203,7 @@ class SpannerlogSchema {
     }
 
     private RelationSchema extractIEFunctionSchema(IEAtom ieAtom, ConjunctiveQueryBody body) {
-        IEFunctionSchema schema = new IEFunctionSchema(ieAtom.getSchemaName(),
-                extractAttributes(ieAtom.getTerms()));
-        schema.getAttrs().forEach(attr -> attr.setSchema(schema));
-        schema.setInputTerm(ieAtom.getInputTerm());
-        schema.determineInputAtoms(body, ieAtom);
-        ieAtom.setSchema(schema);
-        schema.getAtoms().add(ieAtom);
-        return schema;
+        return new IEFunctionSchema(ieAtom, body, extractAttributes(ieAtom.getTerms()));
     }
 
     private RelationSchema extractRelationSchema(DBAtom dbAtom) {
@@ -356,7 +349,7 @@ class SpannerlogSchema {
                 }
 
                 if (localDependencies.isEmpty())
-                    throw new unboundVariableException();
+                    throw new UnboundVariableException(headVarName, headAtomSchema.getName());
 
                 localDependencies.remove(headAttr);
 
@@ -464,46 +457,6 @@ abstract class RelationSchema {
     }
 }
 
-class RelationSchemaBuilder {
-    private RelationSchemaType type;
-
-    RelationSchemaBuilder type(RelationSchemaType type) {
-        this.type = type;
-        return this;
-    }
-
-    RelationSchema build(String name, List<Attribute> attrs) {
-
-        if (type == null) {
-            throw new SchemaBuilderHasNoTypeException();
-        }
-
-        RelationSchema relationSchema;
-
-        switch (type) {
-            case EXTENSIONAL:
-                relationSchema = new ExtensionalRelationSchema(name, attrs);
-                break;
-            case INTENSIONAL:
-                relationSchema = new IntensionalRelationSchema(name, attrs);
-                break;
-            case IEFUNCTION:
-                relationSchema = new IEFunctionSchema(name, attrs);
-                break;
-            default:
-                throw new IllegalArgumentException();
-        }
-
-        return relationSchema;
-    }
-
-    private class SchemaBuilderHasNoTypeException extends RuntimeException {}
-}
-
-enum RelationSchemaType {
-    EXTENSIONAL, INTENSIONAL, IEFUNCTION
-}
-
 class AmbiguousRelationSchema extends RelationSchema {
     AmbiguousRelationSchema(String name, List<Attribute> attrs) {
         super(name, attrs);
@@ -526,6 +479,49 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
     private List<Atom> inputAtoms;
     private Term inputTerm;
 
+    IEFunctionSchema(String name, List<Attribute> attrs) {
+        super(name, attrs);
+    }
+
+    IEFunctionSchema(IEAtom ieAtom, ConjunctiveQueryBody body, List<Attribute> attrs) {
+        super(ieAtom.getSchemaName(), attrs);
+        getAttrs().forEach(attr -> attr.setSchema(this));
+        inputTerm = ieAtom.getInputTerm();
+        validateInputTerm(ieAtom, body);
+        determineInputAtoms(body, ieAtom);
+        ieAtom.setSchema(this);
+        getAtoms().add(ieAtom);
+    }
+
+    private void validateInputTerm(IEAtom ieAtom, ConjunctiveQueryBody body) {
+        if (!(inputTerm instanceof VarTerm))
+            return;
+
+        List<SpanTerm> spans = ((VarTerm) inputTerm).getSpans();
+
+        if (spans == null)
+            return;
+
+        List<String> bodyVarNames = body.getBodyAtoms()
+                .stream()
+                .filter(atom -> atom != ieAtom)
+                .flatMap(atom -> atom.getTerms().stream())
+                .filter(term -> term instanceof VarTerm)
+                .map(term -> ((VarTerm) term).getVarName())
+                .collect(Collectors.toList());
+
+        List<String> spanVarNames = spans
+                .stream()
+                .filter(spanTerm -> spanTerm instanceof VarTerm)
+                .map(spanTerm -> ((VarTerm) spanTerm).getVarName())
+                .collect(Collectors.toList());
+
+        spanVarNames.removeAll(bodyVarNames);
+
+        if (!spanVarNames.isEmpty())
+            throw new UnboundVariableException(spanVarNames.get(0), getName());
+    }
+
     Term getInputTerm() {
         return inputTerm;
     }
@@ -542,11 +538,7 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
         this.inputAtoms = inputAtoms;
     }
 
-    IEFunctionSchema(String name, List<Attribute> attrs) {
-        super(name, attrs);
-    }
-
-    void determineInputAtoms(ConjunctiveQueryBody cqBody, IEAtom ieAtom) {
+    private void determineInputAtoms(ConjunctiveQueryBody cqBody, IEAtom ieAtom) {
         List<Atom> bodyAtoms = cqBody.getBodyAtoms();
         DependenciesGraph depGraph = createDependenciesGraph(bodyAtoms);
         List<Integer> dependencies = depGraph.getDependencies(bodyAtoms.indexOf(ieAtom));
@@ -659,6 +651,46 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
     }
 }
 
+class RelationSchemaBuilder {
+    private RelationSchemaType type;
+
+    RelationSchemaBuilder type(RelationSchemaType type) {
+        this.type = type;
+        return this;
+    }
+
+    RelationSchema build(String name, List<Attribute> attrs) {
+
+        if (type == null) {
+            throw new SchemaBuilderHasNoTypeException();
+        }
+
+        RelationSchema relationSchema;
+
+        switch (type) {
+            case EXTENSIONAL:
+                relationSchema = new ExtensionalRelationSchema(name, attrs);
+                break;
+            case INTENSIONAL:
+                relationSchema = new IntensionalRelationSchema(name, attrs);
+                break;
+            case IEFUNCTION:
+                relationSchema = new IEFunctionSchema(name, attrs);
+                break;
+            default:
+                throw new IllegalArgumentException();
+        }
+
+        return relationSchema;
+    }
+
+    private class SchemaBuilderHasNoTypeException extends RuntimeException {}
+}
+
+enum RelationSchemaType {
+    EXTENSIONAL, INTENSIONAL, IEFUNCTION
+}
+
 class Attribute {
     private String name;
     private String type;
@@ -734,10 +766,14 @@ class CircularDependencyException extends RuntimeException {}
 
 class AttributeTypeCannotBeInferredException extends RuntimeException {}
 
-class unboundVariableException extends RuntimeException {}
+class UnboundVariableException extends RuntimeException {
+    UnboundVariableException(String varName, String schemaName) {
+        super("The variable '" + varName + "' in " + schemaName + " is unbound");
+    }
+}
 
-class undefinedRelationSchema extends RuntimeException {
-    undefinedRelationSchema(String message) {
+class UndefinedRelationSchema extends RuntimeException {
+    UndefinedRelationSchema(String message) {
         super("The relation schema for '" + message + "' is undefined");
     }
 }
