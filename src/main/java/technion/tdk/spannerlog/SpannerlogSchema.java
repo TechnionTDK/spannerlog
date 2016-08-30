@@ -169,7 +169,7 @@ class SpannerlogSchema {
         List<RelationSchema> relationSchemas = program.getStatements()
                 .stream()
                 .flatMap(stmt -> extractRelationSchemas(stmt).stream())
-                .collect(Collectors.toCollection(ArrayList::new)); // TODO check what happens if changed to "toList"
+                .collect(Collectors.toList());
 
         mergeRelationSchemas(relationSchemas);
     }
@@ -208,20 +208,12 @@ class SpannerlogSchema {
 
     private RelationSchema extractRelationSchema(DBAtom dbAtom) {
         // Schema could be intensional or extensional. TBD at a later stage.
-        AmbiguousRelationSchema schema = new AmbiguousRelationSchema(dbAtom.getSchemaName(), extractAttributes(dbAtom.getTerms()));
-        schema.getAttrs().forEach(attr -> attr.setSchema(schema));
-        dbAtom.setSchema(schema);
-        schema.getAtoms().add(dbAtom);
-        return schema;
+        return new AmbiguousRelationSchema(dbAtom, extractAttributes(dbAtom.getTerms()));
     }
 
     private RelationSchema extractIntensionalRelationSchema(DBAtom dbAtom) {
-        IntensionalRelationSchema schema = new IntensionalRelationSchema(dbAtom.getSchemaName(),
+        return new IntensionalRelationSchema(dbAtom,
                 extractAttributesAndGenColumnNames(dbAtom.getTerms()));
-        schema.getAttrs().forEach(attr -> attr.setSchema(schema));
-        dbAtom.setSchema(schema);
-        schema.getAtoms().add(dbAtom);
-        return schema;
     }
 
     private RelationSchema extractRelationSchema(ConjunctiveQueryHead head) {
@@ -458,8 +450,11 @@ abstract class RelationSchema {
 }
 
 class AmbiguousRelationSchema extends RelationSchema {
-    AmbiguousRelationSchema(String name, List<Attribute> attrs) {
-        super(name, attrs);
+    AmbiguousRelationSchema(DBAtom dbAtom, List<Attribute> attrs) {
+        super(dbAtom.getSchemaName(), attrs);
+        getAttrs().forEach(attr -> attr.setSchema(this));
+        dbAtom.setSchema(this);
+        getAtoms().add(dbAtom);
     }
 }
 
@@ -470,8 +465,11 @@ class ExtensionalRelationSchema extends RelationSchema {
 }
 
 class IntensionalRelationSchema extends RelationSchema {
-    IntensionalRelationSchema(String name, List<Attribute> attrs) {
-        super(name, attrs);
+    IntensionalRelationSchema(DBAtom dbAtom, List<Attribute> attrs) {
+        super(dbAtom.getSchemaName(), attrs);
+        getAttrs().forEach(attr -> attr.setSchema(this));
+        dbAtom.setSchema(this);
+        getAtoms().add(dbAtom);
     }
 }
 
@@ -671,9 +669,6 @@ class RelationSchemaBuilder {
             case EXTENSIONAL:
                 relationSchema = new ExtensionalRelationSchema(name, attrs);
                 break;
-            case INTENSIONAL:
-                relationSchema = new IntensionalRelationSchema(name, attrs);
-                break;
             case IEFUNCTION:
                 relationSchema = new IEFunctionSchema(name, attrs);
                 break;
@@ -688,7 +683,7 @@ class RelationSchemaBuilder {
 }
 
 enum RelationSchemaType {
-    EXTENSIONAL, INTENSIONAL, IEFUNCTION
+    EXTENSIONAL, IEFUNCTION
 }
 
 class Attribute {
