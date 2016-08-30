@@ -278,7 +278,7 @@ class SpannerlogSchema {
     private void inferAttributeTypes(Program program) {
 
         Map<Attribute, Set<Attribute>> dependenciesMap = createDependenciesMap(program);
-        DependenciesGraphTemp<Attribute> depGraph = new DependenciesGraphTemp<>(dependenciesMap);
+        DependenciesGraph<Attribute> depGraph = new DependenciesGraph<>(dependenciesMap);
         Set<Attribute> rootAttrs = dependenciesMap.keySet();
 
         for (Attribute rootAttr : rootAttrs) {
@@ -352,45 +352,6 @@ class SpannerlogSchema {
         }
 
         return dependenciesMap;
-    }
-}
-
-class DependenciesGraphTemp<T> {  // TODO replace with DependenciesGraph
-    private Map<T, Set<T>> adjacencyMap;
-
-    DependenciesGraphTemp(Map<T, Set<T>> adjacencyMap) {
-        this.adjacencyMap = adjacencyMap;
-    }
-
-    private Set<T> outEdges(T t) {
-        return adjacencyMap.get(t);
-    }
-
-    List<T> getDependencies(T root) {
-
-        Map<T, Boolean> visited = adjacencyMap.keySet()
-                .stream()
-                .collect(Collectors.toMap(t -> t, t -> Boolean.FALSE));
-
-        Stack<T> stack = new Stack<>();
-        stack.push(root);
-        while (!stack.isEmpty()) {
-            T t = stack.pop();
-            if (!visited.get(t)) {
-                visited.put(t, Boolean.TRUE);
-                for (T s : this.outEdges(t)) {
-                    if (visited.get(s))
-                        throw new CircularDependencyException();
-                    stack.push(s);
-                }
-            }
-        }
-
-        return visited.entrySet()
-                .stream()
-                .filter(Map.Entry::getValue)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
     }
 }
 
@@ -477,6 +438,22 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
     private List<Atom> inputAtoms;
     private Term inputTerm;
 
+    Term getInputTerm() {
+        return inputTerm;
+    }
+
+    List<Atom> getInputAtoms() {
+        return inputAtoms;
+    }
+
+    void setInputTerm(Term inputTerm) {
+        this.inputTerm = inputTerm;
+    }
+
+    void setInputAtoms(List<Atom> inputAtoms) {
+        this.inputAtoms = inputAtoms;
+    }
+
     IEFunctionSchema(String name, List<Attribute> attrs) {
         super(name, attrs);
     }
@@ -520,25 +497,9 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
             throw new UnboundVariableException(spanVarNames.get(0), getName());
     }
 
-    Term getInputTerm() {
-        return inputTerm;
-    }
-
-    List<Atom> getInputAtoms() {
-        return inputAtoms;
-    }
-
-    void setInputTerm(Term inputTerm) {
-        this.inputTerm = inputTerm;
-    }
-
-    void setInputAtoms(List<Atom> inputAtoms) {
-        this.inputAtoms = inputAtoms;
-    }
-
     private void determineInputAtoms(ConjunctiveQueryBody cqBody, IEAtom ieAtom) {
         List<Atom> bodyAtoms = cqBody.getBodyAtoms();
-        DependenciesGraph depGraph = createDependenciesGraph(bodyAtoms);
+        DependenciesGraph<Integer> depGraph = createDependenciesGraph(bodyAtoms);
         List<Integer> dependencies = depGraph.getDependencies(bodyAtoms.indexOf(ieAtom));
         inputAtoms = dependencies
                 .stream()
@@ -546,17 +507,17 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
                 .collect(Collectors.toList());
     }
 
-    private DependenciesGraph createDependenciesGraph(List<Atom> bodyAtoms) {
-        Map<Integer, List<Integer>> adjacencyList =
+    private DependenciesGraph<Integer> createDependenciesGraph(List<Atom> bodyAtoms) {
+        Map<Integer, Set<Integer>> adjacencyMap =
                 IntStream.range(0, bodyAtoms.size())
                         .boxed()
                         .collect(Collectors.toMap(i -> i, i -> calcDependencies(i, bodyAtoms)));
 
-        return new DependenciesGraph(adjacencyList);
+        return new DependenciesGraph<>(adjacencyMap);
     }
 
-    private List<Integer> calcDependencies(int idx, List<Atom> bodyAtoms) {
-        List<Integer> dependencies = new ArrayList<>();
+    private Set<Integer> calcDependencies(int idx, List<Atom> bodyAtoms) {
+        Set<Integer> dependencies = new HashSet<>();
 
         Atom atom = bodyAtoms.get(idx);
         if (atom instanceof IEAtom) {
@@ -756,8 +717,6 @@ class AttributeTypeConflictException extends RuntimeException {
 class AttributeNameConflictException extends RuntimeException {}
 
 class RelationSchemaNameConflictException extends RuntimeException {}
-
-class CircularDependencyException extends RuntimeException {}
 
 class AttributeTypeCannotBeInferredException extends RuntimeException {}
 

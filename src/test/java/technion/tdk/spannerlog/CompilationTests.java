@@ -39,16 +39,15 @@ public class CompilationTests {
         return true;
     }
 
-    @BeforeClass
-    public static void setUpStreams() {
-        System.setOut(new PrintStream(new OutputStream() {
-            public void write(int b) {
-                // DO NOTHING
-            }
-        }));
-    }
+//    @BeforeClass
+//    public static void setUpStreams() {
+//        System.setOut(new PrintStream(new OutputStream() {
+//            public void write(int b) {
+//                // DO NOTHING
+//            }
+//        }));
+//    }
 
-//    @Ignore
     @Test(expected = UndefinedRelationSchema.class)
     public void compileBooleanCQ() {
 
@@ -56,7 +55,6 @@ public class CompilationTests {
         assertTrue(checkCompilation(splogSrc, null, null));
     }
 
-//    @Ignore
     @Test(expected = UndefinedRelationSchema.class)
     public void failCompilationForQueryWithUndefinedSchema() {
 
@@ -64,7 +62,7 @@ public class CompilationTests {
         assertTrue(checkCompilation(splogSrc, null, null));
     }
 
-//    @Ignore
+    @Ignore
     @Test
     public void compileNonBooleanCQ() {
         String splogSrc = "Path(x,y) :- Edge(x,y).\n" +
@@ -74,6 +72,7 @@ public class CompilationTests {
         assertTrue(checkCompilation(splogSrc, edbSchema, null));
     }
 
+    @Ignore
     @Test
     public void compileQueryWithLiterals() {
         String splogSrc = "Q() :- R(False, \"Hello\", 4, -2, 0.01, - 1.0,  [3,4]).";
@@ -82,6 +81,7 @@ public class CompilationTests {
     }
 
 
+    @Ignore
     @Test
     public void compileQueryWithSpans() {
         String splogSrc = "Q(\"Hello World\"[1,6][2,4], s[t]) :- R(s,t).";
@@ -99,7 +99,6 @@ public class CompilationTests {
         assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema));
     }
 
-//    @Ignore
     @Test(expected = UnboundVariableException.class)
     public void failCompilationForQueryWithUnboundVar() {
         String splogSrc = "Q(z) :- doc(s), rgx1<s>(x,y), rgx2<s[y]>(x).";
