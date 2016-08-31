@@ -5,9 +5,9 @@ import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import technion.tdk.spannerlog.rgx.antlr.RgxBaseVisitor;
-import technion.tdk.spannerlog.rgx.antlr.RgxLexer;
-import technion.tdk.spannerlog.rgx.antlr.RgxParser;
+import technion.tdk.spannerlog.rgx.grammar.RgxBaseVisitor;
+import technion.tdk.spannerlog.rgx.grammar.RgxLexer;
+import technion.tdk.spannerlog.rgx.grammar.RgxParser;
 import technion.tdk.spannerlog.utils.antlr.ExceptionThrowerListener;
 
 import java.util.stream.Collectors;

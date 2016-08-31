@@ -1,5 +1,5 @@
 // Generated from /home/yoavn/Workspace/Projects/spannerlog/src/main/java/technion/tdk/spannerlog/rgx/antlr/Rgx.g4 by ANTLR 4.5.3
-package technion.tdk.spannerlog.rgx.antlr;
+package technion.tdk.spannerlog.rgx.grammar;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**

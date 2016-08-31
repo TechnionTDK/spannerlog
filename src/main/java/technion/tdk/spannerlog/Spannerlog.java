@@ -14,7 +14,7 @@ public class Spannerlog {
         Program program = new SpannerlogInputParser().parseProgram(line.getOptionValue("program"));
 
         // desugar
-        program = new SpannerlogDesugarRewriter().derive(program);
+//        program = new SpannerlogDesugarRewriter().derive(program);
 
         // build schema
         SpannerlogSchema schema = SpannerlogSchema

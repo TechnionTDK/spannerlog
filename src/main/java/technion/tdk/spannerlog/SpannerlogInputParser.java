@@ -3,9 +3,9 @@ package technion.tdk.spannerlog;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
-import technion.tdk.spannerlog.antlr.SpannerlogBaseVisitor;
-import technion.tdk.spannerlog.antlr.SpannerlogLexer;
-import technion.tdk.spannerlog.antlr.SpannerlogParser;
+import technion.tdk.spannerlog.grammar.SpannerlogBaseVisitor;
+import technion.tdk.spannerlog.grammar.SpannerlogLexer;
+import technion.tdk.spannerlog.grammar.SpannerlogParser;
 import technion.tdk.spannerlog.utils.antlr.ExceptionThrowerListener;
 
 import java.io.FileInputStream;
