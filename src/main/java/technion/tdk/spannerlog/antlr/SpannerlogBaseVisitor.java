@@ -1,5 +1,5 @@
 // Generated from /home/yoavn/Workspace/Projects/spannerlog/src/main/java/technion/tdk/spannerlog/antlr/main/Spannerlog.g4 by ANTLR 4.5.3
-package technion.tdk.spannerlog.antlr.main;
+package technion.tdk.spannerlog.antlr;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
@@ -73,7 +73,7 @@ public class SpannerlogBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitRegexAbbr(SpannerlogParser.RegexAbbrContext ctx) { return visitChildren(ctx); }
+	@Override public T visitRgx(SpannerlogParser.RgxContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

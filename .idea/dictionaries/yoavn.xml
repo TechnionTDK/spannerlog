@@ -2,6 +2,7 @@
   <dictionary name="yoavn">
     <words>
       <w>spannerlog</w>
+      <w>splog</w>
     </words>
   </dictionary>
 </component>

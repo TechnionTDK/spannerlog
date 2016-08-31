@@ -1,13 +1,10 @@
 // Generated from /home/yoavn/Workspace/Projects/spannerlog/src/main/java/technion/tdk/spannerlog/antlr/main/Spannerlog.g4 by ANTLR 4.5.3
-package technion.tdk.spannerlog.antlr.main;
+package technion.tdk.spannerlog.antlr;
 import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.misc.*;
 import org.antlr.v4.runtime.tree.*;
 import java.util.List;
-import java.util.Iterator;
-import java.util.ArrayList;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast"})
 public class SpannerlogParser extends Parser {
@@ -422,6 +419,18 @@ public class SpannerlogParser extends Parser {
 			super.copyFrom(ctx);
 		}
 	}
+	public static class RgxContext extends IeAtomContext {
+		public TermContext term() {
+			return getRuleContext(TermContext.class,0);
+		}
+		public TerminalNode Regex() { return getToken(SpannerlogParser.Regex, 0); }
+		public RgxContext(IeAtomContext ctx) { copyFrom(ctx); }
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SpannerlogVisitor ) return ((SpannerlogVisitor<? extends T>)visitor).visitRgx(this);
+			else return visitor.visitChildren(this);
+		}
+	}
 	public static class IEFunctionContext extends IeAtomContext {
 		public RelationSchemaNameContext relationSchemaName() {
 			return getRuleContext(RelationSchemaNameContext.class,0);
@@ -436,18 +445,6 @@ public class SpannerlogParser extends Parser {
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof SpannerlogVisitor ) return ((SpannerlogVisitor<? extends T>)visitor).visitIEFunction(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-	public static class RegexAbbrContext extends IeAtomContext {
-		public TermContext term() {
-			return getRuleContext(TermContext.class,0);
-		}
-		public TerminalNode Regex() { return getToken(SpannerlogParser.Regex, 0); }
-		public RegexAbbrContext(IeAtomContext ctx) { copyFrom(ctx); }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof SpannerlogVisitor ) return ((SpannerlogVisitor<? extends T>)visitor).visitRegexAbbr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
@@ -477,7 +474,7 @@ public class SpannerlogParser extends Parser {
 				break;
 			case T__2:
 			case T__4:
-				_localctx = new RegexAbbrContext(_localctx);
+				_localctx = new RgxContext(_localctx);
 				enterOuterAlt(_localctx, 2);
 				{
 				setState(79);

@@ -1,4 +1,4 @@
-package technion.tdk.spannerlog.antlr;
+package technion.tdk.spannerlog.utils.antlr;
 
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.RecognitionException;
@@ -21,6 +21,4 @@ public class ExceptionThrowerListener extends BaseErrorListener {
                             String msg, RecognitionException e)  {
         throw new RuntimeException("Syntax error");
     }
-
-
 }

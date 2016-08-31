@@ -3,10 +3,10 @@ package technion.tdk.spannerlog;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
-import technion.tdk.spannerlog.antlr.ExceptionThrowerListener;
-import technion.tdk.spannerlog.antlr.main.SpannerlogBaseVisitor;
-import technion.tdk.spannerlog.antlr.main.SpannerlogLexer;
-import technion.tdk.spannerlog.antlr.main.SpannerlogParser;
+import technion.tdk.spannerlog.antlr.SpannerlogBaseVisitor;
+import technion.tdk.spannerlog.antlr.SpannerlogLexer;
+import technion.tdk.spannerlog.antlr.SpannerlogParser;
+import technion.tdk.spannerlog.utils.antlr.ExceptionThrowerListener;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 class SpannerlogInputParser {
 
     Program parseProgram(InputStream is) throws IOException {
-        return new TreeVisitor().parseProgram(is);
+        return new InputVisitor().parseProgram(is);
 
     }
 
@@ -27,7 +27,8 @@ class SpannerlogInputParser {
     }
 }
 
-class TreeVisitor {
+
+class InputVisitor {
 
     Program parseProgram(InputStream is) throws IOException {
         ANTLRInputStream input = new ANTLRInputStream(is);
@@ -39,9 +40,7 @@ class TreeVisitor {
         parser.addErrorListener(ExceptionThrowerListener.getInstance());
         ParseTree tree = parser.program();
 
-        ProgramVisitor programVisitor = new ProgramVisitor();
-        Program program = programVisitor.visit(tree);
-        return program;
+        return new ProgramVisitor().visit(tree);
     }
 
     private class ProgramVisitor extends SpannerlogBaseVisitor<Program> {
@@ -98,7 +97,7 @@ class TreeVisitor {
         }
 
         @Override
-        public Atom visitRegexAbbr(SpannerlogParser.RegexAbbrContext ctx) {
+        public Atom visitRgx(SpannerlogParser.RgxContext ctx) {
             return ctx.accept(new RegexVisitor());
         }
 
@@ -122,7 +121,7 @@ class TreeVisitor {
 
     private class RegexVisitor extends SpannerlogBaseVisitor<Regex> {
         @Override
-        public Regex visitRegexAbbr(SpannerlogParser.RegexAbbrContext ctx) {
+        public Regex visitRgx(SpannerlogParser.RgxContext ctx) {
             Term inputTerm = ctx.term().accept(new TermVisitor());
             String regex = ctx.Regex().getText();
             return new Regex(null, null, inputTerm, regex.substring(2, regex.length() - 2));
@@ -226,5 +225,4 @@ class TreeVisitor {
         }
     }
 }
-
 

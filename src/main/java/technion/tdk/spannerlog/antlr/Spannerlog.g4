@@ -31,7 +31,7 @@ dbAtom
 
 ieAtom
     : relationSchemaName '<' term '>' termClause    # IEFunction
-    | ('RGX')? '<' term '>' Regex                   # RegexAbbr
+    | ('RGX')? '<' term '>' Regex                   # Rgx
     ;
 
 termClause

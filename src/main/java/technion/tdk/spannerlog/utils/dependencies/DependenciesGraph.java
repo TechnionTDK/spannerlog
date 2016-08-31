@@ -17,6 +17,7 @@ public class DependenciesGraph<T> {
         this.adjacencyMap = adjacencyMap;
     }
 
+    // Runs DFS on the dependencies graph to find all dependencies of a given root.
     public List<T> getDependencies(T root) {
 
         Map<T, Boolean> visited = adjacencyMap.keySet()
@@ -37,10 +38,10 @@ public class DependenciesGraph<T> {
             }
         }
 
+        visited.put(root, Boolean.FALSE); // an object is never dependent on itself.
         return visited.entrySet()
                 .stream()
                 .filter(Map.Entry::getValue)
-                .filter(e -> !e.getKey().equals(root))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
     }

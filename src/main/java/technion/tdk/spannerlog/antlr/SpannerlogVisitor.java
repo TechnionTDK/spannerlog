@@ -1,5 +1,5 @@
 // Generated from /home/yoavn/Workspace/Projects/spannerlog/src/main/java/technion/tdk/spannerlog/antlr/main/Spannerlog.g4 by ANTLR 4.5.3
-package technion.tdk.spannerlog.antlr.main;
+package technion.tdk.spannerlog.antlr;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**
@@ -60,12 +60,12 @@ public interface SpannerlogVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitIEFunction(SpannerlogParser.IEFunctionContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code RegexAbbr}
+	 * Visit a parse tree produced by the {@code Rgx}
 	 * labeled alternative in {@link SpannerlogParser#ieAtom}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitRegexAbbr(SpannerlogParser.RegexAbbrContext ctx);
+	T visitRgx(SpannerlogParser.RgxContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link SpannerlogParser#termClause}.
 	 * @param ctx the parse tree

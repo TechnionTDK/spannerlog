@@ -1,4 +1,4 @@
-grammar Regex;
+grammar Rgx;
 
 regex
     : regex '|' regexSimple
