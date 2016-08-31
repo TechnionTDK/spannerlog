@@ -40,14 +40,14 @@ public class CompilationTests {
         return true;
     }
 
-//    @BeforeClass
-//    public static void setUpStreams() {
-//        System.setOut(new PrintStream(new OutputStream() {
-//            public void write(int b) {
-//                // DO NOTHING
-//            }
-//        }));
-//    }
+    @BeforeClass
+    public static void setUpStreams() {
+        System.setOut(new PrintStream(new OutputStream() {
+            public void write(int b) {
+                // DO NOTHING
+            }
+        }));
+    }
 
     @Test(expected = UndefinedRelationSchema.class)
     public void programWithUndefinedSchemaShouldFail() {
@@ -90,16 +90,6 @@ public class CompilationTests {
 
         assertTrue(checkCompilation(splogSrc, edbSchema, null));
     }
-//
-//    @Test(expected = AttributeTypeConflictException.class)
-//    public void programWithAmbiguousAttrTypesShouldFail() {
-//
-//        String splogSrc = "Q(x) :- S(x), V(x).\n" +
-//                          "V(x) :- ";
-//        String edbSchema = "{\"S\":{\"col\":\"int\"}, \"T\":{\"col\":\"int\"}}";
-//
-//        assertTrue(checkCompilation(splogSrc, edbSchema, null));
-//    }
 
     @Test(expected = AttributeSchemaConflictException.class)
     public void programWithInCosistentSchemaShouldFail() {
