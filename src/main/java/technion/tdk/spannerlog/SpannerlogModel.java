@@ -87,6 +87,10 @@ abstract class Atom {
     List<Term> getTerms() {
         return terms;
     }
+
+    void setSchemaName(String schemaName) {
+        this.schemaName = schemaName;
+    }
 }
 
 class DBAtom extends Atom {
@@ -110,16 +114,15 @@ class IEAtom extends Atom {
 
 class Regex extends IEAtom {
 
-    private String regex;
+    private String regexString;
 
-    public Regex(String schemaName, List<Term> terms, Term inputTerm, String regex) {
+    Regex(String schemaName, List<Term> terms, Term inputTerm, String regexString) {
         super(schemaName, terms, inputTerm);
-        this.regex = regex;
+        this.regexString = regexString;
     }
-    public String getRegex() {
-        return regex;
+    String getRegexString() {
+        return regexString;
     }
-
 }
 
 abstract class Term {

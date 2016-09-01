@@ -120,7 +120,7 @@ public class ParsingTests {
             VarTerm varTerm = (VarTerm) rgx.getInputTerm();
             assertEquals("s", varTerm.getVarName());
             assertNull(varTerm.getSpans());
-            assertEquals("x{a*}y{b*}", rgx.getRegex());
+            assertEquals("x{a*}y{b*}", rgx.getRegexString());
 
             // Second regex
             rgx = (Regex) bodyAtoms.get(2);
@@ -132,7 +132,7 @@ public class ParsingTests {
             SpanConstExpr spanConstExpr = (SpanConstExpr) spans.get(1);
             assertEquals(0, spanConstExpr.getStart());
             assertEquals(5, spanConstExpr.getEnd());
-            assertEquals("x{b*}", rgx.getRegex());
+            assertEquals("x{b*}", rgx.getRegexString());
 
         } catch (IOException e) {
             e.printStackTrace();

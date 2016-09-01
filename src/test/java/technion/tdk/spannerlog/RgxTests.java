@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 import static org.junit.Assert.assertTrue;
 
@@ -18,20 +19,21 @@ public class RgxTests {
             SpannerlogInputParser parser = new SpannerlogInputParser();
             Program program = parser.parseProgram(new ByteArrayInputStream(splogSrc.getBytes(StandardCharsets.UTF_8)));
 
-            program = new SpannerlogDesugarRewriter().derive(program);
+            Map<String, String> rgxMap = new SpannerlogDesugarRewriter().derive(program);
+            System.out.println(rgxMap);
 
-//            SpannerlogSchema.Builder builder = SpannerlogSchema
-//                    .builder();
-//            if (!StringUtils.isEmpty(edbSchema))
-//                builder.readSchemaFromJson(new StringReader(edbSchema),
-//                        RelationSchema.builder().type(RelationSchemaType.EXTENSIONAL));
-//            if (!StringUtils.isEmpty(udfSchema))
-//                builder.readSchemaFromJson(new StringReader(udfSchema),
-//                        RelationSchema.builder().type(RelationSchemaType.IEFUNCTION));
-//
-//            SpannerlogSchema schema = builder.extractRelationSchemas(program).build();
-//
-//            new SpannerlogCompiler().compile(program, schema);
+            SpannerlogSchema.Builder builder = SpannerlogSchema
+                    .builder();
+            if (!StringUtils.isEmpty(edbSchema))
+                builder.readSchemaFromJson(new StringReader(edbSchema),
+                        RelationSchema.builder().type(RelationSchemaType.EXTENSIONAL));
+            if (!StringUtils.isEmpty(udfSchema))
+                builder.readSchemaFromJson(new StringReader(udfSchema),
+                        RelationSchema.builder().type(RelationSchemaType.IEFUNCTION));
+
+            SpannerlogSchema schema = builder.extractRelationSchemas(program).build();
+
+            new SpannerlogCompiler().compile(program, schema);
 
         } catch (IOException e) {
             e.printStackTrace();

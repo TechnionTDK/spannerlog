@@ -11,6 +11,7 @@ import technion.tdk.spannerlog.utils.antlr.ExceptionThrowerListener;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -124,7 +125,9 @@ class InputVisitor {
         public Regex visitRgx(SpannerlogParser.RgxContext ctx) {
             Term inputTerm = ctx.term().accept(new TermVisitor());
             String regex = ctx.Regex().getText();
-            return new Regex(null, null, inputTerm, regex.substring(2, regex.length() - 2));
+            List<Term> terms = new ArrayList<>();
+            terms.add(inputTerm);
+            return new Regex(null, terms, inputTerm, regex.substring(2, regex.length() - 2));
         }
     }
 

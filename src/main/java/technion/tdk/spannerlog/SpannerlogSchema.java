@@ -199,8 +199,13 @@ class SpannerlogSchema {
     private RelationSchema extractRelationSchema(Atom atom, ConjunctiveQueryBody body) {
         return (RelationSchema) new PatternMatching(
                 inCaseOf(DBAtom.class, this::extractRelationSchema),
+                inCaseOf(Regex.class, a -> extractRegexSchema(a, body)),
                 inCaseOf(IEAtom.class, a -> extractIEFunctionSchema(a, body))
-        ).matchFor(atom);
+                ).matchFor(atom);
+    }
+
+    private RelationSchema extractRegexSchema(Regex regex, ConjunctiveQueryBody body) {
+        return new IEFunctionSchema(regex, body, extractAttributes(regex.getTerms()));
     }
 
     private RelationSchema extractIEFunctionSchema(IEAtom ieAtom, ConjunctiveQueryBody body) {
@@ -459,6 +464,19 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
         super(name, attrs);
     }
 
+    IEFunctionSchema(Regex regex, ConjunctiveQueryBody body, List<Attribute> attrs) {
+        this((IEAtom) regex, body, attrs);
+
+        attrs.get(0).setName("s");
+        attrs.get(0).setType("text");
+        int n = getAttrs().size();
+        for (int i = 1 ; i < n ; i++) { // skipping the input term (always the first term)
+            Attribute attr = getAttrs().get(i);
+            attr.setType("span");
+            attr.setName(((VarTerm) regex.getTerms().get(i)).getVarName());
+        }
+    }
+
     IEFunctionSchema(IEAtom ieAtom, ConjunctiveQueryBody body, List<Attribute> attrs) {
         super(ieAtom.getSchemaName(), attrs);
         getAttrs().forEach(attr -> attr.setSchema(this));
@@ -663,6 +681,10 @@ class Attribute {
 
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getType() {
