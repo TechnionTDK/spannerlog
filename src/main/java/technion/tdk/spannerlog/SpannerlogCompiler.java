@@ -5,38 +5,18 @@ import technion.tdk.spannerlog.utils.match.PatternMatching;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static technion.tdk.spannerlog.utils.match.ClassPattern.inCaseOf;
 
 class SpannerlogCompiler {
 
-    Map<String, List<String>> compile(Program program, SpannerlogSchema schema) throws IOException {
-
-        Map<String, List<String>> blocks = new HashMap<>();
-
-        List<RelationSchema> relationSchemas = schema.getRelationSchemas();
-        blocks.put("schemas", relationSchemas
-                .stream()
-                        .map(this::compile)
-                        .collect(Collectors.toList())
-                );
-        blocks.put("udf", relationSchemas
-                        .stream()
-                        .filter(s -> s instanceof IEFunctionSchema)
-                        .flatMap(s -> compile((IEFunctionSchema) s).stream())
-                        .collect(Collectors.toList())
-        );
-        blocks.put("rules", program.getStatements()
+    List<String> compile(Program program) throws IOException {
+        return program.getStatements()
                 .stream()
                 .map(this::compile)
-                .collect(Collectors.toList())
-        );
-
-        return blocks;
+                .collect(Collectors.toList());
     }
 
     private String compile(RelationSchema relationSchema) {

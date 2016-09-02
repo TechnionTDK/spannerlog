@@ -1,13 +1,12 @@
 package technion.tdk.spannerlog;
 
-import com.google.gson.*;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import org.apache.commons.cli.*;
 
 import java.io.*;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.lang.System.exit;
@@ -34,65 +33,68 @@ public class Spannerlog {
                 .build();
 
         // compile
-        Map<String, List<String>> blocks = new SpannerlogCompiler().compile(program, schema);
+        List<String> blocks = new SpannerlogCompiler().compile(program);
 
         if (!skipExport)
-            export(program, blocks);
+            export(schema, program, blocks);
     }
 
-    private void export(Program program, Map<String, List<String>> blocks) {
+    private void export(SpannerlogSchema schema, Program program, List<String> blocks) {
+        JsonObject jsonTree = new JsonObject();
+
         Gson gson = new GsonBuilder()
                 .setPrettyPrinting()
                 .disableHtmlEscaping()
-                .registerTypeAdapter(Regex.class, new RegexAdapter().nullSafe())
+//               .registerTypeAdapter(Regex.class, new RegexAdapter().nullSafe())
                 .create();
 
-        JsonObject jsonTree = (JsonObject) gson.toJsonTree(blocks);
+        jsonTree.add("schema", gson.toJsonTree(schema.getRelationSchemas()
+                .stream()
+                .map(this::toJson)
+                .collect(Collectors.toList()))
+        );
 
-        List<Regex> RegexList = program.getStatements()
+        jsonTree.add("ie-function", gson.toJsonTree(schema.getRelationSchemas()
+                .stream()
+                .filter(s -> s instanceof IEFunctionSchema)
+                .map(RelationSchema::getName)
+                .collect(Collectors.toList()))
+        );
+
+        jsonTree.add("rules", gson.toJsonTree(blocks));
+
+        jsonTree.add("rgx", gson.toJsonTree(program.getStatements()
                 .stream()
                 .filter(stmt -> stmt instanceof ConjunctiveQuery)
                 .map(stmt -> (ConjunctiveQuery) stmt)
                 .flatMap(cq -> cq.getBody().getBodyAtoms().stream())
                 .filter(atom -> atom instanceof Regex)
-                .map(atom -> (Regex) atom)
-                .collect(Collectors.toList());
-
-        jsonTree.add("rgx", gson.toJsonTree(RegexList));
+                .map(atom -> toJson((Regex) atom))
+                .collect(Collectors.toList()))
+        );
 
         System.out.println(gson.toJson(jsonTree));
     }
 
-    private class RegexAdapter extends TypeAdapter<Regex> {
+    private JsonObject toJson(Regex regex) {
+        JsonObject regexJsonObject = new JsonObject();
 
-        @Override
-        public void write(JsonWriter jsonWriter, Regex regex) throws IOException {
-            jsonWriter.beginObject();
-            writeRegex(jsonWriter, regex);
-            jsonWriter.endObject();
-        }
+        regexJsonObject.addProperty("name", regex.getSchemaName());
+        regexJsonObject.addProperty("regex", regex.getCompiledRegexString());
 
-        private void writeRegex(JsonWriter jsonWriter, Regex regex) throws IOException {
-            jsonWriter.name(regex.getSchema().getName());
-            jsonWriter.beginObject();
-            jsonWriter.name("regex").value(regex.getCompiledRegexString());
-            writeAttributes(jsonWriter, regex.getSchema().getAttrs());
-            jsonWriter.endObject();
-        }
+        return regexJsonObject;
+    }
 
-        private void writeAttributes(JsonWriter jsonWriter, List<Attribute> attrs) throws IOException {
-            jsonWriter.name("attributes");
-            jsonWriter.beginObject();
-            for (Attribute attr : attrs)
-                jsonWriter.name(attr.getName()).value(attr.getType());
-            jsonWriter.endObject();
-        }
+    private JsonObject toJson(RelationSchema schema) {
+        JsonObject relationSchemaJsonObject = new JsonObject();
+        relationSchemaJsonObject.addProperty("name", schema.getName());
 
+        JsonObject attributesJsonObject = new JsonObject();
+        schema.getAttrs().forEach(attr -> attributesJsonObject.addProperty(attr.getName(), attr.getType()));
 
-        @Override
-        public Regex read(JsonReader jsonReader) throws IOException {
-            return null;
-        }
+        relationSchemaJsonObject.add("attributes", attributesJsonObject);
+
+        return relationSchemaJsonObject;
     }
 
     public static void main(String[] args) {

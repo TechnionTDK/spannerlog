@@ -30,7 +30,7 @@ public class CompilationTests {
 
             SpannerlogSchema schema = builder.extractRelationSchemas(program).build();
 
-            new SpannerlogCompiler().compile(program, schema);
+            new SpannerlogCompiler().compile(program);
 
         } catch (IOException e) {
             e.printStackTrace();
