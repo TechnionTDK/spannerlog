@@ -1,13 +1,8 @@
 package technion.tdk.spannerlog;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import technion.tdk.spannerlog.rgx.Rgx;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 class SpannerlogDesugarRewriter {

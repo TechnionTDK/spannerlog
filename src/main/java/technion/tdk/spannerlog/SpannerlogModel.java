@@ -125,11 +125,11 @@ class Regex extends IEAtom {
         return regexString;
     }
 
-    public String getCompiledRegexString() {
+    String getCompiledRegexString() {
         return compiledRegexString;
     }
 
-    public void setCompiledRegexString(String compiledRegexString) {
+    void setCompiledRegexString(String compiledRegexString) {
         this.compiledRegexString = compiledRegexString;
     }
 }

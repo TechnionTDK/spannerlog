@@ -1,14 +1,12 @@
 package technion.tdk.spannerlog;
 
 
-import com.google.gson.*;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
 
 import static org.junit.Assert.assertTrue;
 
