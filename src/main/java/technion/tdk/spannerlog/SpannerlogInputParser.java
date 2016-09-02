@@ -8,7 +8,6 @@ import technion.tdk.spannerlog.grammar.SpannerlogLexer;
 import technion.tdk.spannerlog.grammar.SpannerlogParser;
 import technion.tdk.spannerlog.utils.antlr.ExceptionThrowerListener;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -17,19 +16,6 @@ import java.util.stream.Collectors;
 
 
 class SpannerlogInputParser {
-
-    Program parseProgram(InputStream is) throws IOException {
-        return new InputVisitor().parseProgram(is);
-
-    }
-
-    Program parseProgram(String filename) throws IOException {
-        return parseProgram(new FileInputStream(filename));
-    }
-}
-
-
-class InputVisitor {
 
     Program parseProgram(InputStream is) throws IOException {
         ANTLRInputStream input = new ANTLRInputStream(is);

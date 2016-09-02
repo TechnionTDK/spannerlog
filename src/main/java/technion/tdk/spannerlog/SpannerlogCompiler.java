@@ -5,43 +5,38 @@ import technion.tdk.spannerlog.utils.match.PatternMatching;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static technion.tdk.spannerlog.utils.match.ClassPattern.inCaseOf;
 
 class SpannerlogCompiler {
 
-    void compile(Program program, SpannerlogSchema schema) throws IOException {
+    Map<String, List<String>> compile(Program program, SpannerlogSchema schema) throws IOException {
+
+        Map<String, List<String>> blocks = new HashMap<>();
 
         List<RelationSchema> relationSchemas = schema.getRelationSchemas();
-
-        List<String> schemaDeclarationBlocks = relationSchemas
+        blocks.put("schemas", relationSchemas
+                .stream()
+                        .map(this::compile)
+                        .collect(Collectors.toList())
+                );
+        blocks.put("udf", relationSchemas
+                        .stream()
+                        .filter(s -> s instanceof IEFunctionSchema)
+                        .flatMap(s -> compile((IEFunctionSchema) s).stream())
+                        .collect(Collectors.toList())
+        );
+        blocks.put("rules", program.getStatements()
                 .stream()
                 .map(this::compile)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList())
+        );
 
-        List<String> udfDeclarationBlocks = relationSchemas
-                .stream()
-                .filter(s -> s instanceof IEFunctionSchema)
-                .flatMap(s -> compile((IEFunctionSchema) s).stream())
-                .collect(Collectors.toList());
-
-        List<String> statementBlocks = program.getStatements()
-                .stream()
-                .map(this::compile)
-                .collect(Collectors.toList());
-
-
-        for (String block : schemaDeclarationBlocks) {
-            System.out.println(block + '\n');
-        }
-
-        for (String block : udfDeclarationBlocks) {
-            System.out.println(block + '\n');
-        }
-
-        statementBlocks.forEach(System.out::println);
+        return blocks;
     }
 
     private String compile(RelationSchema relationSchema) {

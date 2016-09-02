@@ -1,33 +1,98 @@
 package technion.tdk.spannerlog;
 
+import com.google.gson.*;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import org.apache.commons.cli.*;
 
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static java.lang.System.exit;
 
 public class Spannerlog {
 
-    private void init(CommandLine line) throws IOException {
+    void init(InputStream programInputStream, Reader edbReader, Reader udfReader, boolean skipExport) throws IOException {
         // parse program
-        Program program = new SpannerlogInputParser().parseProgram(line.getOptionValue("program"));
+        Program program = new SpannerlogInputParser().parseProgram(programInputStream);
 
         // desugar
-//        program = new SpannerlogDesugarRewriter().derive(program);
+        new SpannerlogDesugarRewriter().derive(program);
 
         // build schema
-        SpannerlogSchema schema = SpannerlogSchema
-                .builder()
-                .readSchemaFromJson(new FileReader(line.getOptionValue("edb")),
-                        RelationSchema.builder().type(RelationSchemaType.EXTENSIONAL))
-                .readSchemaFromJson(new FileReader(line.getOptionValue("udf")),
-                        RelationSchema.builder().type(RelationSchemaType.IEFUNCTION))
+        SpannerlogSchema.Builder builder = SpannerlogSchema
+                .builder();
+        if (edbReader != null)
+            builder.readSchemaFromJson(edbReader, RelationSchema.builder().type(RelationSchemaType.EXTENSIONAL));
+        if (udfReader != null)
+            builder.readSchemaFromJson(udfReader, RelationSchema.builder().type(RelationSchemaType.IEFUNCTION));
+
+        SpannerlogSchema schema = builder
                 .extractRelationSchemas(program)
                 .build();
 
         // compile
-        new SpannerlogCompiler().compile(program, schema);
+        Map<String, List<String>> blocks = new SpannerlogCompiler().compile(program, schema);
+
+        if (!skipExport)
+            export(program, blocks);
+    }
+
+    private void export(Program program, Map<String, List<String>> blocks) {
+        Gson gson = new GsonBuilder()
+                .setPrettyPrinting()
+                .disableHtmlEscaping()
+                .registerTypeAdapter(Regex.class, new RegexAdapter().nullSafe())
+                .create();
+
+        JsonObject jsonTree = (JsonObject) gson.toJsonTree(blocks);
+
+        List<Regex> RegexList = program.getStatements()
+                .stream()
+                .filter(stmt -> stmt instanceof ConjunctiveQuery)
+                .map(stmt -> (ConjunctiveQuery) stmt)
+                .flatMap(cq -> cq.getBody().getBodyAtoms().stream())
+                .filter(atom -> atom instanceof Regex)
+                .map(atom -> (Regex) atom)
+                .collect(Collectors.toList());
+
+        jsonTree.add("rgx", gson.toJsonTree(RegexList));
+
+        System.out.println(gson.toJson(jsonTree));
+    }
+
+    private class RegexAdapter extends TypeAdapter<Regex> {
+
+        @Override
+        public void write(JsonWriter jsonWriter, Regex regex) throws IOException {
+            jsonWriter.beginObject();
+            writeRegex(jsonWriter, regex);
+            jsonWriter.endObject();
+        }
+
+        private void writeRegex(JsonWriter jsonWriter, Regex regex) throws IOException {
+            jsonWriter.name(regex.getSchema().getName());
+            jsonWriter.beginObject();
+            jsonWriter.name("regex").value(regex.getCompiledRegexString());
+            writeAttributes(jsonWriter, regex.getSchema().getAttrs());
+            jsonWriter.endObject();
+        }
+
+        private void writeAttributes(JsonWriter jsonWriter, List<Attribute> attrs) throws IOException {
+            jsonWriter.name("attributes");
+            jsonWriter.beginObject();
+            for (Attribute attr : attrs)
+                jsonWriter.name(attr.getName()).value(attr.getType());
+            jsonWriter.endObject();
+        }
+
+
+        @Override
+        public Regex read(JsonReader jsonReader) throws IOException {
+            return null;
+        }
     }
 
     public static void main(String[] args) {
@@ -42,7 +107,12 @@ public class Spannerlog {
                 exit(1);
             }
 
-            new Spannerlog().init(line);
+            InputStream programInputStream = new FileInputStream(line.getOptionValue("program"));
+            Reader edbReader = line.hasOption("edb") ? new FileReader(line.getOptionValue("edb")) : null;
+            Reader udfReader = line.hasOption("udf") ? new FileReader(line.getOptionValue("edb")) : null;
+
+            new Spannerlog().init(programInputStream, edbReader, udfReader, line.hasOption("s"));
+
         } catch (ParseException e) {
             System.err.println(e.getMessage());
             printHelp(options);
@@ -73,7 +143,6 @@ public class Spannerlog {
 
         options.addOption(Option
                 .builder("edb")
-                .required(false)
                 .hasArg()
                 .numberOfArgs(1)
                 .desc("the EDB schema of the program (required if EDB is not empty)")
@@ -81,10 +150,15 @@ public class Spannerlog {
 
         options.addOption(Option
                 .builder("udf")
-                .required(false)
                 .hasArg()
                 .numberOfArgs(1)
                 .desc("the UDF schemas (required if UDFs are used)")
+                .build());
+
+        options.addOption(Option
+                .builder("s")
+                .longOpt("skip-export")
+                .desc("Whether to skip exporting")
                 .build());
 
         return options;

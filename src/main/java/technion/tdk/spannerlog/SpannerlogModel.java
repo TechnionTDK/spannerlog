@@ -115,6 +115,7 @@ class IEAtom extends Atom {
 class Regex extends IEAtom {
 
     private String regexString;
+    private String compiledRegexString;
 
     Regex(String schemaName, List<Term> terms, Term inputTerm, String regexString) {
         super(schemaName, terms, inputTerm);
@@ -122,6 +123,14 @@ class Regex extends IEAtom {
     }
     String getRegexString() {
         return regexString;
+    }
+
+    public String getCompiledRegexString() {
+        return compiledRegexString;
+    }
+
+    public void setCompiledRegexString(String compiledRegexString) {
+        this.compiledRegexString = compiledRegexString;
     }
 }
 

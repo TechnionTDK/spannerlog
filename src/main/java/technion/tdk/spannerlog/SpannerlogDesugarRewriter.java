@@ -1,5 +1,8 @@
 package technion.tdk.spannerlog;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import technion.tdk.spannerlog.rgx.Rgx;
 
 import java.util.HashMap;
@@ -9,7 +12,7 @@ import java.util.stream.Collectors;
 
 class SpannerlogDesugarRewriter {
 
-    Map<String, String> derive(Program program) {
+   void derive(Program program) {
 
         List<Regex> RegexList = program.getStatements()
                 .stream()
@@ -19,8 +22,6 @@ class SpannerlogDesugarRewriter {
                 .filter(atom -> atom instanceof Regex)
                 .map(atom -> (Regex) atom)
                 .collect(Collectors.toList());
-
-        Map<String, String> rgxMap = new HashMap<>();
 
         int cnt = 1;
         for (Regex regex : RegexList) {
@@ -35,10 +36,7 @@ class SpannerlogDesugarRewriter {
                     .collect(Collectors.toList())
             );
 
-            rgxMap.put(name, rgx.getRegexCompiled());
-
+            regex.setCompiledRegexString(rgx.getRegexCompiled());
         }
-
-        return rgxMap;
     }
 }
