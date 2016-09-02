@@ -101,12 +101,6 @@ public class Spannerlog {
         try {
             CommandLine line = new DefaultParser().parse(options, args);
 
-            if (line.getArgs().length % 2 != 0) {
-                System.err.println("Missing a required option or an argument");
-                printHelp(options);
-                exit(1);
-            }
-
             InputStream programInputStream = new FileInputStream(line.getOptionValue("program"));
             Reader edbReader = line.hasOption("edb") ? new FileReader(line.getOptionValue("edb")) : null;
             Reader udfReader = line.hasOption("udf") ? new FileReader(line.getOptionValue("edb")) : null;
