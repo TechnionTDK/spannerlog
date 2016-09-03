@@ -36,6 +36,7 @@ class SpannerlogSchema {
         }
 
         SpannerlogSchema build() {
+            spannerlogSchema.verify();
             spannerlogSchema.inferAttributeTypes(program);
             return spannerlogSchema;
         }
@@ -285,12 +286,15 @@ class SpannerlogSchema {
 
         Map<Attribute, Set<Attribute>> dependenciesMap = createDependenciesMap(program);
         DependenciesGraph<Attribute> depGraph = new DependenciesGraph<>(dependenciesMap);
-        Set<Attribute> rootAttrs = dependenciesMap.keySet();
+        Set<Attribute> rootAttrs = dependenciesMap.keySet()
+                .stream()
+                .filter(attr -> attr.getType() == null)
+                .collect(Collectors.toSet());
 
         for (Attribute rootAttr : rootAttrs) {
             List<String> possibleTypes = depGraph.getDependencies(rootAttr)
                 .stream()
-                .filter(a -> a.getType() != null)
+                .filter(attr -> attr.getType() != null)
                 .map(Attribute::getType)
                 .collect(Collectors.toList());
 
@@ -358,6 +362,25 @@ class SpannerlogSchema {
         }
 
         return dependenciesMap;
+    }
+
+    private void verify() {
+        List<String> AmbiguousSchemaNames = relationSchemas
+                .stream()
+                .filter(schema -> schema instanceof AmbiguousRelationSchema)
+                .map(RelationSchema::getName)
+                .collect(Collectors.toList());
+
+        List<String> UnambiguousSchemaNames = relationSchemas
+                .stream()
+                .filter(schema -> !(schema instanceof AmbiguousRelationSchema))
+                .map(RelationSchema::getName)
+                .collect(Collectors.toList());
+
+        AmbiguousSchemaNames.removeAll(UnambiguousSchemaNames);
+
+        if (!AmbiguousSchemaNames.isEmpty())
+            throw new UndefinedRelationSchema(AmbiguousSchemaNames.get(0));
     }
 }
 
@@ -493,9 +516,6 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
 
         List<SpanTerm> spans = ((VarTerm) inputTerm).getSpans();
 
-        if (spans == null)
-            return;
-
         List<String> bodyVarNames = body.getBodyAtoms()
                 .stream()
                 .filter(atom -> atom != ieAtom)
@@ -605,7 +625,7 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
     private List<String> getVars(ExprTerm exprTerm) {
         List<String> vars = (List<String>) new PatternMatching(
                 inCaseOf(VarTerm.class, varTerm -> Stream.of(varTerm.getVarName()).collect(Collectors.toList())),
-                otherwise(t -> Collections.<String>emptyList())
+                otherwise(t -> new ArrayList<>())
         ).matchFor(exprTerm);
 
         if (exprTerm instanceof StringTerm) {
@@ -614,7 +634,8 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
                 vars.addAll(spans
                         .stream()
                         .flatMap(s -> getVars(s).stream())
-                        .collect(Collectors.toList()));
+                        .collect(Collectors.toList())
+                );
             }
         }
         return vars;
@@ -624,7 +645,7 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
     private List<String> getVars(SpanTerm spanTerm) {
         return (List<String>) new PatternMatching(
                 inCaseOf(VarTerm.class, varTerm -> Stream.of(varTerm.getVarName()).collect(Collectors.toList())),
-                otherwise(t -> Collections.<String>emptyList())
+                otherwise(t -> new ArrayList<>())
         ).matchFor(spanTerm);
     }
 }
@@ -764,3 +785,4 @@ class UndefinedRelationSchema extends RuntimeException {
         super("The relation schema for '" + message + "' is undefined");
     }
 }
+

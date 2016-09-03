@@ -125,7 +125,7 @@ class Regex extends IEAtom {
         return regexString;
     }
 
-    String getCompiledRegexString() {
+    public String getCompiledRegexString() {
         return compiledRegexString;
     }
 

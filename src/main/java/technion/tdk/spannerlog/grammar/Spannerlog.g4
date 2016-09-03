@@ -30,8 +30,8 @@ dbAtom
     ;
 
 ieAtom
-    : relationSchemaName '<' term '>' termClause    # IEFunction
-    | ('RGX')? '<' term '>' Regex                   # Rgx
+    : relationSchemaName '<' varExpr '>' termClause    # IEFunction
+    | ('RGX')? '<' varExpr '>' Regex                   # Rgx
     ;
 
 termClause
@@ -48,8 +48,16 @@ expr
     | floatingPointLiteral
     | booleanLiteral
     | spanLiteral
-    | stringLiteral span*
-    | variable span*
+    | stringExpr
+    | varExpr
+    ;
+
+stringExpr
+    : stringLiteral span*
+    ;
+
+varExpr
+    : variable span*
     ;
 
 span

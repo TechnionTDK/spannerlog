@@ -94,7 +94,7 @@ class SpannerlogInputParser {
         @Override
         public IEAtom visitIEFunction(SpannerlogParser.IEFunctionContext ctx) {
             String relationSchemaName = ctx.relationSchemaName().getText();
-            Term inputTerm = ctx.term().accept(new TermVisitor());
+            Term inputTerm = ctx.varExpr().accept(new VarExprVisitor());
             TermVisitor termVisitor = new TermVisitor();
             List<Term> terms = ctx.termClause().term()
                     .stream()
@@ -109,7 +109,7 @@ class SpannerlogInputParser {
     private class RegexVisitor extends SpannerlogBaseVisitor<Regex> {
         @Override
         public Regex visitRgx(SpannerlogParser.RgxContext ctx) {
-            Term inputTerm = ctx.term().accept(new TermVisitor());
+            Term inputTerm = ctx.varExpr().accept(new VarExprVisitor());
             String regex = ctx.Regex().getText();
             List<Term> terms = new ArrayList<>();
             terms.add(inputTerm);
@@ -142,30 +142,47 @@ class SpannerlogInputParser {
         }
     }
 
+    private class VarExprVisitor extends SpannerlogBaseVisitor<VarTerm> {
+        @Override
+        public VarTerm visitVarExpr(SpannerlogParser.VarExprContext ctx) {
+            VarTerm varTerm = new VarTerm(ctx.variable().getText());
+
+            SpanTermVisitor spanTermVisitor = new SpanTermVisitor();
+            List<SpanTerm> spans = ctx.span()
+                    .stream()
+                    .map(span -> span.accept(spanTermVisitor))
+                    .collect(Collectors.toList());
+
+            varTerm.setSpans(spans);
+
+            return varTerm;
+        }
+    }
+
     private class ExprVisitor extends SpannerlogBaseVisitor<ExprTerm> {
         @Override
         public ExprTerm visitExpr(SpannerlogParser.ExprContext ctx) {
-            List<SpanTerm> spans = null;
-            if (ctx.getChildCount() > 1) {
-                SpanTermVisitor spanTermVisitor = new SpanTermVisitor();
-                spans = ctx.span()
-                        .stream()
-                        .map(span -> span.accept(spanTermVisitor))
-                        .collect(Collectors.toList());
-            }
-
-            ExprTerm expr = visit(ctx.getChild(0));
-
-            if (expr instanceof StringTerm && spans != null) {
-                ((StringTerm) expr).setSpans(spans);
-            }
-
-            return expr;
+            return visit(ctx.getChild(0));
         }
 
         @Override
-        public ExprTerm visitVariable(SpannerlogParser.VariableContext ctx) {
-            return new VarTerm(ctx.getText());
+        public ExprTerm visitVarExpr(SpannerlogParser.VarExprContext ctx) {
+            return ctx.accept(new VarExprVisitor());
+        }
+
+        @Override
+        public ExprTerm visitStringExpr(SpannerlogParser.StringExprContext ctx) {
+            ExprTerm stringExpr = visit(ctx.stringLiteral());
+
+            SpanTermVisitor spanTermVisitor = new SpanTermVisitor();
+            List<SpanTerm> spans = ctx.span()
+                    .stream()
+                    .map(span -> span.accept(spanTermVisitor))
+                    .collect(Collectors.toList());
+
+            ((StringTerm) stringExpr).setSpans(spans);
+
+            return stringExpr;
         }
 
         @Override

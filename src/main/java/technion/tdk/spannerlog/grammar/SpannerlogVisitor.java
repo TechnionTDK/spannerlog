@@ -1,4 +1,4 @@
-// Generated from /home/yoavn/Workspace/Projects/spannerlog/src/main/java/technion/tdk/spannerlog/antlr/main/Spannerlog.g4 by ANTLR 4.5.3
+// Generated from /home/yoavn/Workspace/Projects/spannerlog/src/main/java/technion/tdk/spannerlog/grammar/Spannerlog.g4 by ANTLR 4.5.3
 package technion.tdk.spannerlog.grammar;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -84,6 +84,18 @@ public interface SpannerlogVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitExpr(SpannerlogParser.ExprContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SpannerlogParser#stringExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStringExpr(SpannerlogParser.StringExprContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SpannerlogParser#varExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitVarExpr(SpannerlogParser.VarExprContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link SpannerlogParser#span}.
 	 * @param ctx the parse tree

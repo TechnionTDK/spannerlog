@@ -35,8 +35,8 @@ public class SyntaxTests {
             src = "Out() :- Doc(\"sdfsd  \"), <s>   \\[   x  {0*}  y               {1*}]\\, <s[y]>\\[x{1*}  ]\\  .\n";
             parser.parseProgram(new ByteArrayInputStream(src.getBytes(StandardCharsets.UTF_8)));
 
-            src = "Out() :- RGX<\"aaabbb\">\\[x{a*}y{b*}]\\, RGX<s[y]>\\[x{b*}]\\.";
-            parser.parseProgram(new ByteArrayInputStream(src.getBytes(StandardCharsets.UTF_8)));
+//            src = "Out() :- RGX<\"aaabbb\">\\[x{a*}y{b*}]\\, RGX<s[y]>\\[x{b*}]\\.";
+//            parser.parseProgram(new ByteArrayInputStream(src.getBytes(StandardCharsets.UTF_8)));
 
         } catch (IOException e) {
             e.printStackTrace();

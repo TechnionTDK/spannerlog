@@ -71,7 +71,7 @@ public class ParsingTests {
             // String Literal
             StringConstExpr stringConstExpr = (StringConstExpr) terms.get(1);
             assertEquals("Hello", stringConstExpr.getValue());
-            assertNull(stringConstExpr.getSpans());
+            assertTrue(stringConstExpr.getSpans().isEmpty());
 
             // Integer Literal
             IntConstExpr intConstExpr = (IntConstExpr) terms.get(2);
@@ -119,7 +119,7 @@ public class ParsingTests {
             rgx = (Regex) bodyAtoms.get(1);
             VarTerm varTerm = (VarTerm) rgx.getInputTerm();
             assertEquals("s", varTerm.getVarName());
-            assertNull(varTerm.getSpans());
+            assertTrue(varTerm.getSpans().isEmpty());
             assertEquals("x{a*}y{b*}", rgx.getRegexString());
 
             // Second regex
