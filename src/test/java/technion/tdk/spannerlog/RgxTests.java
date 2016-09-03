@@ -3,6 +3,7 @@ package technion.tdk.spannerlog;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.*;
@@ -37,7 +38,7 @@ public class RgxTests {
 //            }
 //        }));
 //    }
-
+    
     @Test
     public void compileAnbnWithRgx() {
         String splogSrc = "Q() :- doc(s), RGX<\"aaabbb\">\\[x{a*}y{b*}]\\, RGX<s[y]>\\[x{b*}]\\.";

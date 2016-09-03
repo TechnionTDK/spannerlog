@@ -103,7 +103,7 @@ public class Spannerlog {
 
             InputStream programInputStream = new FileInputStream(line.getOptionValue("program"));
             Reader edbReader = line.hasOption("edb") ? new FileReader(line.getOptionValue("edb")) : null;
-            Reader udfReader = line.hasOption("udf") ? new FileReader(line.getOptionValue("edb")) : null;
+            Reader udfReader = line.hasOption("udf") ? new FileReader(line.getOptionValue("udf")) : null;
 
             new Spannerlog().init(programInputStream, edbReader, udfReader, line.hasOption("s"));
 
