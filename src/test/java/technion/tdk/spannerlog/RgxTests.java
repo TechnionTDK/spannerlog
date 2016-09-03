@@ -38,7 +38,7 @@ public class RgxTests {
 //            }
 //        }));
 //    }
-    
+
     @Test
     public void compileAnbnWithRgx() {
         String splogSrc = "Q() :- doc(s), RGX<\"aaabbb\">\\[x{a*}y{b*}]\\, RGX<s[y]>\\[x{b*}]\\.";
