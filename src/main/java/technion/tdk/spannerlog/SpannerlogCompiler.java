@@ -4,68 +4,76 @@ package technion.tdk.spannerlog;
 import technion.tdk.spannerlog.utils.match.PatternMatching;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static technion.tdk.spannerlog.utils.match.ClassPattern.inCaseOf;
 
 class SpannerlogCompiler {
 
+    Map<String, String> compile(SpannerlogSchema schema) {
+        return  schema.getRelationSchemas()
+                .stream()
+                .filter(s -> s instanceof IEFunctionSchema)
+                .map(s -> (IEFunctionSchema) s)
+                .collect(Collectors.toMap(IEFunctionSchema::getName, this::compile));
+    }
+
+
     List<String> compile(Program program) throws IOException {
         return program.getStatements()
                 .stream()
                 .map(this::compile)
                 .collect(Collectors.toList());
+
     }
 
-    private String compile(RelationSchema relationSchema) {
-        if (relationSchema instanceof AmbiguousRelationSchema)
-            throw new UndefinedRelationSchema(relationSchema.getName());
+//    private String compile(RelationSchema relationSchema) {
+//        if (relationSchema instanceof AmbiguousRelationSchema)
+//            throw new UndefinedRelationSchema(relationSchema.getName());
+//
+//        return relationSchema.getName() +
+//                "(\n\t" +
+//                relationSchema.getAttrs()
+//                        .stream()
+//                        .flatMap(attribute -> compile(attribute).stream())
+//                        .collect(Collectors.joining(",\n\t")) +
+//                "\n\t).";
+//    }
 
-        return relationSchema.getName() +
-                "(\n\t" +
-                relationSchema.getAttrs()
-                        .stream()
-                        .flatMap(attribute -> compile(attribute).stream())
-                        .collect(Collectors.joining(",\n\t")) +
-                "\n\t).";
-    }
-
-    private List<String> compile(IEFunctionSchema ieFunctionSchema) {
-        ArrayList<String> blocks = new ArrayList<>();
+    private String compile(IEFunctionSchema ieFunctionSchema) {
         String name = ieFunctionSchema.getName();
 
-        blocks.add("function " + name + " over (s text)\n" +
-                "\treturns rows like " + name + "\n" +
-                "\timplementation \"udf/" + name + ".py\" handles tsv lines.");
+//        blocks.add("function " + name + " over (s text)\n" +
+//                "\treturns rows like " + name + "\n" +
+//                "\timplementation \"udf/" + name + ".py\" handles tsv lines.");
 
         String inputAtomsBlock = ieFunctionSchema.getInputAtoms()
                 .stream()
                 .map(this::compile)
                 .collect(Collectors.joining(", "));
-        blocks.add(name + " += " + name + "(" + compile(ieFunctionSchema.getInputTerm(),
+
+        return name + " += " + name + "(" + compile(ieFunctionSchema.getInputTerm(),
                 ieFunctionSchema.getAttrs().get(0)) + ") :- " + inputAtomsBlock
-                + ".");
-
-        return blocks;
+                + ".";
     }
 
-    private List<String> compile(Attribute attribute) {
-        if (attribute.getType() == null)
-            throw new AttributeTypeCannotBeInferredException(attribute);
-
-        List<String> attrBlock = new ArrayList<>();
-
-        if (attribute.getType().equals("span")) {
-            attrBlock.add(String.format("%-15s int", (attribute.getName()+"_start")));
-            attrBlock.add(String.format("%-15s int", (attribute.getName()+"_end")));
-        } else {
-            attrBlock.add(String.format("%-15s %s", attribute.getName(), attribute.getType()));
-        }
-
-        return attrBlock;
-    }
+//    private List<String> compile(Attribute attribute) {
+//        if (attribute.getType() == null)
+//            throw new AttributeTypeCannotBeInferredException(attribute);
+//
+//        List<String> attrBlock = new ArrayList<>();
+//
+//        if (attribute.getType().equals("span")) {
+//            attrBlock.add(String.format("%-15s int", (attribute.getName()+"_start")));
+//            attrBlock.add(String.format("%-15s int", (attribute.getName()+"_end")));
+//        } else {
+//            attrBlock.add(String.format("%-15s %s", attribute.getName(), attribute.getType()));
+//        }
+//
+//        return attrBlock;
+//    }
 
     private String compile(Statement statement) {
         return (String) new PatternMatching(
