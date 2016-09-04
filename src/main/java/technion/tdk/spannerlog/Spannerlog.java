@@ -113,8 +113,9 @@ public class Spannerlog {
             System.err.println(e.getMessage());
             printHelp(options);
             exit(1);
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            System.err.println(e.getClass().getSimpleName());
+            System.err.println(e.getMessage());
             exit(1);
         }
     }

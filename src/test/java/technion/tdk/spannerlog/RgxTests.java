@@ -1,34 +1,12 @@
 package technion.tdk.spannerlog;
 
 
-import org.apache.commons.lang3.StringUtils;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-
 import static org.junit.Assert.assertTrue;
+import static technion.tdk.spannerlog.Utils.checkCompilation;
 
 public class RgxTests {
-
-    private boolean checkCompilation(String splogSrc, String edbSchema, String udfSchema, boolean skipExport) {
-        try {
-
-            InputStream programInputStream = new ByteArrayInputStream(splogSrc.getBytes(StandardCharsets.UTF_8));
-            Reader edbReader = !StringUtils.isEmpty(edbSchema) ? new StringReader(edbSchema) : null;
-            Reader udfReader = !StringUtils.isEmpty(udfSchema) ? new StringReader(udfSchema) : null;
-
-            new Spannerlog().init(programInputStream, edbReader, udfReader, skipExport);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
-
-        return true;
-    }
 
 //    @BeforeClass
 //    public static void setUpStreams() {

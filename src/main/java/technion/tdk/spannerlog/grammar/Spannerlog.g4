@@ -141,7 +141,7 @@ Letter
 
 fragment
 LetterOrDigit
-    : [a-zA-Z0-9]
+    : [a-zA-Z0-9_$]
     ;
 
 fragment

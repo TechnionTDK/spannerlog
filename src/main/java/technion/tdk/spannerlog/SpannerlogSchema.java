@@ -113,7 +113,7 @@ class SpannerlogSchema {
             coldSchema = newSchema;
         }
 
-        hotSchema.setAttrs(mergeAttributes(oldSchema.getAttrs(), newSchema.getAttrs()));
+        hotSchema.setAttrs(mergeAttributes(oldSchema.getAttrs(), newSchema.getAttrs(), hotSchema.getName()));
         hotSchema.getAttrs().forEach(attr -> attr.setSchema(hotSchema));
         for (Atom atom : coldSchema.getAtoms())
             atom.setSchema(hotSchema);
@@ -129,9 +129,9 @@ class SpannerlogSchema {
         return hotSchema;
     }
 
-    private List<Attribute> mergeAttributes(List<Attribute> oldAttrs, List<Attribute> newAttrs) {
+    private List<Attribute> mergeAttributes(List<Attribute> oldAttrs, List<Attribute> newAttrs, String schemaName) {
         if (oldAttrs.size() != newAttrs.size())
-            throw new AttributeSchemaConflictException(oldAttrs.get(0));
+            throw new AttributeSchemaConflictException(schemaName);
 
         List<Attribute> mergedAttrs = new ArrayList<>();
 
@@ -584,20 +584,17 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
         List<Term> terms = a2.getTerms();
         Term inputTerm = a2.getInputTerm();
 
-        if (inputTerm != null) {
-            terms.remove(inputTerm);
-        }
+        terms.remove(inputTerm);
 
         List<String> varNames2 = terms
                 .stream()
                 .flatMap(term -> getVars(term).stream())
                 .collect(Collectors.toList());
 
-        if (inputTerm != null) {
-            terms.add(0, inputTerm);
-        }
+        terms.add(0, inputTerm);
 
         varNames1.retainAll(varNames2);
+
         return !varNames1.isEmpty();
     }
 
@@ -761,8 +758,8 @@ class AttributeTypeConflictException extends RuntimeException {
 class AttributeNameConflictException extends RuntimeException {}
 
 class AttributeSchemaConflictException extends RuntimeException {
-    AttributeSchemaConflictException(Attribute attr) {
-        super("The schema of " + attr.getSchema().getName() + " is inconsistent");
+    AttributeSchemaConflictException(String schemaName) {
+        super("The schema of '" + schemaName + "' is inconsistent");
     }
 }
 
@@ -770,13 +767,13 @@ class RelationSchemaNameConflictException extends RuntimeException {}
 
 class AttributeTypeCannotBeInferredException extends RuntimeException {
     AttributeTypeCannotBeInferredException(Attribute attr) {
-        super("The type of attribute '" + attr.getName() + "' in " + attr.getSchema().getName() + " cannot be inferred");
+        super("The type of attribute '" + attr.getName() + "' in '" + attr.getSchema().getName() + "' cannot be inferred");
     }
 }
 
 class UnboundVariableException extends RuntimeException {
     UnboundVariableException(String varName, String schemaName) {
-        super("The variable '" + varName + "' in " + schemaName + " is unbound");
+        super("The variable '" + varName + "' in '" + schemaName + "' is unbound");
     }
 }
 
