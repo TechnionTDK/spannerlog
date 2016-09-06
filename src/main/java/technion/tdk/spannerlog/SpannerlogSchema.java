@@ -296,6 +296,7 @@ class SpannerlogSchema {
                 .stream()
                 .filter(attr -> attr.getType() != null)
                 .map(Attribute::getType)
+                .distinct()
                 .collect(Collectors.toList());
 
             if (possibleTypes.size() != 1) {

@@ -19,6 +19,6 @@ public class ExceptionThrowerListener extends BaseErrorListener {
     public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol,
                             int line, int charPositionInLine,
                             String msg, RecognitionException e)  {
-        throw new RuntimeException("Syntax error");
+        throw new SyntaxErrorException("line " + line + ":" + charPositionInLine + " " + msg);
     }
 }

@@ -134,6 +134,10 @@ WS
     : [ \t\r\n]+ -> skip
     ; // skip spaces, tabs, newlines
 
+Comment
+    : '#' ~[\r\n]* -> skip
+    ;
+
 fragment
 Letter
     : [a-zA-Z]

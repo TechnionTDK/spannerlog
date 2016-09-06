@@ -19,7 +19,8 @@ public class SpannerlogParser extends Parser {
 	public static final int
 		T__0=1, T__1=2, T__2=3, T__3=4, T__4=5, T__5=6, T__6=7, T__7=8, T__8=9, 
 		T__9=10, T__10=11, BooleanLiteral=12, Identifier=13, StringLiteral=14, 
-		IntegerLiteral=15, FloatingPointLiteral=16, Separator=17, Regex=18, WS=19;
+		IntegerLiteral=15, FloatingPointLiteral=16, Separator=17, Regex=18, WS=19, 
+		Comment=20;
 	public static final int
 		RULE_program = 0, RULE_statement = 1, RULE_conjunctiveQuery = 2, RULE_conjunctiveQueryHead = 3, 
 		RULE_conjunctiveQueryBody = 4, RULE_atom = 5, RULE_dbAtom = 6, RULE_ieAtom = 7, 
@@ -42,7 +43,7 @@ public class SpannerlogParser extends Parser {
 	private static final String[] _SYMBOLIC_NAMES = {
 		null, null, null, null, null, null, null, null, null, null, null, null, 
 		"BooleanLiteral", "Identifier", "StringLiteral", "IntegerLiteral", "FloatingPointLiteral", 
-		"Separator", "Regex", "WS"
+		"Separator", "Regex", "WS", "Comment"
 	};
 	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
@@ -1267,7 +1268,7 @@ public class SpannerlogParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\3\25\u00b0\4\2\t\2"+
+		"\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\3\26\u00b0\4\2\t\2"+
 		"\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\4\t\t\t\4\n\t\n\4\13"+
 		"\t\13\4\f\t\f\4\r\t\r\4\16\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22"+
 		"\4\23\t\23\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27\4\30\t\30\3\2\7\2\62"+

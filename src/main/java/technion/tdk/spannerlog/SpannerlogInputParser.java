@@ -20,10 +20,12 @@ class SpannerlogInputParser {
     Program parseProgram(InputStream is) throws IOException {
         ANTLRInputStream input = new ANTLRInputStream(is);
         SpannerlogLexer lexer = new SpannerlogLexer(input);
+        lexer.removeErrorListeners();
         lexer.addErrorListener(ExceptionThrowerListener.getInstance());
 
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         SpannerlogParser parser = new SpannerlogParser(tokens);
+        parser.removeErrorListeners();
         parser.addErrorListener(ExceptionThrowerListener.getInstance());
         ParseTree tree = parser.program();
 

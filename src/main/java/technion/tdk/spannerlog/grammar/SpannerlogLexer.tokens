@@ -17,6 +17,7 @@ FloatingPointLiteral=16
 Separator=17
 Regex=18
 WS=19
+Comment=20
 '.'=1
 ','=2
 '<'=3

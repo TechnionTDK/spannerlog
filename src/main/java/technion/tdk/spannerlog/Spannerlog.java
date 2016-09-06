@@ -109,10 +109,6 @@ public class Spannerlog {
 
             new Spannerlog().init(programInputStream, edbReader, udfReader, line.hasOption("s"));
 
-        } catch (ParseException e) {
-            System.err.println(e.getMessage());
-            printHelp(options);
-            exit(1);
         } catch (Exception e) {
             System.err.println(e.getClass().getSimpleName());
             System.err.println(e.getMessage());
