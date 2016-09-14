@@ -36,7 +36,7 @@ class SpannerlogSchema {
         }
 
         SpannerlogSchema build() {
-            spannerlogSchema.verify();
+            spannerlogSchema.validate();
             spannerlogSchema.inferAttributeTypes(program);
             return spannerlogSchema;
         }
@@ -131,7 +131,7 @@ class SpannerlogSchema {
 
     private List<Attribute> mergeAttributes(List<Attribute> oldAttrs, List<Attribute> newAttrs, String schemaName) {
         if (oldAttrs.size() != newAttrs.size())
-            throw new AttributeSchemaConflictException(schemaName);
+            throw new NumberOfAttributesInSchemaConflictException(schemaName);
 
         List<Attribute> mergedAttrs = new ArrayList<>();
 
@@ -365,7 +365,7 @@ class SpannerlogSchema {
         return dependenciesMap;
     }
 
-    private void verify() {
+    private void validate() {
         List<String> AmbiguousSchemaNames = relationSchemas
                 .stream()
                 .filter(schema -> schema instanceof AmbiguousRelationSchema)
@@ -758,9 +758,9 @@ class AttributeTypeConflictException extends RuntimeException {
 
 class AttributeNameConflictException extends RuntimeException {}
 
-class AttributeSchemaConflictException extends RuntimeException {
-    AttributeSchemaConflictException(String schemaName) {
-        super("The schema of '" + schemaName + "' is inconsistent");
+class NumberOfAttributesInSchemaConflictException extends RuntimeException {
+    NumberOfAttributesInSchemaConflictException(String schemaName) {
+        super("The number of attributes in schema '" + schemaName + "' is inconsistent throughout the program");
     }
 }
 

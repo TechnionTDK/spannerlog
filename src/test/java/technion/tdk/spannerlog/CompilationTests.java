@@ -65,7 +65,7 @@ public class CompilationTests {
         assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
-    @Test(expected = AttributeSchemaConflictException.class)
+    @Test(expected = NumberOfAttributesInSchemaConflictException.class)
     public void programWithInCosistentSchemaShouldFail() {
         String splogSrc = "Path(x,y) :- Edge(x,y).\n" +
                           "Path(x) :- Edge(x,y),Path(y).";

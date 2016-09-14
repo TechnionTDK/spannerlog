@@ -29,25 +29,9 @@ class SpannerlogCompiler {
 
     }
 
-//    private String compile(RelationSchema relationSchema) {
-//        if (relationSchema instanceof AmbiguousRelationSchema)
-//            throw new UndefinedRelationSchema(relationSchema.getName());
-//
-//        return relationSchema.getName() +
-//                "(\n\t" +
-//                relationSchema.getAttrs()
-//                        .stream()
-//                        .flatMap(attribute -> compile(attribute).stream())
-//                        .collect(Collectors.joining(",\n\t")) +
-//                "\n\t).";
-//    }
 
     private String compile(IEFunctionSchema ieFunctionSchema) {
         String name = ieFunctionSchema.getName();
-
-//        blocks.add("function " + name + " over (s text)\n" +
-//                "\treturns rows like " + name + "\n" +
-//                "\timplementation \"udf/" + name + ".py\" handles tsv lines.");
 
         String inputAtomsBlock = ieFunctionSchema.getInputAtoms()
                 .stream()
@@ -59,22 +43,6 @@ class SpannerlogCompiler {
                 + ".";
     }
 
-//    private List<String> compile(Attribute attribute) {
-//        if (attribute.getType() == null)
-//            throw new AttributeTypeCannotBeInferredException(attribute);
-//
-//        List<String> attrBlock = new ArrayList<>();
-//
-//        if (attribute.getType().equals("span")) {
-//            attrBlock.add(String.format("%-15s int", (attribute.getName()+"_start")));
-//            attrBlock.add(String.format("%-15s int", (attribute.getName()+"_end")));
-//        } else {
-//            attrBlock.add(String.format("%-15s %s", attribute.getName(), attribute.getType()));
-//        }
-//
-//        return attrBlock;
-//    }
-
     private String compile(Statement statement) {
         return (String) new PatternMatching(
                 inCaseOf(ConjunctiveQuery.class, this::compile)
@@ -83,7 +51,7 @@ class SpannerlogCompiler {
     }
 
     private String compile(ConjunctiveQuery cq) {
-        return compile(cq.getHead()) + " :- " + compile(cq.getBody()) + ".";
+        return compile(cq.getHead()) + " *:- " + compile(cq.getBody()) + ".";
     }
 
     private String compile(ConjunctiveQueryBody body) {
