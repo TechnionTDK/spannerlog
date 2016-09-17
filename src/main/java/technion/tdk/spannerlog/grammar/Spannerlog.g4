@@ -9,7 +9,25 @@ statement
     ;
 
 conjunctiveQuery
-    : conjunctiveQueryHead Separator conjunctiveQueryBody '.'
+    : conjunctiveQueryHead RigidSeparator conjunctiveQueryBody '.'              # RigidCQ
+    | annotation? conjunctiveQueryHead SoftSeparator conjunctiveQueryBody '.'   # SoftCQ
+    ;
+
+annotation
+    : AnnotationSymbol annotationName annotationArguments?
+    ;
+
+annotationName
+    : Identifier
+    ;
+
+annotationArguments
+    : '(' annotationArgument (',' annotationArgument)* ')'
+    ;
+
+annotationArgument
+    :   variable
+    |   floatingPointLiteral
     ;
 
 conjunctiveQueryHead
@@ -17,7 +35,15 @@ conjunctiveQueryHead
     ;
 
 conjunctiveQueryBody
-    : atom (',' atom)*
+    : atom (',' atom)* (',' condition)*
+    ;
+
+condition
+    : binaryCondition
+    ;
+
+binaryCondition
+    : expr CompareOperator expr
     ;
 
 atom
@@ -122,8 +148,21 @@ FloatingPointLiteral
    : Digit + '.' Digit+
    ;
 
-Separator
+RigidSeparator
     : ':-'
+    ;
+
+SoftSeparator
+    : ':~'
+    ;
+
+AnnotationSymbol
+    : '@'
+    ;
+
+CompareOperator
+    : '='
+    | '!='
     ;
 
 Regex
