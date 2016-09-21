@@ -46,10 +46,19 @@ class SpannerlogInputParser {
 
     private class StatementVisitor extends SpannerlogBaseVisitor<Statement> {
         @Override
-        public Statement visitConjunctiveQuery(SpannerlogParser.ConjunctiveQueryContext ctx) {
-            ConjunctiveQueryHead head = ctx.conjunctiveQueryHead().accept(new ConjunctiveQueryHeadVisitor());
-            ConjunctiveQueryBody body = ctx.conjunctiveQueryBody().accept(new ConjunctiveQueryBodyVisitor());
-            return new ConjunctiveQuery(head, body);
+        public Statement visitRigidConjunctiveQuery(SpannerlogParser.RigidConjunctiveQueryContext ctx) {
+            return new RigidConjunctiveQuery(
+                    ctx.conjunctiveQueryHead().accept(new ConjunctiveQueryHeadVisitor()),
+                    ctx.conjunctiveQueryBody().accept(new ConjunctiveQueryBodyVisitor())
+            );
+        }
+
+        @Override
+        public Statement visitSoftConjunctiveQuery(SpannerlogParser.SoftConjunctiveQueryContext ctx) {
+            return new SoftConjunctiveQuery(
+                    ctx.conjunctiveQueryHead().accept(new ConjunctiveQueryHeadVisitor()),
+                    ctx.conjunctiveQueryBody().accept(new ConjunctiveQueryBodyVisitor())
+            );
         }
     }
 

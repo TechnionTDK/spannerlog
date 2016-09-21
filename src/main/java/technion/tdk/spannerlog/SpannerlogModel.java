@@ -19,7 +19,7 @@ class Program {
 abstract class Statement {
 }
 
-class ConjunctiveQuery extends Statement {
+abstract class ConjunctiveQuery extends Statement {
     private ConjunctiveQueryHead head;
     private ConjunctiveQueryBody body;
 
@@ -34,6 +34,18 @@ class ConjunctiveQuery extends Statement {
 
     ConjunctiveQueryBody getBody() {
         return body;
+    }
+}
+
+class RigidConjunctiveQuery extends ConjunctiveQuery {
+    RigidConjunctiveQuery(ConjunctiveQueryHead head, ConjunctiveQueryBody body) {
+        super(head, body);
+    }
+}
+
+class SoftConjunctiveQuery extends ConjunctiveQuery {
+    SoftConjunctiveQuery(ConjunctiveQueryHead head, ConjunctiveQueryBody body) {
+        super(head, body);
     }
 }
 

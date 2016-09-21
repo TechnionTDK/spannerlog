@@ -29,6 +29,42 @@ public interface SpannerlogVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitConjunctiveQuery(SpannerlogParser.ConjunctiveQueryContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link SpannerlogParser#rigidConjunctiveQuery}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitRigidConjunctiveQuery(SpannerlogParser.RigidConjunctiveQueryContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SpannerlogParser#softConjunctiveQuery}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSoftConjunctiveQuery(SpannerlogParser.SoftConjunctiveQueryContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SpannerlogParser#annotation}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAnnotation(SpannerlogParser.AnnotationContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SpannerlogParser#annotationName}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAnnotationName(SpannerlogParser.AnnotationNameContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SpannerlogParser#annotationArguments}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAnnotationArguments(SpannerlogParser.AnnotationArgumentsContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SpannerlogParser#annotationArgument}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAnnotationArgument(SpannerlogParser.AnnotationArgumentContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link SpannerlogParser#conjunctiveQueryHead}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -40,6 +76,18 @@ public interface SpannerlogVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitConjunctiveQueryBody(SpannerlogParser.ConjunctiveQueryBodyContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SpannerlogParser#condition}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitCondition(SpannerlogParser.ConditionContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SpannerlogParser#binaryCondition}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBinaryCondition(SpannerlogParser.BinaryConditionContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link SpannerlogParser#atom}.
 	 * @param ctx the parse tree

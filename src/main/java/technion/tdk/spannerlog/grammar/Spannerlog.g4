@@ -9,8 +9,16 @@ statement
     ;
 
 conjunctiveQuery
-    : conjunctiveQueryHead RigidSeparator conjunctiveQueryBody '.'              # RigidCQ
-    | annotation? conjunctiveQueryHead SoftSeparator conjunctiveQueryBody '.'   # SoftCQ
+    : rigidConjunctiveQuery
+    | softConjunctiveQuery
+    ;
+
+rigidConjunctiveQuery
+    : conjunctiveQueryHead RigidSeparator conjunctiveQueryBody '.'
+    ;
+
+softConjunctiveQuery
+    : annotation? conjunctiveQueryHead SoftSeparator conjunctiveQueryBody '.'
     ;
 
 annotation

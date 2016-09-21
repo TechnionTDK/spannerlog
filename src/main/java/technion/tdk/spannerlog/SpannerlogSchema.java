@@ -42,7 +42,8 @@ class SpannerlogSchema {
         }
     }
 
-    private SpannerlogSchema() {}
+    private SpannerlogSchema() {
+    }
 
     private List<RelationSchema> relationSchemas = new ArrayList<>();
 
@@ -51,7 +52,7 @@ class SpannerlogSchema {
     }
 
     private void readSchemaFromJson(Reader reader, RelationSchemaBuilder builder) throws IOException {
-        try (JsonReader jsonReader = new JsonReader(reader)){
+        try (JsonReader jsonReader = new JsonReader(reader)) {
             List<RelationSchema> relationSchemas = new ArrayList<>();
 
             jsonReader.beginObject();
@@ -94,11 +95,12 @@ class SpannerlogSchema {
 
     @SuppressWarnings("unchecked")
     private RelationSchema mergeRelationSchemas(RelationSchema oldSchema, RelationSchema newSchema) {
+
         if (
-             (!oldSchema.getClass().equals(newSchema.getClass()) && !(oldSchema instanceof AmbiguousRelationSchema) && !(newSchema instanceof AmbiguousRelationSchema)) // Checking if not comparing extensional schema with an intensional one.
-             ||
-             (oldSchema instanceof IEFunctionSchema && !(newSchema instanceof IEFunctionSchema)) || (!(oldSchema instanceof IEFunctionSchema) && newSchema instanceof IEFunctionSchema) // Checking that if one schema is of an IE-function, then the other is also.
-           ) {
+                (!oldSchema.getClass().equals(newSchema.getClass()) && !(oldSchema instanceof AmbiguousRelationSchema) && !(newSchema instanceof AmbiguousRelationSchema)) // Checking if not comparing extensional schema with an intensional one.
+                        ||
+                        (oldSchema instanceof IEFunctionSchema && !(newSchema instanceof IEFunctionSchema)) || (!(oldSchema instanceof IEFunctionSchema) && newSchema instanceof IEFunctionSchema) // Checking that if one schema is of an IE-function, then the other is also.
+                ) {
             throw new RelationSchemaNameConflictException();
         }
 
@@ -124,6 +126,15 @@ class SpannerlogSchema {
 
             hotIESchema.setInputTerm(ObjectUtils.firstNonNull(hotIESchema.getInputTerm(), coldIESchema.getInputTerm()));
             hotIESchema.setInputAtoms(ObjectUtils.firstNonNull(hotIESchema.getInputAtoms(), coldIESchema.getInputAtoms()));
+        }
+
+        if (hotSchema instanceof IntensionalRelationSchema && !(coldSchema instanceof AmbiguousRelationSchema)) {
+            IntensionalRelationSchema coldISchema = (IntensionalRelationSchema) coldSchema;
+            IntensionalRelationSchema hotISchema = (IntensionalRelationSchema) hotSchema;
+
+            if (ObjectUtils.firstNonNull(coldISchema.isPredictionVariableSchema(), hotISchema.isPredictionVariableSchema()) != null
+                    && coldISchema.isPredictionVariableSchema() != hotISchema.isPredictionVariableSchema())
+                throw new VariableConflictException(hotISchema.getName());
         }
 
         return hotSchema;
@@ -179,14 +190,24 @@ class SpannerlogSchema {
     @SuppressWarnings("unchecked")
     private List<RelationSchema> extractRelationSchemas(Statement statement) {
         return (List<RelationSchema>) new PatternMatching(
-                inCaseOf(ConjunctiveQuery.class, this::extractRelationSchemas)
+                inCaseOf(RigidConjunctiveQuery.class, this::extractRelationSchemas),
+                inCaseOf(SoftConjunctiveQuery.class, this::extractRelationSchemas)
         ).matchFor(statement);
     }
 
-    private List<RelationSchema> extractRelationSchemas(ConjunctiveQuery cq) {
+    private List<RelationSchema> extractRelationSchemas(RigidConjunctiveQuery cq) {
         ConjunctiveQueryBody body = cq.getBody();
         List<RelationSchema> relationSchemas = extractRelationSchemas(body);
         relationSchemas.add(extractRelationSchema(cq.getHead()));
+        return relationSchemas;
+    }
+
+    private List<RelationSchema> extractRelationSchemas(SoftConjunctiveQuery cq) {
+        ConjunctiveQueryBody body = cq.getBody();
+        List<RelationSchema> relationSchemas = extractRelationSchemas(body);
+        IntensionalRelationSchema headSchema = (IntensionalRelationSchema) extractRelationSchema(cq.getHead());
+        headSchema.setPredictionVariableSchema(true);
+        relationSchemas.add(headSchema);
         return relationSchemas;
     }
 
@@ -202,7 +223,7 @@ class SpannerlogSchema {
                 inCaseOf(DBAtom.class, this::extractRelationSchema),
                 inCaseOf(Regex.class, a -> extractRegexSchema(a, body)),
                 inCaseOf(IEAtom.class, a -> extractIEFunctionSchema(a, body))
-                ).matchFor(atom);
+        ).matchFor(atom);
     }
 
     private RelationSchema extractRegexSchema(Regex regex, ConjunctiveQueryBody body) {
@@ -293,11 +314,11 @@ class SpannerlogSchema {
 
         for (Attribute rootAttr : rootAttrs) {
             List<String> possibleTypes = depGraph.getDependencies(rootAttr)
-                .stream()
-                .filter(attr -> attr.getType() != null)
-                .map(Attribute::getType)
-                .distinct()
-                .collect(Collectors.toList());
+                    .stream()
+                    .filter(attr -> attr.getType() != null)
+                    .map(Attribute::getType)
+                    .distinct()
+                    .collect(Collectors.toList());
 
             if (possibleTypes.size() != 1) {
                 throw new AttributeTypeCannotBeInferredException(rootAttr);
@@ -456,11 +477,21 @@ class ExtensionalRelationSchema extends RelationSchema {
 }
 
 class IntensionalRelationSchema extends RelationSchema {
+    private Boolean isPredictionVariableSchema;
+
     IntensionalRelationSchema(DBAtom dbAtom, List<Attribute> attrs) {
         super(dbAtom.getSchemaName(), attrs);
         getAttrs().forEach(attr -> attr.setSchema(this));
         dbAtom.setSchema(this);
         getAtoms().add(dbAtom);
+    }
+
+    Boolean isPredictionVariableSchema() {
+        return isPredictionVariableSchema;
+    }
+
+    void setPredictionVariableSchema(Boolean predictionVariableSchema) {
+        isPredictionVariableSchema = predictionVariableSchema;
     }
 }
 
@@ -494,7 +525,7 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
         attrs.get(0).setName("s");
         attrs.get(0).setType("text");
         int n = getAttrs().size();
-        for (int i = 1 ; i < n ; i++) { // skipping the input term (always the first term)
+        for (int i = 1; i < n; i++) { // skipping the input term (always the first term)
             Attribute attr = getAttrs().get(i);
             attr.setType("span");
             attr.setName(((VarTerm) regex.getTerms().get(i)).getVarName());
@@ -678,7 +709,8 @@ class RelationSchemaBuilder {
         return relationSchema;
     }
 
-    private class SchemaBuilderHasNoTypeException extends RuntimeException {}
+    private class SchemaBuilderHasNoTypeException extends RuntimeException {
+    }
 }
 
 enum RelationSchemaType {
@@ -756,7 +788,8 @@ class AttributeTypeConflictException extends RuntimeException {
     }
 }
 
-class AttributeNameConflictException extends RuntimeException {}
+class AttributeNameConflictException extends RuntimeException {
+}
 
 class NumberOfAttributesInSchemaConflictException extends RuntimeException {
     NumberOfAttributesInSchemaConflictException(String schemaName) {
@@ -764,7 +797,8 @@ class NumberOfAttributesInSchemaConflictException extends RuntimeException {
     }
 }
 
-class RelationSchemaNameConflictException extends RuntimeException {}
+class RelationSchemaNameConflictException extends RuntimeException {
+}
 
 class AttributeTypeCannotBeInferredException extends RuntimeException {
     AttributeTypeCannotBeInferredException(Attribute attr) {
@@ -781,6 +815,12 @@ class UnboundVariableException extends RuntimeException {
 class UndefinedRelationSchema extends RuntimeException {
     UndefinedRelationSchema(String message) {
         super("The relation schema for '" + message + "' is undefined");
+    }
+}
+
+class VariableConflictException extends RuntimeException {
+    public VariableConflictException(String schemaName) {
+        super("Inconsistency in the relation '" + schemaName + "' (has been declared as variable and as non-variable)");
     }
 }
 

@@ -89,6 +89,12 @@ public class Spannerlog {
         JsonObject schemaJsonObject = new JsonObject();
         schemaJsonObject.addProperty("name", schema.getName());
 
+        if (schema instanceof IntensionalRelationSchema
+                && ((IntensionalRelationSchema) schema).isPredictionVariableSchema() != null
+                && ((IntensionalRelationSchema) schema).isPredictionVariableSchema()) {
+            schemaJsonObject.addProperty("prediction", true);
+        }
+
         JsonObject attributesJsonObject = new JsonObject();
         schema.getAttrs().forEach(attr -> attributesJsonObject.addProperty(attr.getName(), attr.getType()));
 

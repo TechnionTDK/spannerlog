@@ -19,17 +19,22 @@ public class SpannerlogParser extends Parser {
 	public static final int
 		T__0=1, T__1=2, T__2=3, T__3=4, T__4=5, T__5=6, T__6=7, T__7=8, T__8=9, 
 		T__9=10, T__10=11, BooleanLiteral=12, Identifier=13, StringLiteral=14, 
-		IntegerLiteral=15, FloatingPointLiteral=16, Separator=17, Regex=18, WS=19, 
-		Comment=20;
+		IntegerLiteral=15, FloatingPointLiteral=16, RigidSeparator=17, SoftSeparator=18, 
+		AnnotationSymbol=19, CompareOperator=20, Regex=21, WS=22, Comment=23;
 	public static final int
-		RULE_program = 0, RULE_statement = 1, RULE_conjunctiveQuery = 2, RULE_conjunctiveQueryHead = 3, 
-		RULE_conjunctiveQueryBody = 4, RULE_atom = 5, RULE_dbAtom = 6, RULE_ieAtom = 7, 
-		RULE_termClause = 8, RULE_term = 9, RULE_expr = 10, RULE_stringExpr = 11, 
-		RULE_varExpr = 12, RULE_span = 13, RULE_spanVarClause = 14, RULE_relationSchemaName = 15, 
-		RULE_variable = 16, RULE_placeHolder = 17, RULE_spanLiteral = 18, RULE_integerLiteral = 19, 
-		RULE_floatingPointLiteral = 20, RULE_booleanLiteral = 21, RULE_stringLiteral = 22;
+		RULE_program = 0, RULE_statement = 1, RULE_conjunctiveQuery = 2, RULE_rigidConjunctiveQuery = 3, 
+		RULE_softConjunctiveQuery = 4, RULE_annotation = 5, RULE_annotationName = 6, 
+		RULE_annotationArguments = 7, RULE_annotationArgument = 8, RULE_conjunctiveQueryHead = 9, 
+		RULE_conjunctiveQueryBody = 10, RULE_condition = 11, RULE_binaryCondition = 12, 
+		RULE_atom = 13, RULE_dbAtom = 14, RULE_ieAtom = 15, RULE_termClause = 16, 
+		RULE_term = 17, RULE_expr = 18, RULE_stringExpr = 19, RULE_varExpr = 20, 
+		RULE_span = 21, RULE_spanVarClause = 22, RULE_relationSchemaName = 23, 
+		RULE_variable = 24, RULE_placeHolder = 25, RULE_spanLiteral = 26, RULE_integerLiteral = 27, 
+		RULE_floatingPointLiteral = 28, RULE_booleanLiteral = 29, RULE_stringLiteral = 30;
 	public static final String[] ruleNames = {
-		"program", "statement", "conjunctiveQuery", "conjunctiveQueryHead", "conjunctiveQueryBody", 
+		"program", "statement", "conjunctiveQuery", "rigidConjunctiveQuery", "softConjunctiveQuery", 
+		"annotation", "annotationName", "annotationArguments", "annotationArgument", 
+		"conjunctiveQueryHead", "conjunctiveQueryBody", "condition", "binaryCondition", 
 		"atom", "dbAtom", "ieAtom", "termClause", "term", "expr", "stringExpr", 
 		"varExpr", "span", "spanVarClause", "relationSchemaName", "variable", 
 		"placeHolder", "spanLiteral", "integerLiteral", "floatingPointLiteral", 
@@ -37,13 +42,14 @@ public class SpannerlogParser extends Parser {
 	};
 
 	private static final String[] _LITERAL_NAMES = {
-		null, "'.'", "','", "'<'", "'>'", "'RGX'", "'('", "')'", "'['", "']'", 
-		"'_'", "'-'", null, null, null, null, null, "':-'"
+		null, "'.'", "'('", "','", "')'", "'<'", "'>'", "'RGX'", "'['", "']'", 
+		"'_'", "'-'", null, null, null, null, null, "':-'", "':~'", "'@'"
 	};
 	private static final String[] _SYMBOLIC_NAMES = {
 		null, null, null, null, null, null, null, null, null, null, null, null, 
 		"BooleanLiteral", "Identifier", "StringLiteral", "IntegerLiteral", "FloatingPointLiteral", 
-		"Separator", "Regex", "WS", "Comment"
+		"RigidSeparator", "SoftSeparator", "AnnotationSymbol", "CompareOperator", 
+		"Regex", "WS", "Comment"
 	};
 	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
@@ -119,17 +125,17 @@ public class SpannerlogParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(49);
+			setState(65);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (_la==Identifier) {
+			while (_la==Identifier || _la==AnnotationSymbol) {
 				{
 				{
-				setState(46);
+				setState(62);
 				statement();
 				}
 				}
-				setState(51);
+				setState(67);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -167,7 +173,7 @@ public class SpannerlogParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(52);
+			setState(68);
 			conjunctiveQuery();
 			}
 		}
@@ -183,12 +189,11 @@ public class SpannerlogParser extends Parser {
 	}
 
 	public static class ConjunctiveQueryContext extends ParserRuleContext {
-		public ConjunctiveQueryHeadContext conjunctiveQueryHead() {
-			return getRuleContext(ConjunctiveQueryHeadContext.class,0);
+		public RigidConjunctiveQueryContext rigidConjunctiveQuery() {
+			return getRuleContext(RigidConjunctiveQueryContext.class,0);
 		}
-		public TerminalNode Separator() { return getToken(SpannerlogParser.Separator, 0); }
-		public ConjunctiveQueryBodyContext conjunctiveQueryBody() {
-			return getRuleContext(ConjunctiveQueryBodyContext.class,0);
+		public SoftConjunctiveQueryContext softConjunctiveQuery() {
+			return getRuleContext(SoftConjunctiveQueryContext.class,0);
 		}
 		public ConjunctiveQueryContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -205,16 +210,328 @@ public class SpannerlogParser extends Parser {
 		ConjunctiveQueryContext _localctx = new ConjunctiveQueryContext(_ctx, getState());
 		enterRule(_localctx, 4, RULE_conjunctiveQuery);
 		try {
+			setState(72);
+			_errHandler.sync(this);
+			switch ( getInterpreter().adaptivePredict(_input,1,_ctx) ) {
+			case 1:
+				enterOuterAlt(_localctx, 1);
+				{
+				setState(70);
+				rigidConjunctiveQuery();
+				}
+				break;
+			case 2:
+				enterOuterAlt(_localctx, 2);
+				{
+				setState(71);
+				softConjunctiveQuery();
+				}
+				break;
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class RigidConjunctiveQueryContext extends ParserRuleContext {
+		public ConjunctiveQueryHeadContext conjunctiveQueryHead() {
+			return getRuleContext(ConjunctiveQueryHeadContext.class,0);
+		}
+		public TerminalNode RigidSeparator() { return getToken(SpannerlogParser.RigidSeparator, 0); }
+		public ConjunctiveQueryBodyContext conjunctiveQueryBody() {
+			return getRuleContext(ConjunctiveQueryBodyContext.class,0);
+		}
+		public RigidConjunctiveQueryContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_rigidConjunctiveQuery; }
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SpannerlogVisitor ) return ((SpannerlogVisitor<? extends T>)visitor).visitRigidConjunctiveQuery(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final RigidConjunctiveQueryContext rigidConjunctiveQuery() throws RecognitionException {
+		RigidConjunctiveQueryContext _localctx = new RigidConjunctiveQueryContext(_ctx, getState());
+		enterRule(_localctx, 6, RULE_rigidConjunctiveQuery);
+		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(54);
+			setState(74);
 			conjunctiveQueryHead();
-			setState(55);
-			match(Separator);
-			setState(56);
+			setState(75);
+			match(RigidSeparator);
+			setState(76);
 			conjunctiveQueryBody();
-			setState(57);
+			setState(77);
 			match(T__0);
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class SoftConjunctiveQueryContext extends ParserRuleContext {
+		public ConjunctiveQueryHeadContext conjunctiveQueryHead() {
+			return getRuleContext(ConjunctiveQueryHeadContext.class,0);
+		}
+		public TerminalNode SoftSeparator() { return getToken(SpannerlogParser.SoftSeparator, 0); }
+		public ConjunctiveQueryBodyContext conjunctiveQueryBody() {
+			return getRuleContext(ConjunctiveQueryBodyContext.class,0);
+		}
+		public AnnotationContext annotation() {
+			return getRuleContext(AnnotationContext.class,0);
+		}
+		public SoftConjunctiveQueryContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_softConjunctiveQuery; }
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SpannerlogVisitor ) return ((SpannerlogVisitor<? extends T>)visitor).visitSoftConjunctiveQuery(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final SoftConjunctiveQueryContext softConjunctiveQuery() throws RecognitionException {
+		SoftConjunctiveQueryContext _localctx = new SoftConjunctiveQueryContext(_ctx, getState());
+		enterRule(_localctx, 8, RULE_softConjunctiveQuery);
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(80);
+			_la = _input.LA(1);
+			if (_la==AnnotationSymbol) {
+				{
+				setState(79);
+				annotation();
+				}
+			}
+
+			setState(82);
+			conjunctiveQueryHead();
+			setState(83);
+			match(SoftSeparator);
+			setState(84);
+			conjunctiveQueryBody();
+			setState(85);
+			match(T__0);
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class AnnotationContext extends ParserRuleContext {
+		public TerminalNode AnnotationSymbol() { return getToken(SpannerlogParser.AnnotationSymbol, 0); }
+		public AnnotationNameContext annotationName() {
+			return getRuleContext(AnnotationNameContext.class,0);
+		}
+		public AnnotationArgumentsContext annotationArguments() {
+			return getRuleContext(AnnotationArgumentsContext.class,0);
+		}
+		public AnnotationContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_annotation; }
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SpannerlogVisitor ) return ((SpannerlogVisitor<? extends T>)visitor).visitAnnotation(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final AnnotationContext annotation() throws RecognitionException {
+		AnnotationContext _localctx = new AnnotationContext(_ctx, getState());
+		enterRule(_localctx, 10, RULE_annotation);
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(87);
+			match(AnnotationSymbol);
+			setState(88);
+			annotationName();
+			setState(90);
+			_la = _input.LA(1);
+			if (_la==T__1) {
+				{
+				setState(89);
+				annotationArguments();
+				}
+			}
+
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class AnnotationNameContext extends ParserRuleContext {
+		public TerminalNode Identifier() { return getToken(SpannerlogParser.Identifier, 0); }
+		public AnnotationNameContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_annotationName; }
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SpannerlogVisitor ) return ((SpannerlogVisitor<? extends T>)visitor).visitAnnotationName(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final AnnotationNameContext annotationName() throws RecognitionException {
+		AnnotationNameContext _localctx = new AnnotationNameContext(_ctx, getState());
+		enterRule(_localctx, 12, RULE_annotationName);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(92);
+			match(Identifier);
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class AnnotationArgumentsContext extends ParserRuleContext {
+		public List<AnnotationArgumentContext> annotationArgument() {
+			return getRuleContexts(AnnotationArgumentContext.class);
+		}
+		public AnnotationArgumentContext annotationArgument(int i) {
+			return getRuleContext(AnnotationArgumentContext.class,i);
+		}
+		public AnnotationArgumentsContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_annotationArguments; }
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SpannerlogVisitor ) return ((SpannerlogVisitor<? extends T>)visitor).visitAnnotationArguments(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final AnnotationArgumentsContext annotationArguments() throws RecognitionException {
+		AnnotationArgumentsContext _localctx = new AnnotationArgumentsContext(_ctx, getState());
+		enterRule(_localctx, 14, RULE_annotationArguments);
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(94);
+			match(T__1);
+			setState(95);
+			annotationArgument();
+			setState(100);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			while (_la==T__2) {
+				{
+				{
+				setState(96);
+				match(T__2);
+				setState(97);
+				annotationArgument();
+				}
+				}
+				setState(102);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+			}
+			setState(103);
+			match(T__3);
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class AnnotationArgumentContext extends ParserRuleContext {
+		public VariableContext variable() {
+			return getRuleContext(VariableContext.class,0);
+		}
+		public FloatingPointLiteralContext floatingPointLiteral() {
+			return getRuleContext(FloatingPointLiteralContext.class,0);
+		}
+		public AnnotationArgumentContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_annotationArgument; }
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SpannerlogVisitor ) return ((SpannerlogVisitor<? extends T>)visitor).visitAnnotationArgument(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final AnnotationArgumentContext annotationArgument() throws RecognitionException {
+		AnnotationArgumentContext _localctx = new AnnotationArgumentContext(_ctx, getState());
+		enterRule(_localctx, 16, RULE_annotationArgument);
+		try {
+			setState(107);
+			switch (_input.LA(1)) {
+			case Identifier:
+				enterOuterAlt(_localctx, 1);
+				{
+				setState(105);
+				variable();
+				}
+				break;
+			case T__10:
+			case FloatingPointLiteral:
+				enterOuterAlt(_localctx, 2);
+				{
+				setState(106);
+				floatingPointLiteral();
+				}
+				break;
+			default:
+				throw new NoViableAltException(this);
 			}
 		}
 		catch (RecognitionException re) {
@@ -245,11 +562,11 @@ public class SpannerlogParser extends Parser {
 
 	public final ConjunctiveQueryHeadContext conjunctiveQueryHead() throws RecognitionException {
 		ConjunctiveQueryHeadContext _localctx = new ConjunctiveQueryHeadContext(_ctx, getState());
-		enterRule(_localctx, 6, RULE_conjunctiveQueryHead);
+		enterRule(_localctx, 18, RULE_conjunctiveQueryHead);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(59);
+			setState(109);
 			dbAtom();
 			}
 		}
@@ -271,6 +588,12 @@ public class SpannerlogParser extends Parser {
 		public AtomContext atom(int i) {
 			return getRuleContext(AtomContext.class,i);
 		}
+		public List<ConditionContext> condition() {
+			return getRuleContexts(ConditionContext.class);
+		}
+		public ConditionContext condition(int i) {
+			return getRuleContext(ConditionContext.class,i);
+		}
 		public ConjunctiveQueryBodyContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -284,29 +607,128 @@ public class SpannerlogParser extends Parser {
 
 	public final ConjunctiveQueryBodyContext conjunctiveQueryBody() throws RecognitionException {
 		ConjunctiveQueryBodyContext _localctx = new ConjunctiveQueryBodyContext(_ctx, getState());
-		enterRule(_localctx, 8, RULE_conjunctiveQueryBody);
+		enterRule(_localctx, 20, RULE_conjunctiveQueryBody);
 		int _la;
 		try {
+			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(61);
+			setState(111);
 			atom();
-			setState(66);
+			setState(116);
+			_errHandler.sync(this);
+			_alt = getInterpreter().adaptivePredict(_input,6,_ctx);
+			while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER ) {
+				if ( _alt==1 ) {
+					{
+					{
+					setState(112);
+					match(T__2);
+					setState(113);
+					atom();
+					}
+					} 
+				}
+				setState(118);
+				_errHandler.sync(this);
+				_alt = getInterpreter().adaptivePredict(_input,6,_ctx);
+			}
+			setState(123);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (_la==T__1) {
+			while (_la==T__2) {
 				{
 				{
-				setState(62);
-				match(T__1);
-				setState(63);
-				atom();
+				setState(119);
+				match(T__2);
+				setState(120);
+				condition();
 				}
 				}
-				setState(68);
+				setState(125);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class ConditionContext extends ParserRuleContext {
+		public BinaryConditionContext binaryCondition() {
+			return getRuleContext(BinaryConditionContext.class,0);
+		}
+		public ConditionContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_condition; }
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SpannerlogVisitor ) return ((SpannerlogVisitor<? extends T>)visitor).visitCondition(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final ConditionContext condition() throws RecognitionException {
+		ConditionContext _localctx = new ConditionContext(_ctx, getState());
+		enterRule(_localctx, 22, RULE_condition);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(126);
+			binaryCondition();
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class BinaryConditionContext extends ParserRuleContext {
+		public List<ExprContext> expr() {
+			return getRuleContexts(ExprContext.class);
+		}
+		public ExprContext expr(int i) {
+			return getRuleContext(ExprContext.class,i);
+		}
+		public TerminalNode CompareOperator() { return getToken(SpannerlogParser.CompareOperator, 0); }
+		public BinaryConditionContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_binaryCondition; }
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SpannerlogVisitor ) return ((SpannerlogVisitor<? extends T>)visitor).visitBinaryCondition(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final BinaryConditionContext binaryCondition() throws RecognitionException {
+		BinaryConditionContext _localctx = new BinaryConditionContext(_ctx, getState());
+		enterRule(_localctx, 24, RULE_binaryCondition);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(128);
+			expr();
+			setState(129);
+			match(CompareOperator);
+			setState(130);
+			expr();
 			}
 		}
 		catch (RecognitionException re) {
@@ -340,22 +762,22 @@ public class SpannerlogParser extends Parser {
 
 	public final AtomContext atom() throws RecognitionException {
 		AtomContext _localctx = new AtomContext(_ctx, getState());
-		enterRule(_localctx, 10, RULE_atom);
+		enterRule(_localctx, 26, RULE_atom);
 		try {
-			setState(71);
+			setState(134);
 			_errHandler.sync(this);
-			switch ( getInterpreter().adaptivePredict(_input,2,_ctx) ) {
+			switch ( getInterpreter().adaptivePredict(_input,8,_ctx) ) {
 			case 1:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(69);
+				setState(132);
 				dbAtom();
 				}
 				break;
 			case 2:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(70);
+				setState(133);
 				ieAtom();
 				}
 				break;
@@ -392,13 +814,13 @@ public class SpannerlogParser extends Parser {
 
 	public final DbAtomContext dbAtom() throws RecognitionException {
 		DbAtomContext _localctx = new DbAtomContext(_ctx, getState());
-		enterRule(_localctx, 12, RULE_dbAtom);
+		enterRule(_localctx, 28, RULE_dbAtom);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(73);
+			setState(136);
 			relationSchemaName();
-			setState(74);
+			setState(137);
 			termClause();
 			}
 		}
@@ -456,48 +878,48 @@ public class SpannerlogParser extends Parser {
 
 	public final IeAtomContext ieAtom() throws RecognitionException {
 		IeAtomContext _localctx = new IeAtomContext(_ctx, getState());
-		enterRule(_localctx, 14, RULE_ieAtom);
+		enterRule(_localctx, 30, RULE_ieAtom);
 		int _la;
 		try {
-			setState(90);
+			setState(153);
 			switch (_input.LA(1)) {
 			case Identifier:
 				_localctx = new IEFunctionContext(_localctx);
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(76);
+				setState(139);
 				relationSchemaName();
-				setState(77);
-				match(T__2);
-				setState(78);
+				setState(140);
+				match(T__4);
+				setState(141);
 				varExpr();
-				setState(79);
-				match(T__3);
-				setState(80);
+				setState(142);
+				match(T__5);
+				setState(143);
 				termClause();
 				}
 				break;
-			case T__2:
 			case T__4:
+			case T__6:
 				_localctx = new RgxContext(_localctx);
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(83);
+				setState(146);
 				_la = _input.LA(1);
-				if (_la==T__4) {
+				if (_la==T__6) {
 					{
-					setState(82);
-					match(T__4);
+					setState(145);
+					match(T__6);
 					}
 				}
 
-				setState(85);
-				match(T__2);
-				setState(86);
+				setState(148);
+				match(T__4);
+				setState(149);
 				varExpr();
-				setState(87);
-				match(T__3);
-				setState(88);
+				setState(150);
+				match(T__5);
+				setState(151);
 				match(Regex);
 				}
 				break;
@@ -536,40 +958,40 @@ public class SpannerlogParser extends Parser {
 
 	public final TermClauseContext termClause() throws RecognitionException {
 		TermClauseContext _localctx = new TermClauseContext(_ctx, getState());
-		enterRule(_localctx, 16, RULE_termClause);
+		enterRule(_localctx, 32, RULE_termClause);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(92);
-			match(T__5);
-			setState(101);
+			setState(155);
+			match(T__1);
+			setState(164);
 			_la = _input.LA(1);
 			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__7) | (1L << T__9) | (1L << T__10) | (1L << BooleanLiteral) | (1L << Identifier) | (1L << StringLiteral) | (1L << IntegerLiteral) | (1L << FloatingPointLiteral))) != 0)) {
 				{
-				setState(93);
+				setState(156);
 				term();
-				setState(98);
+				setState(161);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				while (_la==T__1) {
+				while (_la==T__2) {
 					{
 					{
-					setState(94);
-					match(T__1);
-					setState(95);
+					setState(157);
+					match(T__2);
+					setState(158);
 					term();
 					}
 					}
-					setState(100);
+					setState(163);
 					_errHandler.sync(this);
 					_la = _input.LA(1);
 				}
 				}
 			}
 
-			setState(103);
-			match(T__6);
+			setState(166);
+			match(T__3);
 			}
 		}
 		catch (RecognitionException re) {
@@ -603,14 +1025,14 @@ public class SpannerlogParser extends Parser {
 
 	public final TermContext term() throws RecognitionException {
 		TermContext _localctx = new TermContext(_ctx, getState());
-		enterRule(_localctx, 18, RULE_term);
+		enterRule(_localctx, 34, RULE_term);
 		try {
-			setState(107);
+			setState(170);
 			switch (_input.LA(1)) {
 			case T__9:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(105);
+				setState(168);
 				placeHolder();
 				}
 				break;
@@ -623,7 +1045,7 @@ public class SpannerlogParser extends Parser {
 			case FloatingPointLiteral:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(106);
+				setState(169);
 				expr();
 				}
 				break;
@@ -674,50 +1096,50 @@ public class SpannerlogParser extends Parser {
 
 	public final ExprContext expr() throws RecognitionException {
 		ExprContext _localctx = new ExprContext(_ctx, getState());
-		enterRule(_localctx, 20, RULE_expr);
+		enterRule(_localctx, 36, RULE_expr);
 		try {
-			setState(115);
+			setState(178);
 			_errHandler.sync(this);
-			switch ( getInterpreter().adaptivePredict(_input,8,_ctx) ) {
+			switch ( getInterpreter().adaptivePredict(_input,14,_ctx) ) {
 			case 1:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(109);
+				setState(172);
 				integerLiteral();
 				}
 				break;
 			case 2:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(110);
+				setState(173);
 				floatingPointLiteral();
 				}
 				break;
 			case 3:
 				enterOuterAlt(_localctx, 3);
 				{
-				setState(111);
+				setState(174);
 				booleanLiteral();
 				}
 				break;
 			case 4:
 				enterOuterAlt(_localctx, 4);
 				{
-				setState(112);
+				setState(175);
 				spanLiteral();
 				}
 				break;
 			case 5:
 				enterOuterAlt(_localctx, 5);
 				{
-				setState(113);
+				setState(176);
 				stringExpr();
 				}
 				break;
 			case 6:
 				enterOuterAlt(_localctx, 6);
 				{
-				setState(114);
+				setState(177);
 				varExpr();
 				}
 				break;
@@ -757,24 +1179,24 @@ public class SpannerlogParser extends Parser {
 
 	public final StringExprContext stringExpr() throws RecognitionException {
 		StringExprContext _localctx = new StringExprContext(_ctx, getState());
-		enterRule(_localctx, 22, RULE_stringExpr);
+		enterRule(_localctx, 38, RULE_stringExpr);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(117);
+			setState(180);
 			stringLiteral();
-			setState(121);
+			setState(184);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==T__7) {
 				{
 				{
-				setState(118);
+				setState(181);
 				span();
 				}
 				}
-				setState(123);
+				setState(186);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -814,24 +1236,24 @@ public class SpannerlogParser extends Parser {
 
 	public final VarExprContext varExpr() throws RecognitionException {
 		VarExprContext _localctx = new VarExprContext(_ctx, getState());
-		enterRule(_localctx, 24, RULE_varExpr);
+		enterRule(_localctx, 40, RULE_varExpr);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(124);
+			setState(187);
 			variable();
-			setState(128);
+			setState(191);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==T__7) {
 				{
 				{
-				setState(125);
+				setState(188);
 				span();
 				}
 				}
-				setState(130);
+				setState(193);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -868,22 +1290,22 @@ public class SpannerlogParser extends Parser {
 
 	public final SpanContext span() throws RecognitionException {
 		SpanContext _localctx = new SpanContext(_ctx, getState());
-		enterRule(_localctx, 26, RULE_span);
+		enterRule(_localctx, 42, RULE_span);
 		try {
-			setState(133);
+			setState(196);
 			_errHandler.sync(this);
-			switch ( getInterpreter().adaptivePredict(_input,11,_ctx) ) {
+			switch ( getInterpreter().adaptivePredict(_input,17,_ctx) ) {
 			case 1:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(131);
+				setState(194);
 				spanVarClause();
 				}
 				break;
 			case 2:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(132);
+				setState(195);
 				spanLiteral();
 				}
 				break;
@@ -917,15 +1339,15 @@ public class SpannerlogParser extends Parser {
 
 	public final SpanVarClauseContext spanVarClause() throws RecognitionException {
 		SpanVarClauseContext _localctx = new SpanVarClauseContext(_ctx, getState());
-		enterRule(_localctx, 28, RULE_spanVarClause);
+		enterRule(_localctx, 44, RULE_spanVarClause);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(135);
+			setState(198);
 			match(T__7);
-			setState(136);
+			setState(199);
 			variable();
-			setState(137);
+			setState(200);
 			match(T__8);
 			}
 		}
@@ -955,11 +1377,11 @@ public class SpannerlogParser extends Parser {
 
 	public final RelationSchemaNameContext relationSchemaName() throws RecognitionException {
 		RelationSchemaNameContext _localctx = new RelationSchemaNameContext(_ctx, getState());
-		enterRule(_localctx, 30, RULE_relationSchemaName);
+		enterRule(_localctx, 46, RULE_relationSchemaName);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(139);
+			setState(202);
 			match(Identifier);
 			}
 		}
@@ -989,11 +1411,11 @@ public class SpannerlogParser extends Parser {
 
 	public final VariableContext variable() throws RecognitionException {
 		VariableContext _localctx = new VariableContext(_ctx, getState());
-		enterRule(_localctx, 32, RULE_variable);
+		enterRule(_localctx, 48, RULE_variable);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(141);
+			setState(204);
 			match(Identifier);
 			}
 		}
@@ -1022,11 +1444,11 @@ public class SpannerlogParser extends Parser {
 
 	public final PlaceHolderContext placeHolder() throws RecognitionException {
 		PlaceHolderContext _localctx = new PlaceHolderContext(_ctx, getState());
-		enterRule(_localctx, 34, RULE_placeHolder);
+		enterRule(_localctx, 50, RULE_placeHolder);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(143);
+			setState(206);
 			match(T__9);
 			}
 		}
@@ -1059,44 +1481,44 @@ public class SpannerlogParser extends Parser {
 
 	public final SpanLiteralContext spanLiteral() throws RecognitionException {
 		SpanLiteralContext _localctx = new SpanLiteralContext(_ctx, getState());
-		enterRule(_localctx, 36, RULE_spanLiteral);
+		enterRule(_localctx, 52, RULE_spanLiteral);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(145);
+			setState(208);
 			match(T__7);
-			setState(147); 
+			setState(210); 
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			do {
 				{
 				{
-				setState(146);
+				setState(209);
 				match(IntegerLiteral);
 				}
 				}
-				setState(149); 
+				setState(212); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			} while ( _la==IntegerLiteral );
-			setState(151);
-			match(T__1);
-			setState(153); 
+			setState(214);
+			match(T__2);
+			setState(216); 
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			do {
 				{
 				{
-				setState(152);
+				setState(215);
 				match(IntegerLiteral);
 				}
 				}
-				setState(155); 
+				setState(218); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			} while ( _la==IntegerLiteral );
-			setState(157);
+			setState(220);
 			match(T__8);
 			}
 		}
@@ -1126,21 +1548,21 @@ public class SpannerlogParser extends Parser {
 
 	public final IntegerLiteralContext integerLiteral() throws RecognitionException {
 		IntegerLiteralContext _localctx = new IntegerLiteralContext(_ctx, getState());
-		enterRule(_localctx, 38, RULE_integerLiteral);
+		enterRule(_localctx, 54, RULE_integerLiteral);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(160);
+			setState(223);
 			_la = _input.LA(1);
 			if (_la==T__10) {
 				{
-				setState(159);
+				setState(222);
 				match(T__10);
 				}
 			}
 
-			setState(162);
+			setState(225);
 			match(IntegerLiteral);
 			}
 		}
@@ -1170,21 +1592,21 @@ public class SpannerlogParser extends Parser {
 
 	public final FloatingPointLiteralContext floatingPointLiteral() throws RecognitionException {
 		FloatingPointLiteralContext _localctx = new FloatingPointLiteralContext(_ctx, getState());
-		enterRule(_localctx, 40, RULE_floatingPointLiteral);
+		enterRule(_localctx, 56, RULE_floatingPointLiteral);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(165);
+			setState(228);
 			_la = _input.LA(1);
 			if (_la==T__10) {
 				{
-				setState(164);
+				setState(227);
 				match(T__10);
 				}
 			}
 
-			setState(167);
+			setState(230);
 			match(FloatingPointLiteral);
 			}
 		}
@@ -1214,11 +1636,11 @@ public class SpannerlogParser extends Parser {
 
 	public final BooleanLiteralContext booleanLiteral() throws RecognitionException {
 		BooleanLiteralContext _localctx = new BooleanLiteralContext(_ctx, getState());
-		enterRule(_localctx, 42, RULE_booleanLiteral);
+		enterRule(_localctx, 58, RULE_booleanLiteral);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(169);
+			setState(232);
 			match(BooleanLiteral);
 			}
 		}
@@ -1248,11 +1670,11 @@ public class SpannerlogParser extends Parser {
 
 	public final StringLiteralContext stringLiteral() throws RecognitionException {
 		StringLiteralContext _localctx = new StringLiteralContext(_ctx, getState());
-		enterRule(_localctx, 44, RULE_stringLiteral);
+		enterRule(_localctx, 60, RULE_stringLiteral);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(171);
+			setState(234);
 			match(StringLiteral);
 			}
 		}
@@ -1268,55 +1690,80 @@ public class SpannerlogParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\3\26\u00b0\4\2\t\2"+
+		"\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\3\31\u00ef\4\2\t\2"+
 		"\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\4\t\t\t\4\n\t\n\4\13"+
 		"\t\13\4\f\t\f\4\r\t\r\4\16\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22"+
-		"\4\23\t\23\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27\4\30\t\30\3\2\7\2\62"+
-		"\n\2\f\2\16\2\65\13\2\3\3\3\3\3\4\3\4\3\4\3\4\3\4\3\5\3\5\3\6\3\6\3\6"+
-		"\7\6C\n\6\f\6\16\6F\13\6\3\7\3\7\5\7J\n\7\3\b\3\b\3\b\3\t\3\t\3\t\3\t"+
-		"\3\t\3\t\3\t\5\tV\n\t\3\t\3\t\3\t\3\t\3\t\5\t]\n\t\3\n\3\n\3\n\3\n\7\n"+
-		"c\n\n\f\n\16\nf\13\n\5\nh\n\n\3\n\3\n\3\13\3\13\5\13n\n\13\3\f\3\f\3\f"+
-		"\3\f\3\f\3\f\5\fv\n\f\3\r\3\r\7\rz\n\r\f\r\16\r}\13\r\3\16\3\16\7\16\u0081"+
-		"\n\16\f\16\16\16\u0084\13\16\3\17\3\17\5\17\u0088\n\17\3\20\3\20\3\20"+
-		"\3\20\3\21\3\21\3\22\3\22\3\23\3\23\3\24\3\24\6\24\u0096\n\24\r\24\16"+
-		"\24\u0097\3\24\3\24\6\24\u009c\n\24\r\24\16\24\u009d\3\24\3\24\3\25\5"+
-		"\25\u00a3\n\25\3\25\3\25\3\26\5\26\u00a8\n\26\3\26\3\26\3\27\3\27\3\30"+
-		"\3\30\3\30\2\2\31\2\4\6\b\n\f\16\20\22\24\26\30\32\34\36 \"$&(*,.\2\2"+
-		"\u00ac\2\63\3\2\2\2\4\66\3\2\2\2\68\3\2\2\2\b=\3\2\2\2\n?\3\2\2\2\fI\3"+
-		"\2\2\2\16K\3\2\2\2\20\\\3\2\2\2\22^\3\2\2\2\24m\3\2\2\2\26u\3\2\2\2\30"+
-		"w\3\2\2\2\32~\3\2\2\2\34\u0087\3\2\2\2\36\u0089\3\2\2\2 \u008d\3\2\2\2"+
-		"\"\u008f\3\2\2\2$\u0091\3\2\2\2&\u0093\3\2\2\2(\u00a2\3\2\2\2*\u00a7\3"+
-		"\2\2\2,\u00ab\3\2\2\2.\u00ad\3\2\2\2\60\62\5\4\3\2\61\60\3\2\2\2\62\65"+
-		"\3\2\2\2\63\61\3\2\2\2\63\64\3\2\2\2\64\3\3\2\2\2\65\63\3\2\2\2\66\67"+
-		"\5\6\4\2\67\5\3\2\2\289\5\b\5\29:\7\23\2\2:;\5\n\6\2;<\7\3\2\2<\7\3\2"+
-		"\2\2=>\5\16\b\2>\t\3\2\2\2?D\5\f\7\2@A\7\4\2\2AC\5\f\7\2B@\3\2\2\2CF\3"+
-		"\2\2\2DB\3\2\2\2DE\3\2\2\2E\13\3\2\2\2FD\3\2\2\2GJ\5\16\b\2HJ\5\20\t\2"+
-		"IG\3\2\2\2IH\3\2\2\2J\r\3\2\2\2KL\5 \21\2LM\5\22\n\2M\17\3\2\2\2NO\5 "+
-		"\21\2OP\7\5\2\2PQ\5\32\16\2QR\7\6\2\2RS\5\22\n\2S]\3\2\2\2TV\7\7\2\2U"+
-		"T\3\2\2\2UV\3\2\2\2VW\3\2\2\2WX\7\5\2\2XY\5\32\16\2YZ\7\6\2\2Z[\7\24\2"+
-		"\2[]\3\2\2\2\\N\3\2\2\2\\U\3\2\2\2]\21\3\2\2\2^g\7\b\2\2_d\5\24\13\2`"+
-		"a\7\4\2\2ac\5\24\13\2b`\3\2\2\2cf\3\2\2\2db\3\2\2\2de\3\2\2\2eh\3\2\2"+
-		"\2fd\3\2\2\2g_\3\2\2\2gh\3\2\2\2hi\3\2\2\2ij\7\t\2\2j\23\3\2\2\2kn\5$"+
-		"\23\2ln\5\26\f\2mk\3\2\2\2ml\3\2\2\2n\25\3\2\2\2ov\5(\25\2pv\5*\26\2q"+
-		"v\5,\27\2rv\5&\24\2sv\5\30\r\2tv\5\32\16\2uo\3\2\2\2up\3\2\2\2uq\3\2\2"+
-		"\2ur\3\2\2\2us\3\2\2\2ut\3\2\2\2v\27\3\2\2\2w{\5.\30\2xz\5\34\17\2yx\3"+
-		"\2\2\2z}\3\2\2\2{y\3\2\2\2{|\3\2\2\2|\31\3\2\2\2}{\3\2\2\2~\u0082\5\""+
-		"\22\2\177\u0081\5\34\17\2\u0080\177\3\2\2\2\u0081\u0084\3\2\2\2\u0082"+
-		"\u0080\3\2\2\2\u0082\u0083\3\2\2\2\u0083\33\3\2\2\2\u0084\u0082\3\2\2"+
-		"\2\u0085\u0088\5\36\20\2\u0086\u0088\5&\24\2\u0087\u0085\3\2\2\2\u0087"+
-		"\u0086\3\2\2\2\u0088\35\3\2\2\2\u0089\u008a\7\n\2\2\u008a\u008b\5\"\22"+
-		"\2\u008b\u008c\7\13\2\2\u008c\37\3\2\2\2\u008d\u008e\7\17\2\2\u008e!\3"+
-		"\2\2\2\u008f\u0090\7\17\2\2\u0090#\3\2\2\2\u0091\u0092\7\f\2\2\u0092%"+
-		"\3\2\2\2\u0093\u0095\7\n\2\2\u0094\u0096\7\21\2\2\u0095\u0094\3\2\2\2"+
-		"\u0096\u0097\3\2\2\2\u0097\u0095\3\2\2\2\u0097\u0098\3\2\2\2\u0098\u0099"+
-		"\3\2\2\2\u0099\u009b\7\4\2\2\u009a\u009c\7\21\2\2\u009b\u009a\3\2\2\2"+
-		"\u009c\u009d\3\2\2\2\u009d\u009b\3\2\2\2\u009d\u009e\3\2\2\2\u009e\u009f"+
-		"\3\2\2\2\u009f\u00a0\7\13\2\2\u00a0\'\3\2\2\2\u00a1\u00a3\7\r\2\2\u00a2"+
-		"\u00a1\3\2\2\2\u00a2\u00a3\3\2\2\2\u00a3\u00a4\3\2\2\2\u00a4\u00a5\7\21"+
-		"\2\2\u00a5)\3\2\2\2\u00a6\u00a8\7\r\2\2\u00a7\u00a6\3\2\2\2\u00a7\u00a8"+
-		"\3\2\2\2\u00a8\u00a9\3\2\2\2\u00a9\u00aa\7\22\2\2\u00aa+\3\2\2\2\u00ab"+
-		"\u00ac\7\16\2\2\u00ac-\3\2\2\2\u00ad\u00ae\7\20\2\2\u00ae/\3\2\2\2\22"+
-		"\63DIU\\dgmu{\u0082\u0087\u0097\u009d\u00a2\u00a7";
+		"\4\23\t\23\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27\4\30\t\30\4\31\t\31"+
+		"\4\32\t\32\4\33\t\33\4\34\t\34\4\35\t\35\4\36\t\36\4\37\t\37\4 \t \3\2"+
+		"\7\2B\n\2\f\2\16\2E\13\2\3\3\3\3\3\4\3\4\5\4K\n\4\3\5\3\5\3\5\3\5\3\5"+
+		"\3\6\5\6S\n\6\3\6\3\6\3\6\3\6\3\6\3\7\3\7\3\7\5\7]\n\7\3\b\3\b\3\t\3\t"+
+		"\3\t\3\t\7\te\n\t\f\t\16\th\13\t\3\t\3\t\3\n\3\n\5\nn\n\n\3\13\3\13\3"+
+		"\f\3\f\3\f\7\fu\n\f\f\f\16\fx\13\f\3\f\3\f\7\f|\n\f\f\f\16\f\177\13\f"+
+		"\3\r\3\r\3\16\3\16\3\16\3\16\3\17\3\17\5\17\u0089\n\17\3\20\3\20\3\20"+
+		"\3\21\3\21\3\21\3\21\3\21\3\21\3\21\5\21\u0095\n\21\3\21\3\21\3\21\3\21"+
+		"\3\21\5\21\u009c\n\21\3\22\3\22\3\22\3\22\7\22\u00a2\n\22\f\22\16\22\u00a5"+
+		"\13\22\5\22\u00a7\n\22\3\22\3\22\3\23\3\23\5\23\u00ad\n\23\3\24\3\24\3"+
+		"\24\3\24\3\24\3\24\5\24\u00b5\n\24\3\25\3\25\7\25\u00b9\n\25\f\25\16\25"+
+		"\u00bc\13\25\3\26\3\26\7\26\u00c0\n\26\f\26\16\26\u00c3\13\26\3\27\3\27"+
+		"\5\27\u00c7\n\27\3\30\3\30\3\30\3\30\3\31\3\31\3\32\3\32\3\33\3\33\3\34"+
+		"\3\34\6\34\u00d5\n\34\r\34\16\34\u00d6\3\34\3\34\6\34\u00db\n\34\r\34"+
+		"\16\34\u00dc\3\34\3\34\3\35\5\35\u00e2\n\35\3\35\3\35\3\36\5\36\u00e7"+
+		"\n\36\3\36\3\36\3\37\3\37\3 \3 \3 \2\2!\2\4\6\b\n\f\16\20\22\24\26\30"+
+		"\32\34\36 \"$&(*,.\60\62\64\668:<>\2\2\u00e9\2C\3\2\2\2\4F\3\2\2\2\6J"+
+		"\3\2\2\2\bL\3\2\2\2\nR\3\2\2\2\fY\3\2\2\2\16^\3\2\2\2\20`\3\2\2\2\22m"+
+		"\3\2\2\2\24o\3\2\2\2\26q\3\2\2\2\30\u0080\3\2\2\2\32\u0082\3\2\2\2\34"+
+		"\u0088\3\2\2\2\36\u008a\3\2\2\2 \u009b\3\2\2\2\"\u009d\3\2\2\2$\u00ac"+
+		"\3\2\2\2&\u00b4\3\2\2\2(\u00b6\3\2\2\2*\u00bd\3\2\2\2,\u00c6\3\2\2\2."+
+		"\u00c8\3\2\2\2\60\u00cc\3\2\2\2\62\u00ce\3\2\2\2\64\u00d0\3\2\2\2\66\u00d2"+
+		"\3\2\2\28\u00e1\3\2\2\2:\u00e6\3\2\2\2<\u00ea\3\2\2\2>\u00ec\3\2\2\2@"+
+		"B\5\4\3\2A@\3\2\2\2BE\3\2\2\2CA\3\2\2\2CD\3\2\2\2D\3\3\2\2\2EC\3\2\2\2"+
+		"FG\5\6\4\2G\5\3\2\2\2HK\5\b\5\2IK\5\n\6\2JH\3\2\2\2JI\3\2\2\2K\7\3\2\2"+
+		"\2LM\5\24\13\2MN\7\23\2\2NO\5\26\f\2OP\7\3\2\2P\t\3\2\2\2QS\5\f\7\2RQ"+
+		"\3\2\2\2RS\3\2\2\2ST\3\2\2\2TU\5\24\13\2UV\7\24\2\2VW\5\26\f\2WX\7\3\2"+
+		"\2X\13\3\2\2\2YZ\7\25\2\2Z\\\5\16\b\2[]\5\20\t\2\\[\3\2\2\2\\]\3\2\2\2"+
+		"]\r\3\2\2\2^_\7\17\2\2_\17\3\2\2\2`a\7\4\2\2af\5\22\n\2bc\7\5\2\2ce\5"+
+		"\22\n\2db\3\2\2\2eh\3\2\2\2fd\3\2\2\2fg\3\2\2\2gi\3\2\2\2hf\3\2\2\2ij"+
+		"\7\6\2\2j\21\3\2\2\2kn\5\62\32\2ln\5:\36\2mk\3\2\2\2ml\3\2\2\2n\23\3\2"+
+		"\2\2op\5\36\20\2p\25\3\2\2\2qv\5\34\17\2rs\7\5\2\2su\5\34\17\2tr\3\2\2"+
+		"\2ux\3\2\2\2vt\3\2\2\2vw\3\2\2\2w}\3\2\2\2xv\3\2\2\2yz\7\5\2\2z|\5\30"+
+		"\r\2{y\3\2\2\2|\177\3\2\2\2}{\3\2\2\2}~\3\2\2\2~\27\3\2\2\2\177}\3\2\2"+
+		"\2\u0080\u0081\5\32\16\2\u0081\31\3\2\2\2\u0082\u0083\5&\24\2\u0083\u0084"+
+		"\7\26\2\2\u0084\u0085\5&\24\2\u0085\33\3\2\2\2\u0086\u0089\5\36\20\2\u0087"+
+		"\u0089\5 \21\2\u0088\u0086\3\2\2\2\u0088\u0087\3\2\2\2\u0089\35\3\2\2"+
+		"\2\u008a\u008b\5\60\31\2\u008b\u008c\5\"\22\2\u008c\37\3\2\2\2\u008d\u008e"+
+		"\5\60\31\2\u008e\u008f\7\7\2\2\u008f\u0090\5*\26\2\u0090\u0091\7\b\2\2"+
+		"\u0091\u0092\5\"\22\2\u0092\u009c\3\2\2\2\u0093\u0095\7\t\2\2\u0094\u0093"+
+		"\3\2\2\2\u0094\u0095\3\2\2\2\u0095\u0096\3\2\2\2\u0096\u0097\7\7\2\2\u0097"+
+		"\u0098\5*\26\2\u0098\u0099\7\b\2\2\u0099\u009a\7\27\2\2\u009a\u009c\3"+
+		"\2\2\2\u009b\u008d\3\2\2\2\u009b\u0094\3\2\2\2\u009c!\3\2\2\2\u009d\u00a6"+
+		"\7\4\2\2\u009e\u00a3\5$\23\2\u009f\u00a0\7\5\2\2\u00a0\u00a2\5$\23\2\u00a1"+
+		"\u009f\3\2\2\2\u00a2\u00a5\3\2\2\2\u00a3\u00a1\3\2\2\2\u00a3\u00a4\3\2"+
+		"\2\2\u00a4\u00a7\3\2\2\2\u00a5\u00a3\3\2\2\2\u00a6\u009e\3\2\2\2\u00a6"+
+		"\u00a7\3\2\2\2\u00a7\u00a8\3\2\2\2\u00a8\u00a9\7\6\2\2\u00a9#\3\2\2\2"+
+		"\u00aa\u00ad\5\64\33\2\u00ab\u00ad\5&\24\2\u00ac\u00aa\3\2\2\2\u00ac\u00ab"+
+		"\3\2\2\2\u00ad%\3\2\2\2\u00ae\u00b5\58\35\2\u00af\u00b5\5:\36\2\u00b0"+
+		"\u00b5\5<\37\2\u00b1\u00b5\5\66\34\2\u00b2\u00b5\5(\25\2\u00b3\u00b5\5"+
+		"*\26\2\u00b4\u00ae\3\2\2\2\u00b4\u00af\3\2\2\2\u00b4\u00b0\3\2\2\2\u00b4"+
+		"\u00b1\3\2\2\2\u00b4\u00b2\3\2\2\2\u00b4\u00b3\3\2\2\2\u00b5\'\3\2\2\2"+
+		"\u00b6\u00ba\5> \2\u00b7\u00b9\5,\27\2\u00b8\u00b7\3\2\2\2\u00b9\u00bc"+
+		"\3\2\2\2\u00ba\u00b8\3\2\2\2\u00ba\u00bb\3\2\2\2\u00bb)\3\2\2\2\u00bc"+
+		"\u00ba\3\2\2\2\u00bd\u00c1\5\62\32\2\u00be\u00c0\5,\27\2\u00bf\u00be\3"+
+		"\2\2\2\u00c0\u00c3\3\2\2\2\u00c1\u00bf\3\2\2\2\u00c1\u00c2\3\2\2\2\u00c2"+
+		"+\3\2\2\2\u00c3\u00c1\3\2\2\2\u00c4\u00c7\5.\30\2\u00c5\u00c7\5\66\34"+
+		"\2\u00c6\u00c4\3\2\2\2\u00c6\u00c5\3\2\2\2\u00c7-\3\2\2\2\u00c8\u00c9"+
+		"\7\n\2\2\u00c9\u00ca\5\62\32\2\u00ca\u00cb\7\13\2\2\u00cb/\3\2\2\2\u00cc"+
+		"\u00cd\7\17\2\2\u00cd\61\3\2\2\2\u00ce\u00cf\7\17\2\2\u00cf\63\3\2\2\2"+
+		"\u00d0\u00d1\7\f\2\2\u00d1\65\3\2\2\2\u00d2\u00d4\7\n\2\2\u00d3\u00d5"+
+		"\7\21\2\2\u00d4\u00d3\3\2\2\2\u00d5\u00d6\3\2\2\2\u00d6\u00d4\3\2\2\2"+
+		"\u00d6\u00d7\3\2\2\2\u00d7\u00d8\3\2\2\2\u00d8\u00da\7\5\2\2\u00d9\u00db"+
+		"\7\21\2\2\u00da\u00d9\3\2\2\2\u00db\u00dc\3\2\2\2\u00dc\u00da\3\2\2\2"+
+		"\u00dc\u00dd\3\2\2\2\u00dd\u00de\3\2\2\2\u00de\u00df\7\13\2\2\u00df\67"+
+		"\3\2\2\2\u00e0\u00e2\7\r\2\2\u00e1\u00e0\3\2\2\2\u00e1\u00e2\3\2\2\2\u00e2"+
+		"\u00e3\3\2\2\2\u00e3\u00e4\7\21\2\2\u00e49\3\2\2\2\u00e5\u00e7\7\r\2\2"+
+		"\u00e6\u00e5\3\2\2\2\u00e6\u00e7\3\2\2\2\u00e7\u00e8\3\2\2\2\u00e8\u00e9"+
+		"\7\22\2\2\u00e9;\3\2\2\2\u00ea\u00eb\7\16\2\2\u00eb=\3\2\2\2\u00ec\u00ed"+
+		"\7\20\2\2\u00ed?\3\2\2\2\30CJR\\fmv}\u0088\u0094\u009b\u00a3\u00a6\u00ac"+
+		"\u00b4\u00ba\u00c1\u00c6\u00d6\u00dc\u00e1\u00e6";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {
