@@ -59,7 +59,7 @@ public class SpannerlogBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitAnnotationName(SpannerlogParser.AnnotationNameContext ctx) { return visitChildren(ctx); }
+	@Override public T visitWeight(SpannerlogParser.WeightContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

@@ -14,7 +14,7 @@ import static java.lang.System.exit;
 
 public class Spannerlog {
 
-    void init(InputStream programInputStream, Reader edbReader, Reader udfReader, boolean skipExport) throws IOException {
+    JsonObject init(InputStream programInputStream, Reader edbReader, Reader udfReader) throws IOException {
         // parse program
         Program program = new SpannerlogInputParser().parseProgram(programInputStream);
 
@@ -37,18 +37,12 @@ public class Spannerlog {
         Map<String, String> iefBlocksMap = compiler.compile(schema);
         List<String> ruleBlocks = compiler.compile(program);
 
-        // export to json
-        if (!skipExport)
-            export(schema, iefBlocksMap, ruleBlocks);
+        return export(schema, iefBlocksMap, ruleBlocks);
     }
 
-    private void export(SpannerlogSchema schema, Map<String, String> iefBlocksMap, List<String> ruleBlocks) {
+    private JsonObject export(SpannerlogSchema schema, Map<String, String> iefBlocksMap, List<String> ruleBlocks) {
         JsonObject jsonTree = new JsonObject();
-
-        Gson gson = new GsonBuilder()
-                .setPrettyPrinting()
-                .disableHtmlEscaping()
-                .create();
+        Gson gson = new Gson();
 
         jsonTree.add("schema", gson.toJsonTree(schema.getRelationSchemas()
                 .stream()
@@ -67,7 +61,7 @@ public class Spannerlog {
 
         jsonTree.add("rules", gson.toJsonTree(ruleBlocks));
 
-        System.out.println(gson.toJson(jsonTree));
+        return jsonTree;
     }
 
     private JsonObject toJson(IEFunctionSchema schema, Map<String, String> iefBlocksMap) {
@@ -90,9 +84,8 @@ public class Spannerlog {
         schemaJsonObject.addProperty("name", schema.getName());
 
         if (schema instanceof IntensionalRelationSchema
-                && ((IntensionalRelationSchema) schema).isPredictionVariableSchema() != null
                 && ((IntensionalRelationSchema) schema).isPredictionVariableSchema()) {
-            schemaJsonObject.addProperty("prediction", true);
+            schemaJsonObject.addProperty("predict_var", true);
         }
 
         JsonObject attributesJsonObject = new JsonObject();
@@ -113,8 +106,17 @@ public class Spannerlog {
             Reader edbReader = line.hasOption("edb") ? new FileReader(line.getOptionValue("edb")) : null;
             Reader udfReader = line.hasOption("udf") ? new FileReader(line.getOptionValue("udf")) : null;
 
-            new Spannerlog().init(programInputStream, edbReader, udfReader, line.hasOption("s"));
+            JsonObject jsonTree = new Spannerlog().init(programInputStream, edbReader, udfReader);
 
+            // print json tree to stdout
+            if (!line.hasOption("s")) {
+                Gson gson = new GsonBuilder()
+                        .setPrettyPrinting()
+                        .disableHtmlEscaping()
+                        .create();
+
+                System.out.println(gson.toJson(jsonTree));
+            }
         } catch (Exception e) {
             System.err.println(e.getClass().getSimpleName());
             System.err.println(e.getMessage());
@@ -156,8 +158,8 @@ public class Spannerlog {
 
         options.addOption(Option
                 .builder("s")
-                .longOpt("skip-export")
-                .desc("Whether to skip exporting")
+                .longOpt("skip-print")
+                .desc("Whether to skip printing the compiled json object to stdout")
                 .build());
 
         return options;

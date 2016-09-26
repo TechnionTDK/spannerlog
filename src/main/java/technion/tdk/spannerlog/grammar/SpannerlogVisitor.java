@@ -47,11 +47,12 @@ public interface SpannerlogVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitAnnotation(SpannerlogParser.AnnotationContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link SpannerlogParser#annotationName}.
+	 * Visit a parse tree produced by the {@code Weight}
+	 * labeled alternative in {@link SpannerlogParser#annotationName}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitAnnotationName(SpannerlogParser.AnnotationNameContext ctx);
+	T visitWeight(SpannerlogParser.WeightContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link SpannerlogParser#annotationArguments}.
 	 * @param ctx the parse tree

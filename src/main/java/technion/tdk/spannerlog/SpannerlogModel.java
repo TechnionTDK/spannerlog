@@ -44,8 +44,15 @@ class RigidConjunctiveQuery extends ConjunctiveQuery {
 }
 
 class SoftConjunctiveQuery extends ConjunctiveQuery {
-    SoftConjunctiveQuery(ConjunctiveQueryHead head, ConjunctiveQueryBody body) {
+    private Term weight;
+
+    SoftConjunctiveQuery(ConjunctiveQueryHead head, ConjunctiveQueryBody body, Term weight) {
         super(head, body);
+        this.weight = weight;
+    }
+
+    public Term getWeight() {
+        return weight;
     }
 }
 
@@ -137,7 +144,7 @@ class Regex extends IEAtom {
         return regexString;
     }
 
-    public String getCompiledRegexString() {
+    String getCompiledRegexString() {
         return compiledRegexString;
     }
 
@@ -273,5 +280,23 @@ class SpanConstExpr extends ConstExprTerm implements SpanTerm {
 
     int getEnd() {
         return end;
+    }
+}
+
+class Annotation {
+    private String name;
+    private List<ExprTerm> args;
+
+    Annotation(String name, List<ExprTerm> args) {
+        this.name = name;
+        this.args = args;
+    }
+
+    String getName() {
+        return name;
+    }
+
+    List<ExprTerm> getArgs() {
+        return args;
     }
 }

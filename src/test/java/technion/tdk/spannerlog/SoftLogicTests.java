@@ -1,10 +1,14 @@
 package technion.tdk.spannerlog;
 
 
+import com.google.gson.JsonObject;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static technion.tdk.spannerlog.Utils.checkCompilation;
+import static technion.tdk.spannerlog.Utils.compileToJson;
 
 
 public class SoftLogicTests {
@@ -17,13 +21,17 @@ public class SoftLogicTests {
         assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
-    @Test(expected = VariableConflictException.class)
-    public void RigidSoftConflictShouldFail() {
-        String splogSrc = "R(x) :~ S(x, _).\n" +
-                          "R(x) :- S(_, x).";
+    @Test
+    public void RigidSoftConflictShouldSucceed() {
+        String splogSrc = "R(x) :- S(x, _).\n" +
+                          "R(x) :~ S(_, x).";
         String edbSchema = "{\"S\":{\"column1\":\"text\",\"column2\":\"text\"}}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+        JsonObject jsonTree = compileToJson(splogSrc, edbSchema, null);
+        JsonObject rSchema = jsonTree.getAsJsonArray("schema").get(0).getAsJsonObject();
+        assertEquals("R", rSchema.get("name").getAsString());
+        assertNotNull(rSchema.get("predict_var"));
+        assertEquals(true, rSchema.get("predict_var").getAsBoolean());
     }
 
     @Test
@@ -31,7 +39,7 @@ public class SoftLogicTests {
         String splogSrc = "@weight(3.0) R(x) :~ S(x, _).";
         String edbSchema = "{\"S\":{\"column1\":\"text\",\"column2\":\"text\"}}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
     }
 
 }

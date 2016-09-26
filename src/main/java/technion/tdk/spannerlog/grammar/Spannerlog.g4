@@ -26,7 +26,7 @@ annotation
     ;
 
 annotationName
-    : Identifier
+    : 'weight'  # Weight
     ;
 
 annotationArguments

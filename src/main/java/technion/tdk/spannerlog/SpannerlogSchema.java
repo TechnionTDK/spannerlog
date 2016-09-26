@@ -132,9 +132,8 @@ class SpannerlogSchema {
             IntensionalRelationSchema coldISchema = (IntensionalRelationSchema) coldSchema;
             IntensionalRelationSchema hotISchema = (IntensionalRelationSchema) hotSchema;
 
-            if (ObjectUtils.firstNonNull(coldISchema.isPredictionVariableSchema(), hotISchema.isPredictionVariableSchema()) != null
-                    && coldISchema.isPredictionVariableSchema() != hotISchema.isPredictionVariableSchema())
-                throw new VariableConflictException(hotISchema.getName());
+            hotISchema.setPredictionVariableSchema(hotISchema.isPredictionVariableSchema()
+                    || coldISchema.isPredictionVariableSchema());
         }
 
         return hotSchema;
@@ -477,7 +476,7 @@ class ExtensionalRelationSchema extends RelationSchema {
 }
 
 class IntensionalRelationSchema extends RelationSchema {
-    private Boolean isPredictionVariableSchema;
+    private boolean isPredictionVariableSchema;
 
     IntensionalRelationSchema(DBAtom dbAtom, List<Attribute> attrs) {
         super(dbAtom.getSchemaName(), attrs);
@@ -486,11 +485,11 @@ class IntensionalRelationSchema extends RelationSchema {
         getAtoms().add(dbAtom);
     }
 
-    Boolean isPredictionVariableSchema() {
+    boolean isPredictionVariableSchema() {
         return isPredictionVariableSchema;
     }
 
-    void setPredictionVariableSchema(Boolean predictionVariableSchema) {
+    void setPredictionVariableSchema(boolean predictionVariableSchema) {
         isPredictionVariableSchema = predictionVariableSchema;
     }
 }

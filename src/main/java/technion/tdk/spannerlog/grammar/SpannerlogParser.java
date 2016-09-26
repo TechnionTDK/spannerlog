@@ -18,9 +18,9 @@ public class SpannerlogParser extends Parser {
 		new PredictionContextCache();
 	public static final int
 		T__0=1, T__1=2, T__2=3, T__3=4, T__4=5, T__5=6, T__6=7, T__7=8, T__8=9, 
-		T__9=10, T__10=11, BooleanLiteral=12, Identifier=13, StringLiteral=14, 
-		IntegerLiteral=15, FloatingPointLiteral=16, RigidSeparator=17, SoftSeparator=18, 
-		AnnotationSymbol=19, CompareOperator=20, Regex=21, WS=22, Comment=23;
+		T__9=10, T__10=11, T__11=12, BooleanLiteral=13, Identifier=14, StringLiteral=15, 
+		IntegerLiteral=16, FloatingPointLiteral=17, RigidSeparator=18, SoftSeparator=19, 
+		AnnotationSymbol=20, CompareOperator=21, Regex=22, WS=23, Comment=24;
 	public static final int
 		RULE_program = 0, RULE_statement = 1, RULE_conjunctiveQuery = 2, RULE_rigidConjunctiveQuery = 3, 
 		RULE_softConjunctiveQuery = 4, RULE_annotation = 5, RULE_annotationName = 6, 
@@ -42,14 +42,14 @@ public class SpannerlogParser extends Parser {
 	};
 
 	private static final String[] _LITERAL_NAMES = {
-		null, "'.'", "'('", "','", "')'", "'<'", "'>'", "'RGX'", "'['", "']'", 
-		"'_'", "'-'", null, null, null, null, null, "':-'", "':~'", "'@'"
+		null, "'.'", "'weight'", "'('", "','", "')'", "'<'", "'>'", "'RGX'", "'['", 
+		"']'", "'_'", "'-'", null, null, null, null, null, "':-'", "':~'", "'@'"
 	};
 	private static final String[] _SYMBOLIC_NAMES = {
 		null, null, null, null, null, null, null, null, null, null, null, null, 
-		"BooleanLiteral", "Identifier", "StringLiteral", "IntegerLiteral", "FloatingPointLiteral", 
-		"RigidSeparator", "SoftSeparator", "AnnotationSymbol", "CompareOperator", 
-		"Regex", "WS", "Comment"
+		null, "BooleanLiteral", "Identifier", "StringLiteral", "IntegerLiteral", 
+		"FloatingPointLiteral", "RigidSeparator", "SoftSeparator", "AnnotationSymbol", 
+		"CompareOperator", "Regex", "WS", "Comment"
 	};
 	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
@@ -377,7 +377,7 @@ public class SpannerlogParser extends Parser {
 			annotationName();
 			setState(90);
 			_la = _input.LA(1);
-			if (_la==T__1) {
+			if (_la==T__2) {
 				{
 				setState(89);
 				annotationArguments();
@@ -398,14 +398,21 @@ public class SpannerlogParser extends Parser {
 	}
 
 	public static class AnnotationNameContext extends ParserRuleContext {
-		public TerminalNode Identifier() { return getToken(SpannerlogParser.Identifier, 0); }
 		public AnnotationNameContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_annotationName; }
+	 
+		public AnnotationNameContext() { }
+		public void copyFrom(AnnotationNameContext ctx) {
+			super.copyFrom(ctx);
+		}
+	}
+	public static class WeightContext extends AnnotationNameContext {
+		public WeightContext(AnnotationNameContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof SpannerlogVisitor ) return ((SpannerlogVisitor<? extends T>)visitor).visitAnnotationName(this);
+			if ( visitor instanceof SpannerlogVisitor ) return ((SpannerlogVisitor<? extends T>)visitor).visitWeight(this);
 			else return visitor.visitChildren(this);
 		}
 	}
@@ -414,10 +421,11 @@ public class SpannerlogParser extends Parser {
 		AnnotationNameContext _localctx = new AnnotationNameContext(_ctx, getState());
 		enterRule(_localctx, 12, RULE_annotationName);
 		try {
+			_localctx = new WeightContext(_localctx);
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(92);
-			match(Identifier);
+			match(T__1);
 			}
 		}
 		catch (RecognitionException re) {
@@ -457,17 +465,17 @@ public class SpannerlogParser extends Parser {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(94);
-			match(T__1);
+			match(T__2);
 			setState(95);
 			annotationArgument();
 			setState(100);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (_la==T__2) {
+			while (_la==T__3) {
 				{
 				{
 				setState(96);
-				match(T__2);
+				match(T__3);
 				setState(97);
 				annotationArgument();
 				}
@@ -477,7 +485,7 @@ public class SpannerlogParser extends Parser {
 				_la = _input.LA(1);
 			}
 			setState(103);
-			match(T__3);
+			match(T__4);
 			}
 		}
 		catch (RecognitionException re) {
@@ -522,7 +530,7 @@ public class SpannerlogParser extends Parser {
 				variable();
 				}
 				break;
-			case T__10:
+			case T__11:
 			case FloatingPointLiteral:
 				enterOuterAlt(_localctx, 2);
 				{
@@ -623,7 +631,7 @@ public class SpannerlogParser extends Parser {
 					{
 					{
 					setState(112);
-					match(T__2);
+					match(T__3);
 					setState(113);
 					atom();
 					}
@@ -636,11 +644,11 @@ public class SpannerlogParser extends Parser {
 			setState(123);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (_la==T__2) {
+			while (_la==T__3) {
 				{
 				{
 				setState(119);
-				match(T__2);
+				match(T__3);
 				setState(120);
 				condition();
 				}
@@ -890,35 +898,35 @@ public class SpannerlogParser extends Parser {
 				setState(139);
 				relationSchemaName();
 				setState(140);
-				match(T__4);
+				match(T__5);
 				setState(141);
 				varExpr();
 				setState(142);
-				match(T__5);
+				match(T__6);
 				setState(143);
 				termClause();
 				}
 				break;
-			case T__4:
-			case T__6:
+			case T__5:
+			case T__7:
 				_localctx = new RgxContext(_localctx);
 				enterOuterAlt(_localctx, 2);
 				{
 				setState(146);
 				_la = _input.LA(1);
-				if (_la==T__6) {
+				if (_la==T__7) {
 					{
 					setState(145);
-					match(T__6);
+					match(T__7);
 					}
 				}
 
 				setState(148);
-				match(T__4);
+				match(T__5);
 				setState(149);
 				varExpr();
 				setState(150);
-				match(T__5);
+				match(T__6);
 				setState(151);
 				match(Regex);
 				}
@@ -964,21 +972,21 @@ public class SpannerlogParser extends Parser {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(155);
-			match(T__1);
+			match(T__2);
 			setState(164);
 			_la = _input.LA(1);
-			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__7) | (1L << T__9) | (1L << T__10) | (1L << BooleanLiteral) | (1L << Identifier) | (1L << StringLiteral) | (1L << IntegerLiteral) | (1L << FloatingPointLiteral))) != 0)) {
+			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__8) | (1L << T__10) | (1L << T__11) | (1L << BooleanLiteral) | (1L << Identifier) | (1L << StringLiteral) | (1L << IntegerLiteral) | (1L << FloatingPointLiteral))) != 0)) {
 				{
 				setState(156);
 				term();
 				setState(161);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				while (_la==T__2) {
+				while (_la==T__3) {
 					{
 					{
 					setState(157);
-					match(T__2);
+					match(T__3);
 					setState(158);
 					term();
 					}
@@ -991,7 +999,7 @@ public class SpannerlogParser extends Parser {
 			}
 
 			setState(166);
-			match(T__3);
+			match(T__4);
 			}
 		}
 		catch (RecognitionException re) {
@@ -1029,15 +1037,15 @@ public class SpannerlogParser extends Parser {
 		try {
 			setState(170);
 			switch (_input.LA(1)) {
-			case T__9:
+			case T__10:
 				enterOuterAlt(_localctx, 1);
 				{
 				setState(168);
 				placeHolder();
 				}
 				break;
-			case T__7:
-			case T__10:
+			case T__8:
+			case T__11:
 			case BooleanLiteral:
 			case Identifier:
 			case StringLiteral:
@@ -1189,7 +1197,7 @@ public class SpannerlogParser extends Parser {
 			setState(184);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (_la==T__7) {
+			while (_la==T__8) {
 				{
 				{
 				setState(181);
@@ -1246,7 +1254,7 @@ public class SpannerlogParser extends Parser {
 			setState(191);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (_la==T__7) {
+			while (_la==T__8) {
 				{
 				{
 				setState(188);
@@ -1344,11 +1352,11 @@ public class SpannerlogParser extends Parser {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(198);
-			match(T__7);
+			match(T__8);
 			setState(199);
 			variable();
 			setState(200);
-			match(T__8);
+			match(T__9);
 			}
 		}
 		catch (RecognitionException re) {
@@ -1449,7 +1457,7 @@ public class SpannerlogParser extends Parser {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(206);
-			match(T__9);
+			match(T__10);
 			}
 		}
 		catch (RecognitionException re) {
@@ -1487,7 +1495,7 @@ public class SpannerlogParser extends Parser {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(208);
-			match(T__7);
+			match(T__8);
 			setState(210); 
 			_errHandler.sync(this);
 			_la = _input.LA(1);
@@ -1503,7 +1511,7 @@ public class SpannerlogParser extends Parser {
 				_la = _input.LA(1);
 			} while ( _la==IntegerLiteral );
 			setState(214);
-			match(T__2);
+			match(T__3);
 			setState(216); 
 			_errHandler.sync(this);
 			_la = _input.LA(1);
@@ -1519,7 +1527,7 @@ public class SpannerlogParser extends Parser {
 				_la = _input.LA(1);
 			} while ( _la==IntegerLiteral );
 			setState(220);
-			match(T__8);
+			match(T__9);
 			}
 		}
 		catch (RecognitionException re) {
@@ -1555,10 +1563,10 @@ public class SpannerlogParser extends Parser {
 			{
 			setState(223);
 			_la = _input.LA(1);
-			if (_la==T__10) {
+			if (_la==T__11) {
 				{
 				setState(222);
-				match(T__10);
+				match(T__11);
 				}
 			}
 
@@ -1599,10 +1607,10 @@ public class SpannerlogParser extends Parser {
 			{
 			setState(228);
 			_la = _input.LA(1);
-			if (_la==T__10) {
+			if (_la==T__11) {
 				{
 				setState(227);
-				match(T__10);
+				match(T__11);
 				}
 			}
 
@@ -1690,7 +1698,7 @@ public class SpannerlogParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\3\31\u00ef\4\2\t\2"+
+		"\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\3\32\u00ef\4\2\t\2"+
 		"\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\4\t\t\t\4\n\t\n\4\13"+
 		"\t\13\4\f\t\f\4\r\t\r\4\16\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22"+
 		"\4\23\t\23\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27\4\30\t\30\4\31\t\31"+
@@ -1718,28 +1726,28 @@ public class SpannerlogParser extends Parser {
 		"\3\2\2\28\u00e1\3\2\2\2:\u00e6\3\2\2\2<\u00ea\3\2\2\2>\u00ec\3\2\2\2@"+
 		"B\5\4\3\2A@\3\2\2\2BE\3\2\2\2CA\3\2\2\2CD\3\2\2\2D\3\3\2\2\2EC\3\2\2\2"+
 		"FG\5\6\4\2G\5\3\2\2\2HK\5\b\5\2IK\5\n\6\2JH\3\2\2\2JI\3\2\2\2K\7\3\2\2"+
-		"\2LM\5\24\13\2MN\7\23\2\2NO\5\26\f\2OP\7\3\2\2P\t\3\2\2\2QS\5\f\7\2RQ"+
-		"\3\2\2\2RS\3\2\2\2ST\3\2\2\2TU\5\24\13\2UV\7\24\2\2VW\5\26\f\2WX\7\3\2"+
-		"\2X\13\3\2\2\2YZ\7\25\2\2Z\\\5\16\b\2[]\5\20\t\2\\[\3\2\2\2\\]\3\2\2\2"+
-		"]\r\3\2\2\2^_\7\17\2\2_\17\3\2\2\2`a\7\4\2\2af\5\22\n\2bc\7\5\2\2ce\5"+
-		"\22\n\2db\3\2\2\2eh\3\2\2\2fd\3\2\2\2fg\3\2\2\2gi\3\2\2\2hf\3\2\2\2ij"+
-		"\7\6\2\2j\21\3\2\2\2kn\5\62\32\2ln\5:\36\2mk\3\2\2\2ml\3\2\2\2n\23\3\2"+
-		"\2\2op\5\36\20\2p\25\3\2\2\2qv\5\34\17\2rs\7\5\2\2su\5\34\17\2tr\3\2\2"+
-		"\2ux\3\2\2\2vt\3\2\2\2vw\3\2\2\2w}\3\2\2\2xv\3\2\2\2yz\7\5\2\2z|\5\30"+
-		"\r\2{y\3\2\2\2|\177\3\2\2\2}{\3\2\2\2}~\3\2\2\2~\27\3\2\2\2\177}\3\2\2"+
-		"\2\u0080\u0081\5\32\16\2\u0081\31\3\2\2\2\u0082\u0083\5&\24\2\u0083\u0084"+
-		"\7\26\2\2\u0084\u0085\5&\24\2\u0085\33\3\2\2\2\u0086\u0089\5\36\20\2\u0087"+
+		"\2LM\5\24\13\2MN\7\24\2\2NO\5\26\f\2OP\7\3\2\2P\t\3\2\2\2QS\5\f\7\2RQ"+
+		"\3\2\2\2RS\3\2\2\2ST\3\2\2\2TU\5\24\13\2UV\7\25\2\2VW\5\26\f\2WX\7\3\2"+
+		"\2X\13\3\2\2\2YZ\7\26\2\2Z\\\5\16\b\2[]\5\20\t\2\\[\3\2\2\2\\]\3\2\2\2"+
+		"]\r\3\2\2\2^_\7\4\2\2_\17\3\2\2\2`a\7\5\2\2af\5\22\n\2bc\7\6\2\2ce\5\22"+
+		"\n\2db\3\2\2\2eh\3\2\2\2fd\3\2\2\2fg\3\2\2\2gi\3\2\2\2hf\3\2\2\2ij\7\7"+
+		"\2\2j\21\3\2\2\2kn\5\62\32\2ln\5:\36\2mk\3\2\2\2ml\3\2\2\2n\23\3\2\2\2"+
+		"op\5\36\20\2p\25\3\2\2\2qv\5\34\17\2rs\7\6\2\2su\5\34\17\2tr\3\2\2\2u"+
+		"x\3\2\2\2vt\3\2\2\2vw\3\2\2\2w}\3\2\2\2xv\3\2\2\2yz\7\6\2\2z|\5\30\r\2"+
+		"{y\3\2\2\2|\177\3\2\2\2}{\3\2\2\2}~\3\2\2\2~\27\3\2\2\2\177}\3\2\2\2\u0080"+
+		"\u0081\5\32\16\2\u0081\31\3\2\2\2\u0082\u0083\5&\24\2\u0083\u0084\7\27"+
+		"\2\2\u0084\u0085\5&\24\2\u0085\33\3\2\2\2\u0086\u0089\5\36\20\2\u0087"+
 		"\u0089\5 \21\2\u0088\u0086\3\2\2\2\u0088\u0087\3\2\2\2\u0089\35\3\2\2"+
 		"\2\u008a\u008b\5\60\31\2\u008b\u008c\5\"\22\2\u008c\37\3\2\2\2\u008d\u008e"+
-		"\5\60\31\2\u008e\u008f\7\7\2\2\u008f\u0090\5*\26\2\u0090\u0091\7\b\2\2"+
-		"\u0091\u0092\5\"\22\2\u0092\u009c\3\2\2\2\u0093\u0095\7\t\2\2\u0094\u0093"+
-		"\3\2\2\2\u0094\u0095\3\2\2\2\u0095\u0096\3\2\2\2\u0096\u0097\7\7\2\2\u0097"+
-		"\u0098\5*\26\2\u0098\u0099\7\b\2\2\u0099\u009a\7\27\2\2\u009a\u009c\3"+
+		"\5\60\31\2\u008e\u008f\7\b\2\2\u008f\u0090\5*\26\2\u0090\u0091\7\t\2\2"+
+		"\u0091\u0092\5\"\22\2\u0092\u009c\3\2\2\2\u0093\u0095\7\n\2\2\u0094\u0093"+
+		"\3\2\2\2\u0094\u0095\3\2\2\2\u0095\u0096\3\2\2\2\u0096\u0097\7\b\2\2\u0097"+
+		"\u0098\5*\26\2\u0098\u0099\7\t\2\2\u0099\u009a\7\30\2\2\u009a\u009c\3"+
 		"\2\2\2\u009b\u008d\3\2\2\2\u009b\u0094\3\2\2\2\u009c!\3\2\2\2\u009d\u00a6"+
-		"\7\4\2\2\u009e\u00a3\5$\23\2\u009f\u00a0\7\5\2\2\u00a0\u00a2\5$\23\2\u00a1"+
+		"\7\5\2\2\u009e\u00a3\5$\23\2\u009f\u00a0\7\6\2\2\u00a0\u00a2\5$\23\2\u00a1"+
 		"\u009f\3\2\2\2\u00a2\u00a5\3\2\2\2\u00a3\u00a1\3\2\2\2\u00a3\u00a4\3\2"+
 		"\2\2\u00a4\u00a7\3\2\2\2\u00a5\u00a3\3\2\2\2\u00a6\u009e\3\2\2\2\u00a6"+
-		"\u00a7\3\2\2\2\u00a7\u00a8\3\2\2\2\u00a8\u00a9\7\6\2\2\u00a9#\3\2\2\2"+
+		"\u00a7\3\2\2\2\u00a7\u00a8\3\2\2\2\u00a8\u00a9\7\7\2\2\u00a9#\3\2\2\2"+
 		"\u00aa\u00ad\5\64\33\2\u00ab\u00ad\5&\24\2\u00ac\u00aa\3\2\2\2\u00ac\u00ab"+
 		"\3\2\2\2\u00ad%\3\2\2\2\u00ae\u00b5\58\35\2\u00af\u00b5\5:\36\2\u00b0"+
 		"\u00b5\5<\37\2\u00b1\u00b5\5\66\34\2\u00b2\u00b5\5(\25\2\u00b3\u00b5\5"+
@@ -1751,19 +1759,19 @@ public class SpannerlogParser extends Parser {
 		"\2\2\2\u00c0\u00c3\3\2\2\2\u00c1\u00bf\3\2\2\2\u00c1\u00c2\3\2\2\2\u00c2"+
 		"+\3\2\2\2\u00c3\u00c1\3\2\2\2\u00c4\u00c7\5.\30\2\u00c5\u00c7\5\66\34"+
 		"\2\u00c6\u00c4\3\2\2\2\u00c6\u00c5\3\2\2\2\u00c7-\3\2\2\2\u00c8\u00c9"+
-		"\7\n\2\2\u00c9\u00ca\5\62\32\2\u00ca\u00cb\7\13\2\2\u00cb/\3\2\2\2\u00cc"+
-		"\u00cd\7\17\2\2\u00cd\61\3\2\2\2\u00ce\u00cf\7\17\2\2\u00cf\63\3\2\2\2"+
-		"\u00d0\u00d1\7\f\2\2\u00d1\65\3\2\2\2\u00d2\u00d4\7\n\2\2\u00d3\u00d5"+
-		"\7\21\2\2\u00d4\u00d3\3\2\2\2\u00d5\u00d6\3\2\2\2\u00d6\u00d4\3\2\2\2"+
-		"\u00d6\u00d7\3\2\2\2\u00d7\u00d8\3\2\2\2\u00d8\u00da\7\5\2\2\u00d9\u00db"+
-		"\7\21\2\2\u00da\u00d9\3\2\2\2\u00db\u00dc\3\2\2\2\u00dc\u00da\3\2\2\2"+
-		"\u00dc\u00dd\3\2\2\2\u00dd\u00de\3\2\2\2\u00de\u00df\7\13\2\2\u00df\67"+
-		"\3\2\2\2\u00e0\u00e2\7\r\2\2\u00e1\u00e0\3\2\2\2\u00e1\u00e2\3\2\2\2\u00e2"+
-		"\u00e3\3\2\2\2\u00e3\u00e4\7\21\2\2\u00e49\3\2\2\2\u00e5\u00e7\7\r\2\2"+
-		"\u00e6\u00e5\3\2\2\2\u00e6\u00e7\3\2\2\2\u00e7\u00e8\3\2\2\2\u00e8\u00e9"+
-		"\7\22\2\2\u00e9;\3\2\2\2\u00ea\u00eb\7\16\2\2\u00eb=\3\2\2\2\u00ec\u00ed"+
-		"\7\20\2\2\u00ed?\3\2\2\2\30CJR\\fmv}\u0088\u0094\u009b\u00a3\u00a6\u00ac"+
-		"\u00b4\u00ba\u00c1\u00c6\u00d6\u00dc\u00e1\u00e6";
+		"\7\13\2\2\u00c9\u00ca\5\62\32\2\u00ca\u00cb\7\f\2\2\u00cb/\3\2\2\2\u00cc"+
+		"\u00cd\7\20\2\2\u00cd\61\3\2\2\2\u00ce\u00cf\7\20\2\2\u00cf\63\3\2\2\2"+
+		"\u00d0\u00d1\7\r\2\2\u00d1\65\3\2\2\2\u00d2\u00d4\7\13\2\2\u00d3\u00d5"+
+		"\7\22\2\2\u00d4\u00d3\3\2\2\2\u00d5\u00d6\3\2\2\2\u00d6\u00d4\3\2\2\2"+
+		"\u00d6\u00d7\3\2\2\2\u00d7\u00d8\3\2\2\2\u00d8\u00da\7\6\2\2\u00d9\u00db"+
+		"\7\22\2\2\u00da\u00d9\3\2\2\2\u00db\u00dc\3\2\2\2\u00dc\u00da\3\2\2\2"+
+		"\u00dc\u00dd\3\2\2\2\u00dd\u00de\3\2\2\2\u00de\u00df\7\f\2\2\u00df\67"+
+		"\3\2\2\2\u00e0\u00e2\7\16\2\2\u00e1\u00e0\3\2\2\2\u00e1\u00e2\3\2\2\2"+
+		"\u00e2\u00e3\3\2\2\2\u00e3\u00e4\7\22\2\2\u00e49\3\2\2\2\u00e5\u00e7\7"+
+		"\16\2\2\u00e6\u00e5\3\2\2\2\u00e6\u00e7\3\2\2\2\u00e7\u00e8\3\2\2\2\u00e8"+
+		"\u00e9\7\23\2\2\u00e9;\3\2\2\2\u00ea\u00eb\7\17\2\2\u00eb=\3\2\2\2\u00ec"+
+		"\u00ed\7\21\2\2\u00ed?\3\2\2\2\30CJR\\fmv}\u0088\u0094\u009b\u00a3\u00a6"+
+		"\u00ac\u00b4\u00ba\u00c1\u00c6\u00d6\u00dc\u00e1\u00e6";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

@@ -14,15 +14,6 @@ import static technion.tdk.spannerlog.Utils.checkCompilation;
 
 public class CompilationTests {
 
-    @BeforeClass
-    public static void setUpStreams() {
-        System.setOut(new PrintStream(new OutputStream() {
-            public void write(int b) {
-                // DO NOTHING
-            }
-        }));
-    }
-
     @Test(expected = UndefinedRelationSchema.class)
     public void programWithUndefinedSchemaShouldFail() {
 
