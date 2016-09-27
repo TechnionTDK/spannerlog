@@ -34,15 +34,17 @@ public class Spannerlog {
 
         // compile
         SpannerlogCompiler compiler = new SpannerlogCompiler();
-        Map<String, String> iefBlocksMap = compiler.compile(schema);
-        List<String> ruleBlocks = compiler.compile(program);
+        Map<String, String> iefDeclarationsBlocks = compiler.compile(schema);
+        List<Map<String, String>> cqBlocks = compiler.compile(program);
 
-        return export(schema, iefBlocksMap, ruleBlocks);
+        return export(schema, iefDeclarationsBlocks, cqBlocks);
     }
 
-    private JsonObject export(SpannerlogSchema schema, Map<String, String> iefBlocksMap, List<String> ruleBlocks) {
+    private JsonObject export(SpannerlogSchema schema, Map<String, String> iefDeclarationsBlocks,
+                              List<Map<String, String>> cqBlocks) {
+
         JsonObject jsonTree = new JsonObject();
-        Gson gson = new Gson();
+        Gson gson = new GsonBuilder().serializeNulls().create();
 
         jsonTree.add("schema", gson.toJsonTree(schema.getRelationSchemas()
                 .stream()
@@ -51,25 +53,25 @@ public class Spannerlog {
                 .collect(Collectors.toList()))
         );
 
-        jsonTree.add("ie-functions", gson.toJsonTree(schema.getRelationSchemas()
+        jsonTree.add("ie_functions", gson.toJsonTree(schema.getRelationSchemas()
                 .stream()
                 .filter(s -> s instanceof IEFunctionSchema)
                 .sorted((s1, s2) -> String.CASE_INSENSITIVE_ORDER.compare(s1.getName(), s2.getName()))
-                .map(s -> toJson((IEFunctionSchema) s, iefBlocksMap))
+                .map(s -> toJson((IEFunctionSchema) s, iefDeclarationsBlocks))
                 .collect(Collectors.toList()))
         );
 
-        jsonTree.add("rules", gson.toJsonTree(ruleBlocks));
+        jsonTree.add("rules", gson.toJsonTree(cqBlocks));
 
         return jsonTree;
     }
 
-    private JsonObject toJson(IEFunctionSchema schema, Map<String, String> iefBlocksMap) {
+    private JsonObject toJson(IEFunctionSchema schema, Map<String, String> iefDeclarationsBlocks) {
         JsonObject schemaJsonObject = new JsonObject();
 
         String name = schema.getName();
         schemaJsonObject.addProperty("name", name);
-        schemaJsonObject.addProperty("function-call-rule", iefBlocksMap.get(name));
+        schemaJsonObject.addProperty("statement", iefDeclarationsBlocks.get(name));
 
         List<Atom> atoms = schema.getAtoms();
         if (atoms.size() == 1 && atoms.get(0) instanceof Regex) {
@@ -113,6 +115,7 @@ public class Spannerlog {
                 Gson gson = new GsonBuilder()
                         .setPrettyPrinting()
                         .disableHtmlEscaping()
+                        .serializeNulls()
                         .create();
 
                 System.out.println(gson.toJson(jsonTree));

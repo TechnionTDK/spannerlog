@@ -15,6 +15,7 @@ class Utils {
         Gson gson = new GsonBuilder()
                 .setPrettyPrinting()
                 .disableHtmlEscaping()
+                .serializeNulls()
                 .create();
 
         System.out.println(gson.toJson(jsonTree));

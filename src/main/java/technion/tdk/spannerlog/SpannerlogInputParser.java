@@ -55,10 +55,12 @@ class SpannerlogInputParser {
 
         @Override
         public Statement visitSoftConjunctiveQuery(SpannerlogParser.SoftConjunctiveQueryContext ctx) {
-            Annotation anno = ctx.annotation().accept(new AnnotationVisitor());
-            Term weight = null;
-            if (anno != null && anno.getName().equals("weight")) {
-                weight = anno.getArgs().get(0);
+            FactorWeightTerm weight = null;
+            if (ctx.annotation() != null) {
+                Annotation annotation = ctx.annotation().accept(new AnnotationVisitor());
+                if (annotation != null && annotation.getName().equals("weight")) {
+                    weight = (FactorWeightTerm) annotation.getArgs().get(0);
+                }
             }
 
             return new SoftConjunctiveQuery(

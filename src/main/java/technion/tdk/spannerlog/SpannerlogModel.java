@@ -44,14 +44,14 @@ class RigidConjunctiveQuery extends ConjunctiveQuery {
 }
 
 class SoftConjunctiveQuery extends ConjunctiveQuery {
-    private Term weight;
+    private FactorWeightTerm weight;
 
-    SoftConjunctiveQuery(ConjunctiveQueryHead head, ConjunctiveQueryBody body, Term weight) {
+    SoftConjunctiveQuery(ConjunctiveQueryHead head, ConjunctiveQueryBody body, FactorWeightTerm weight) {
         super(head, body);
         this.weight = weight;
     }
 
-    public Term getWeight() {
+    public FactorWeightTerm getWeight() {
         return weight;
     }
 }
@@ -170,7 +170,7 @@ class PlaceHolderTerm extends Term { // singleton
 abstract class ExprTerm extends Term {
 }
 
-class VarTerm extends ExprTerm implements StringTerm, SpanTerm {
+class VarTerm extends ExprTerm implements StringTerm, SpanTerm, FactorWeightTerm {
     private String varName;
     private List<SpanTerm> spans;
 
@@ -190,6 +190,11 @@ class VarTerm extends ExprTerm implements StringTerm, SpanTerm {
     @Override
     public List<SpanTerm> getSpans() {
         return spans;
+    }
+
+    @Override
+    public String getWeightAsString() {
+        return varName;
     }
 }
 
@@ -253,7 +258,7 @@ class BooleanConstExpr extends ConstExprTerm {
     }
 }
 
-class FloatConstExpr extends ConstExprTerm {
+class FloatConstExpr extends ConstExprTerm implements FactorWeightTerm {
     private float value;
 
     FloatConstExpr(float value) {
@@ -263,6 +268,15 @@ class FloatConstExpr extends ConstExprTerm {
     float getValue() {
         return value;
     }
+
+    @Override
+    public String getWeightAsString() {
+        return Float.toString(value);
+    }
+}
+
+interface FactorWeightTerm {
+    String getWeightAsString();
 }
 
 class SpanConstExpr extends ConstExprTerm implements SpanTerm {

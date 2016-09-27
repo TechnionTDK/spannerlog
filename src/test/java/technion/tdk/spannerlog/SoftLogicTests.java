@@ -9,6 +9,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static technion.tdk.spannerlog.Utils.checkCompilation;
 import static technion.tdk.spannerlog.Utils.compileToJson;
+import static technion.tdk.spannerlog.Utils.printJsonTree;
 
 
 public class SoftLogicTests {
@@ -32,6 +33,8 @@ public class SoftLogicTests {
         assertEquals("R", rSchema.get("name").getAsString());
         assertNotNull(rSchema.get("predict_var"));
         assertEquals(true, rSchema.get("predict_var").getAsBoolean());
+
+//        printJsonTree(jsonTree);
     }
 
     @Test
@@ -39,7 +42,7 @@ public class SoftLogicTests {
         String splogSrc = "@weight(3.0) R(x) :~ S(x, _).";
         String edbSchema = "{\"S\":{\"column1\":\"text\",\"column2\":\"text\"}}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
 }

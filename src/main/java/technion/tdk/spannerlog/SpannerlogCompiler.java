@@ -4,6 +4,7 @@ package technion.tdk.spannerlog;
 import technion.tdk.spannerlog.utils.match.PatternMatching;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -21,7 +22,7 @@ class SpannerlogCompiler {
     }
 
 
-    List<String> compile(Program program) throws IOException {
+    List<Map<String, String>> compile(Program program) throws IOException {
         return program.getStatements()
                 .stream()
                 .map(this::compile)
@@ -43,15 +44,34 @@ class SpannerlogCompiler {
                 + ".";
     }
 
-    private String compile(Statement statement) {
-        return (String) new PatternMatching(
+    @SuppressWarnings("unchecked")
+    private Map<String, String> compile(Statement statement) {
+        return (Map<String, String>) new PatternMatching(
                 inCaseOf(ConjunctiveQuery.class, this::compile)
         ).matchFor(statement);
 
     }
 
-    private String compile(ConjunctiveQuery cq) {
-        return compile(cq.getHead()) + " *:- " + compile(cq.getBody()) + ".";
+    @SuppressWarnings("unchecked")
+    private Map<String, String> compile(ConjunctiveQuery cq) {
+        return (Map<String, String>) new PatternMatching(
+                inCaseOf(RigidConjunctiveQuery.class, this::compile),
+                inCaseOf(SoftConjunctiveQuery.class, this::compile)
+        ).matchFor(cq);
+    }
+
+    private Map<String, String> compile(SoftConjunctiveQuery cq) {
+        Map<String, String> cqBlock = new HashMap<>();
+        cqBlock.put("statement", compile(cq.getHead()) + " *:- " + compile(cq.getBody()) + ".");
+        String weight = cq.getWeight() == null ? null : cq.getWeight().getWeightAsString();
+        cqBlock.put("weight", weight);
+        return cqBlock;
+    }
+
+    private Map<String, String> compile(RigidConjunctiveQuery cq) {
+        Map<String, String> cqBlock = new HashMap<>();
+        cqBlock.put("statement", compile(cq.getHead()) + " *:- " + compile(cq.getBody()) + ".");
+        return cqBlock;
     }
 
     private String compile(ConjunctiveQueryBody body) {
