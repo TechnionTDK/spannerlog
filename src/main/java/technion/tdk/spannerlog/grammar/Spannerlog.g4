@@ -43,7 +43,12 @@ conjunctiveQueryHead
     ;
 
 conjunctiveQueryBody
-    : atom (',' atom)* (',' condition)*
+    : bodyElement (',' bodyElement)*
+    ;
+
+bodyElement
+    : atom
+    | condition
     ;
 
 condition

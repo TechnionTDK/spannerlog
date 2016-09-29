@@ -13,7 +13,7 @@ class SpannerlogDesugarRewriter {
                 .stream()
                 .filter(stmt -> stmt instanceof ConjunctiveQuery)
                 .map(stmt -> (ConjunctiveQuery) stmt)
-                .flatMap(cq -> cq.getBody().getBodyAtoms().stream())
+                .flatMap(cq -> cq.getBody().getBodyElements().stream())
                 .filter(atom -> atom instanceof Regex)
                 .map(atom -> (Regex) atom)
                 .collect(Collectors.toList());

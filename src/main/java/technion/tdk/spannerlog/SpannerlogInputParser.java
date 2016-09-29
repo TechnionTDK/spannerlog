@@ -113,12 +113,37 @@ class SpannerlogInputParser {
     private class ConjunctiveQueryBodyVisitor extends SpannerlogBaseVisitor<ConjunctiveQueryBody> {
         @Override
         public ConjunctiveQueryBody visitConjunctiveQueryBody(SpannerlogParser.ConjunctiveQueryBodyContext ctx) {
-            AtomVisitor atomVisitor = new AtomVisitor();
-            List<Atom> atoms = ctx.atom()
+
+            BodyElementVisitor bodyElementVisitor = new BodyElementVisitor();
+            List<BodyElement> bodyElements = ctx.bodyElement()
                     .stream()
-                    .map(atom -> atom.accept(atomVisitor))
+                    .map(elem -> elem.accept(bodyElementVisitor))
                     .collect(Collectors.toList());
-            return new ConjunctiveQueryBody(atoms);
+
+            return new ConjunctiveQueryBody(bodyElements);
+        }
+    }
+
+    private class BodyElementVisitor extends SpannerlogBaseVisitor<BodyElement> {
+        @Override
+        public BodyElement visitCondition(SpannerlogParser.ConditionContext ctx) {
+            return ctx.accept(new ConditionVisitor());
+        }
+
+        @Override
+        public BodyElement visitAtom(SpannerlogParser.AtomContext ctx) {
+            return ctx.accept(new AtomVisitor());
+        }
+    }
+
+    private class ConditionVisitor extends SpannerlogBaseVisitor<Condition> {
+        @Override
+        public Condition visitBinaryCondition(SpannerlogParser.BinaryConditionContext ctx) {
+            ExprVisitor exprVisitor = new ExprVisitor();
+            return new BinaryCondition(ctx.expr(0).accept(exprVisitor),
+                    ctx.CompareOperator().getText(),
+                    ctx.expr(1).accept(exprVisitor)
+            );
         }
     }
 

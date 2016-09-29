@@ -39,8 +39,7 @@ class SpannerlogCompiler {
                 .map(this::compile)
                 .collect(Collectors.joining(", "));
 
-        return name + " += " + name + "(" + compile(ieFunctionSchema.getInputTerm(),
-                ieFunctionSchema.getAttrs().get(0)) + ") :- " + inputAtomsBlock
+        return name + " += " + name + "(" + compile(ieFunctionSchema.getInputTerm()) + ") :- " + inputAtomsBlock
                 + ".";
     }
 
@@ -75,10 +74,46 @@ class SpannerlogCompiler {
     }
 
     private String compile(ConjunctiveQueryBody body) {
-        return body.getBodyAtoms()
+        return body.getBodyElements()
                 .stream()
                 .map(this::compile)
                 .collect(Collectors.joining(", "));
+    }
+
+    private String compile(BodyElement bodyElement) {
+        return (String) new PatternMatching(
+                inCaseOf(Atom.class, this::compile),
+                inCaseOf(Condition.class, this::compile)
+        ).matchFor(bodyElement);
+    }
+
+    private String compile(Condition condition) {
+        return (String) new PatternMatching(
+                inCaseOf(BinaryCondition.class, this::compile)
+        ).matchFor(condition);
+    }
+
+    private String compile(BinaryCondition bc) {
+        String lhsString;
+        ExprTerm lhs = bc.getLhs();
+        if (lhs instanceof VarTerm) {
+            lhsString = compileVarInCondition((VarTerm) lhs);
+        } else
+            lhsString = compile(lhs);
+
+        String rhsString;
+        ExprTerm rhs = bc.getRhs();
+        if (rhs instanceof VarTerm)
+            rhsString = compileVarInCondition((VarTerm) rhs);
+        else
+            rhsString = compile(rhs);
+
+        return lhsString + " " + bc.getOp() + " " + rhsString;
+    }
+
+    private String compileVarInCondition(VarTerm varTerm) {
+        return varTerm.getVarName()
+                + (varTerm.getType().equals("span") ? "_start" : "");
     }
 
     private String compile(Atom atom) {
@@ -93,58 +128,58 @@ class SpannerlogCompiler {
     }
 
     private String compile(IEAtom ieAtom) {
-        return ieAtom.getSchemaName() + "(" + compile(ieAtom.getTerms(), ieAtom.getSchema()) + ")";
+        return ieAtom.getSchemaName() + "(" + compile(ieAtom.getTerms()) + ")";
     }
 
     private String compile(DBAtom dbAtom) {
-        return dbAtom.getSchemaName() + "(" + compile(dbAtom.getTerms(), dbAtom.getSchema()) + ")";
+        return dbAtom.getSchemaName() + "(" + compile(dbAtom.getTerms()) + ")";
     }
 
-    private String compile(List<Term> terms, RelationSchema schema) {
+    private String compile(List<Term> terms) {
         if (terms.isEmpty())
             return "TRUE";
 
         return terms
                 .stream()
-                .map(term -> compile(term, schema.getAttrs().get(terms.indexOf(term))))
+                .map(this::compile)
                 .collect(Collectors.joining(", "));
     }
 
-    private String compile(Term term, Attribute attr) {
+    private String compile(Term term) {
         return (String) new PatternMatching(
                 inCaseOf(PlaceHolderTerm.class, t -> "_"),
-                inCaseOf(ExprTerm.class, t -> compile(t, attr))
+                inCaseOf(ExprTerm.class, this::compile)
         ).matchFor(term);
     }
 
-    private String compile(ExprTerm exprTerm, Attribute attr) {
+    private String compile(ExprTerm exprTerm) {
         if (exprTerm instanceof StringTerm) {
             List<SpanTerm> spans = ((StringTerm) exprTerm).getSpans();
             if (spans != null && !spans.isEmpty()) {
                 SpanTerm spanTerm = spans.get(spans.size() - 1);
                 spans.remove(spans.size() - 1);
-                return compile(exprTerm, spanTerm, attr);
+                return compile(exprTerm, spanTerm);
             }
         }
 
         return (String) new PatternMatching(
                 inCaseOf(ConstExprTerm.class, this::compile),
-                inCaseOf(VarTerm.class, t -> compile(t, attr))
+                inCaseOf(VarTerm.class, this::compile)
         ).matchFor(exprTerm);
     }
 
-    private String compile(ExprTerm exprTerm, SpanTerm spanTerm, Attribute attr) {
+    private String compile(ExprTerm exprTerm, SpanTerm spanTerm) {
         return (String) new PatternMatching(
-                inCaseOf(SpanConstExpr.class, spanConstExpr -> compile(exprTerm, spanConstExpr, attr)),
-                inCaseOf(VarTerm.class, varTerm -> compile(exprTerm, varTerm, attr))
+                inCaseOf(SpanConstExpr.class, spanConstExpr -> compile(exprTerm, spanConstExpr)),
+                inCaseOf(VarTerm.class, varTerm -> compile(exprTerm, varTerm))
         ).matchFor(spanTerm);
     }
 
-    private String compile(ExprTerm exprTerm, VarTerm varTerm, Attribute attr) {
+    private String compile(ExprTerm exprTerm, VarTerm varTerm) {
         String varName = varTerm.getVarName();
 
         String block = "substr(" +
-                compile(exprTerm, attr) +
+                compile(exprTerm) +
                 ", " + varName + "_start" +
                 ", (" + varName + "_end - " + varName + "_start)" +
                 ')';
@@ -155,12 +190,12 @@ class SpannerlogCompiler {
         return block;
     }
 
-    private String compile(ExprTerm exprTerm, SpanConstExpr spanConstExpr, Attribute attr) {
+    private String compile(ExprTerm exprTerm, SpanConstExpr spanConstExpr) {
         int start = spanConstExpr.getStart();
         int end = spanConstExpr.getEnd();
 
         String block = "substr(" +
-                compile(exprTerm, attr) +
+                compile(exprTerm) +
                 ", " + start +
                 ", " + (end - start) +
                 ')';
@@ -203,8 +238,8 @@ class SpannerlogCompiler {
         return "\"" + stringConstExpr.getValue() + "\"";
     }
 
-    private String compile(VarTerm varTerm, Attribute attr) {
-        if (attr.getType().equals("span"))
+    private String compile(VarTerm varTerm) {
+        if (varTerm.getType().equals("span"))
             return varTerm.getVarName() + "_start, " + varTerm.getVarName() + "_end";
 
         return varTerm.getVarName();

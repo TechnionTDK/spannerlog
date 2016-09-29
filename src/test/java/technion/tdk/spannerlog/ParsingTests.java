@@ -7,6 +7,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -30,7 +31,12 @@ public class ParsingTests {
             assertEquals(head.getSchemaName(), "Q");
             assertEquals(0, head.getTerms().size());
 
-            List<Atom> body = cq.getBody().getBodyAtoms();
+            List<Atom> body = cq.getBody().getBodyElements()
+                    .stream()
+                    .filter(bodyElement -> bodyElement instanceof Atom)
+                    .map(bodyElement -> (Atom) bodyElement)
+                    .collect(Collectors.toList());
+
             assertEquals(1, body.size());
             DBAtom atomR = (DBAtom) body.get(0);
             assertEquals(atomR.getSchemaName(), "R");
@@ -57,7 +63,12 @@ public class ParsingTests {
             List<Statement> statements = program.getStatements();
             ConjunctiveQuery cq = (ConjunctiveQuery) statements.get(0);
 
-            List<Atom> bodyAtoms = cq.getBody().getBodyAtoms();
+            List<Atom> bodyAtoms = cq.getBody().getBodyElements()
+                    .stream()
+                    .filter(bodyElement -> bodyElement instanceof Atom)
+                    .map(bodyElement -> (Atom) bodyElement)
+                    .collect(Collectors.toList());
+
             assertEquals(1, bodyAtoms.size());
             DBAtom atomR = (DBAtom) bodyAtoms.get(0);
             List<Term> terms = atomR.getTerms();
@@ -111,7 +122,12 @@ public class ParsingTests {
             List<Statement> statements = program.getStatements();
             ConjunctiveQuery cq = (ConjunctiveQuery) statements.get(0);
 
-            List<Atom> bodyAtoms = cq.getBody().getBodyAtoms();
+            List<Atom> bodyAtoms = cq.getBody().getBodyElements()
+                    .stream()
+                    .filter(bodyElement -> bodyElement instanceof Atom)
+                    .map(bodyElement -> (Atom) bodyElement)
+                    .collect(Collectors.toList());
+
             assertEquals(3, bodyAtoms.size());
 
             Regex rgx;

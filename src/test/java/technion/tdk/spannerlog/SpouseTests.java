@@ -35,4 +35,26 @@ public class SpouseTests {
 
         assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema, false));
     }
+
+    @Test
+    public void compileProgramWithCondition() {
+        String splogSrc =
+                "spouse_candidate(doc_id, sentence_span, person_span1, person_span2) :-\n" +
+                "   person_mention(name1, doc_id, sentence_span, person_span1),\n" +
+                "   person_mention(name2, doc_id, sentence_span, person_span2),\n" +
+                "   name1 != name2,\n" +
+                "   person_span1 != person_span2.";
+
+        String edbSchema =
+                "{" +
+                        "\"person_mention\": {" +
+                            "\"name\":\"text\"," +
+                            "\"doc_id\":\"text\"," +
+                            "\"sentence\":\"span\"," +
+                            "\"person\":\"span\"" +
+                        "}" +
+                "}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+    }
 }

@@ -69,19 +69,48 @@ class ConjunctiveQueryHead {
 }
 
 class ConjunctiveQueryBody {
-    private List<Atom> bodyAtoms;
+    private List<BodyElement> bodyElements;
 
-    ConjunctiveQueryBody(List<Atom> bodyAtoms) {
-        this.bodyAtoms = bodyAtoms;
+    ConjunctiveQueryBody(List<BodyElement> bodyElements) {
+        this.bodyElements = bodyElements;
     }
 
-    List<Atom> getBodyAtoms() {
-        return bodyAtoms;
+    List<BodyElement> getBodyElements() {
+        return bodyElements;
     }
 }
 
+abstract class BodyElement {
+}
 
-abstract class Atom {
+abstract class Condition extends BodyElement {
+}
+
+class BinaryCondition extends Condition {
+    private ExprTerm lhs;
+    private String op;
+    private ExprTerm rhs;
+
+    BinaryCondition(ExprTerm lhs, String op, ExprTerm rhs) {
+        this.lhs = lhs;
+        this.op = op;
+        this.rhs = rhs;
+    }
+
+    ExprTerm getLhs() {
+        return lhs;
+    }
+
+    public String getOp() {
+        return op;
+    }
+
+    ExprTerm getRhs() {
+        return rhs;
+    }
+}
+
+abstract class Atom extends BodyElement {
     private String schemaName;
     private List<Term> terms;
     private RelationSchema schema;
@@ -173,6 +202,7 @@ abstract class ExprTerm extends Term {
 class VarTerm extends ExprTerm implements StringTerm, SpanTerm, FactorWeightTerm {
     private String varName;
     private List<SpanTerm> spans;
+    private String type;
 
     VarTerm(String varName) {
         this.varName = varName;
@@ -195,6 +225,14 @@ class VarTerm extends ExprTerm implements StringTerm, SpanTerm, FactorWeightTerm
     @Override
     public String getWeightAsString() {
         return varName;
+    }
+
+    String getType() {
+        return type;
+    }
+
+    void setType(String type) {
+        this.type = type;
     }
 }
 

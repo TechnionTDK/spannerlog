@@ -78,6 +78,12 @@ public interface SpannerlogVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitConjunctiveQueryBody(SpannerlogParser.ConjunctiveQueryBodyContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link SpannerlogParser#bodyElement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBodyElement(SpannerlogParser.BodyElementContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link SpannerlogParser#condition}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

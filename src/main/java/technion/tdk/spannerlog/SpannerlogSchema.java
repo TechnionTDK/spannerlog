@@ -38,6 +38,7 @@ class SpannerlogSchema {
         SpannerlogSchema build() {
             spannerlogSchema.validate();
             spannerlogSchema.inferAttributeTypes(program);
+            spannerlogSchema.setVariablesType(program);
             return spannerlogSchema;
         }
     }
@@ -211,10 +212,17 @@ class SpannerlogSchema {
     }
 
     private List<RelationSchema> extractRelationSchemas(ConjunctiveQueryBody body) {
-        return body.getBodyAtoms()
+        return body.getBodyElements()
                 .stream()
-                .map(atom -> extractRelationSchema(atom, body))
+                .filter(bodyElement -> bodyElement instanceof Atom)
+                .map(bodyElement -> extractRelationSchema(bodyElement, body))
                 .collect(Collectors.toList());
+    }
+
+    private RelationSchema extractRelationSchema(BodyElement bodyElement, ConjunctiveQueryBody body) {
+        return (RelationSchema) new PatternMatching(
+                inCaseOf(Atom.class, atom -> extractRelationSchema(atom, body))
+        ).matchFor(bodyElement);
     }
 
     private RelationSchema extractRelationSchema(Atom atom, ConjunctiveQueryBody body) {
@@ -338,7 +346,11 @@ class SpannerlogSchema {
 
         for (ConjunctiveQuery cq : cqs) {
             DBAtom headAtom = cq.getHead().getHeadAtom();
-            List<Atom> bodyAtoms = cq.getBody().getBodyAtoms();
+            List<Atom> bodyAtoms = cq.getBody().getBodyElements()
+                    .stream()
+                    .filter(bodyElement -> bodyElement instanceof Atom)
+                    .map(bodyElement -> (Atom) bodyElement)
+                    .collect(Collectors.toList());
 
             RelationSchema headAtomSchema = headAtom.getSchema();
 
@@ -402,6 +414,94 @@ class SpannerlogSchema {
 
         if (!AmbiguousSchemaNames.isEmpty())
             throw new UndefinedRelationSchema(AmbiguousSchemaNames.get(0));
+    }
+
+    private void setVariablesType(Program program) {
+        List<ConjunctiveQuery> conjunctiveQueries = program.getStatements()
+                .stream()
+                .filter(stmt -> stmt instanceof ConjunctiveQuery)
+                .map(stmt -> (ConjunctiveQuery) stmt)
+                .collect(Collectors.toList());
+
+        for (ConjunctiveQuery cq : conjunctiveQueries) {
+            List<Atom> atoms = cq.getBody().getBodyElements()
+                    .stream()
+                    .filter(bodyElement -> bodyElement instanceof Atom)
+                    .map(bodyElement -> (Atom) bodyElement)
+                    .collect(Collectors.toList());
+
+            atoms.add(cq.getHead().getHeadAtom());
+
+            atoms.stream()
+                    .flatMap(atom -> atom.getTerms().stream())
+                    .filter(term -> term instanceof VarTerm)
+                    .map(term -> (VarTerm) term);
+
+            for (Atom atom : atoms) {
+                List<Attribute> atomAttrs = atom.getSchema().getAttrs();
+                ListIterator<Term> it = atom.getTerms().listIterator();
+                while (it.hasNext()) {
+                    Term term = it.next();
+                    if (!(term instanceof VarTerm))
+                        continue;
+
+                    ((VarTerm) term).setType(atomAttrs.get(it.previousIndex()).getType());
+                }
+            }
+
+            List<Condition> conditions = cq.getBody().getBodyElements()
+                    .stream()
+                    .filter(bodyElement -> bodyElement instanceof Condition)
+                    .map(bodyElement -> (Condition) bodyElement)
+                    .collect(Collectors.toList());
+
+            if (!conditions.isEmpty()) {
+                List<VarTerm> atomsVars = atoms
+                        .stream()
+                        .flatMap(atom -> atom.getTerms().stream())
+                        .filter(term -> term instanceof VarTerm)
+                        .map(term -> (VarTerm) term)
+                        .collect(Collectors.toList());
+
+                for (Condition c : conditions) {
+                    List<VarTerm> condVars = getConditionVars(c);
+                    for (VarTerm condVar : condVars) {
+                        List<String> possibleTypes = atomsVars
+                                .stream()
+                                .filter(atomVar -> atomVar.getVarName().equals(condVar.getVarName()))
+                                .map(VarTerm::getType)
+                                .distinct()
+                                .collect(Collectors.toList());
+
+                        if (possibleTypes.size() != 1) {
+                            throw new VariableTypeCannotBeInferredException(condVar);
+                        }
+                        condVar.setType(possibleTypes.get(0));
+                    }
+
+                    // validateCondition(c); // TODO check binary condition is legal
+                }
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<VarTerm> getConditionVars(Condition c) {
+        return (List<VarTerm>) new PatternMatching(
+                inCaseOf(BinaryCondition.class, this::getConditionVars)
+        ).matchFor(c);
+    }
+
+    private List<VarTerm> getConditionVars(BinaryCondition bc) {
+        List<VarTerm> varTerms = new ArrayList<>();
+
+        if (bc.getLhs() instanceof VarTerm)
+            varTerms.add((VarTerm) bc.getLhs());
+
+        if (bc.getRhs() instanceof VarTerm)
+            varTerms.add((VarTerm) bc.getRhs());
+
+        return varTerms;
     }
 }
 
@@ -547,8 +647,10 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
 
         List<SpanTerm> spans = ((VarTerm) inputTerm).getSpans();
 
-        List<String> bodyVarNames = body.getBodyAtoms()
+        List<String> bodyVarNames = body.getBodyElements()
                 .stream()
+                .filter(bodyElement -> bodyElement instanceof Atom)
+                .map(bodyElement -> (Atom) bodyElement)
                 .filter(atom -> atom != ieAtom)
                 .flatMap(atom -> atom.getTerms().stream())
                 .filter(term -> term instanceof VarTerm)
@@ -568,7 +670,12 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
     }
 
     private void determineInputAtoms(ConjunctiveQueryBody cqBody, IEAtom ieAtom) {
-        List<Atom> bodyAtoms = cqBody.getBodyAtoms();
+        List<Atom> bodyAtoms = cqBody.getBodyElements()
+                .stream()
+                .filter(bodyElement -> bodyElement instanceof Atom)
+                .map(bodyElement -> (Atom) bodyElement)
+                .collect(Collectors.toList());
+
         DependenciesGraph<Integer> depGraph = createDependenciesGraph(bodyAtoms);
         List<Integer> dependencies = depGraph.getDependencies(bodyAtoms.indexOf(ieAtom));
         inputAtoms = dependencies
@@ -805,6 +912,12 @@ class AttributeTypeCannotBeInferredException extends RuntimeException {
     }
 }
 
+class VariableTypeCannotBeInferredException extends RuntimeException {
+    VariableTypeCannotBeInferredException(VarTerm varTerm) {
+        super("The type of the variable '" + varTerm.getVarName() + "' cannot be inferred");
+    }
+}
+
 class UnboundVariableException extends RuntimeException {
     UnboundVariableException(String varName, String schemaName) {
         super("The variable '" + varName + "' in '" + schemaName + "' is unbound");
@@ -814,12 +927,6 @@ class UnboundVariableException extends RuntimeException {
 class UndefinedRelationSchema extends RuntimeException {
     UndefinedRelationSchema(String message) {
         super("The relation schema for '" + message + "' is undefined");
-    }
-}
-
-class VariableConflictException extends RuntimeException {
-    public VariableConflictException(String schemaName) {
-        super("Inconsistency in the relation '" + schemaName + "' (has been declared as variable and as non-variable)");
     }
 }
 
