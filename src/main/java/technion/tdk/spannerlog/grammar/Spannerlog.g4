@@ -137,6 +137,18 @@ NullLiteral
     : 'NULL'
     ;
 
+PositiveLabel
+    : 'POS'
+    ;
+
+NegativeLabel
+    : 'NEG'
+    ;
+
+UnknownLabel
+    : 'UKN'
+    ;
+
 Identifier
     : Letter LetterOrDigit*
     ;
@@ -159,10 +171,6 @@ RigidSeparator
 
 SoftSeparator
     : '<~'
-    ;
-
-AnnotationSymbol
-    : '@'
     ;
 
 CompareOperator
