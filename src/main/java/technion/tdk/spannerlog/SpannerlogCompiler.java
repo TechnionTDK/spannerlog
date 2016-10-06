@@ -62,8 +62,6 @@ class SpannerlogCompiler {
     private Map<String, String> compile(SoftConjunctiveQuery cq) {
         Map<String, String> cqBlock = new HashMap<>();
         cqBlock.put("statement", compile(cq.getHead()) + " *:- " + compile(cq.getBody()) + ".");
-        String weight = cq.getWeight() == null ? null : cq.getWeight().getWeightAsString();
-        cqBlock.put("weight", weight);
         return cqBlock;
     }
 

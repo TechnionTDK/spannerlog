@@ -18,24 +18,7 @@ rigidConjunctiveQuery
     ;
 
 softConjunctiveQuery
-    : annotation? conjunctiveQueryHead SoftSeparator conjunctiveQueryBody '.'
-    ;
-
-annotation
-    : AnnotationSymbol annotationName annotationArguments?
-    ;
-
-annotationName
-    : 'weight'  # Weight
-    ;
-
-annotationArguments
-    : '(' annotationArgument (',' annotationArgument)* ')'
-    ;
-
-annotationArgument
-    :   variable
-    |   floatingPointLiteral
+    : conjunctiveQueryHead SoftSeparator conjunctiveQueryBody '.'
     ;
 
 conjunctiveQueryHead

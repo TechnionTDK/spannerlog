@@ -44,15 +44,8 @@ class RigidConjunctiveQuery extends ConjunctiveQuery {
 }
 
 class SoftConjunctiveQuery extends ConjunctiveQuery {
-    private FactorWeightTerm weight;
-
-    SoftConjunctiveQuery(ConjunctiveQueryHead head, ConjunctiveQueryBody body, FactorWeightTerm weight) {
+    SoftConjunctiveQuery(ConjunctiveQueryHead head, ConjunctiveQueryBody body) {
         super(head, body);
-        this.weight = weight;
-    }
-
-    public FactorWeightTerm getWeight() {
-        return weight;
     }
 }
 
@@ -199,7 +192,7 @@ class PlaceHolderTerm extends Term { // singleton
 abstract class ExprTerm extends Term {
 }
 
-class VarTerm extends ExprTerm implements StringTerm, SpanTerm, FactorWeightTerm {
+class VarTerm extends ExprTerm implements StringTerm, SpanTerm {
     private String varName;
     private List<SpanTerm> spans;
     private String type;
@@ -220,11 +213,6 @@ class VarTerm extends ExprTerm implements StringTerm, SpanTerm, FactorWeightTerm
     @Override
     public List<SpanTerm> getSpans() {
         return spans;
-    }
-
-    @Override
-    public String getWeightAsString() {
-        return varName;
     }
 
     String getType() {
@@ -296,7 +284,7 @@ class BooleanConstExpr extends ConstExprTerm {
     }
 }
 
-class FloatConstExpr extends ConstExprTerm implements FactorWeightTerm {
+class FloatConstExpr extends ConstExprTerm {
     private float value;
 
     FloatConstExpr(float value) {
@@ -306,15 +294,6 @@ class FloatConstExpr extends ConstExprTerm implements FactorWeightTerm {
     float getValue() {
         return value;
     }
-
-    @Override
-    public String getWeightAsString() {
-        return Float.toString(value);
-    }
-}
-
-interface FactorWeightTerm {
-    String getWeightAsString();
 }
 
 class SpanConstExpr extends ConstExprTerm implements SpanTerm {
@@ -332,23 +311,5 @@ class SpanConstExpr extends ConstExprTerm implements SpanTerm {
 
     int getEnd() {
         return end;
-    }
-}
-
-class Annotation {
-    private String name;
-    private List<ExprTerm> args;
-
-    Annotation(String name, List<ExprTerm> args) {
-        this.name = name;
-        this.args = args;
-    }
-
-    String getName() {
-        return name;
-    }
-
-    List<ExprTerm> getArgs() {
-        return args;
     }
 }

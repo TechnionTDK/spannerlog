@@ -55,49 +55,10 @@ class SpannerlogInputParser {
 
         @Override
         public Statement visitSoftConjunctiveQuery(SpannerlogParser.SoftConjunctiveQueryContext ctx) {
-            FactorWeightTerm weight = null;
-            if (ctx.annotation() != null) {
-                Annotation annotation = ctx.annotation().accept(new AnnotationVisitor());
-                if (annotation != null && annotation.getName().equals("weight")) {
-                    weight = (FactorWeightTerm) annotation.getArgs().get(0);
-                }
-            }
-
             return new SoftConjunctiveQuery(
                     ctx.conjunctiveQueryHead().accept(new ConjunctiveQueryHeadVisitor()),
-                    ctx.conjunctiveQueryBody().accept(new ConjunctiveQueryBodyVisitor()),
-                    weight
+                    ctx.conjunctiveQueryBody().accept(new ConjunctiveQueryBodyVisitor())
             );
-        }
-    }
-
-    private class AnnotationVisitor extends SpannerlogBaseVisitor<Annotation> {
-        @Override
-        public Annotation visitAnnotation(SpannerlogParser.AnnotationContext ctx) {
-            String annotationName = ctx.annotationName().getText();
-            AnnotationArgumentVisitor argumentVisitor = new AnnotationArgumentVisitor();
-            SpannerlogParser.AnnotationArgumentsContext args = ctx.annotationArguments();
-            if (args == null)
-                return new Annotation(annotationName, new ArrayList<>());
-
-            List<ExprTerm> terms = args.annotationArgument()
-                    .stream()
-                    .map(arg -> arg.accept(argumentVisitor))
-                    .collect(Collectors.toList());
-
-            return new Annotation(annotationName, terms);
-        }
-    }
-
-    private class AnnotationArgumentVisitor extends SpannerlogBaseVisitor<ExprTerm> {
-        @Override
-        public ExprTerm visitVariable(SpannerlogParser.VariableContext ctx) {
-            return new VarTerm(ctx.getText());
-        }
-
-        @Override
-        public ExprTerm visitFloatingPointLiteral(SpannerlogParser.FloatingPointLiteralContext ctx) {
-            return new FloatConstExpr(Float.parseFloat(ctx.getText()));
         }
     }
 

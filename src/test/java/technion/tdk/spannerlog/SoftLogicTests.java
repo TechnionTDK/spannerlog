@@ -36,13 +36,4 @@ public class SoftLogicTests {
 
 //        printJsonTree(jsonTree);
     }
-
-    @Test
-    public void CompileQueryWithWeight() {
-        String splogSrc = "@weight(3.0) R(x) :~ S(x, _).";
-        String edbSchema = "{\"S\":{\"column1\":\"text\",\"column2\":\"text\"}}";
-
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
-    }
-
 }
