@@ -6,6 +6,11 @@ program
 
 statement
     : ruleWithConjunctiveQuery
+    | predictionVariableDeclaration
+    ;
+
+predictionVariableDeclaration
+    : '?' relationSchemaName
     ;
 
 ruleWithConjunctiveQuery
@@ -19,7 +24,7 @@ extractionRule
     ;
 
 supervisionRule
-    : dbAtom '=' expr RigidSeparator conjunctiveQueryBody '.'
+    : dbAtom '=' supervisionExpr RigidSeparator conjunctiveQueryBody '.'
     ;
 
 inferenceRule
@@ -27,7 +32,10 @@ inferenceRule
     ;
 
 inferenceRuleHead
-    : dbAtom
+    : dbAtom                               # IsTrue
+    | dbAtom (',' dbAtom)* '=>' dbAtom     # Imply
+    | dbAtom ('v' dbAtom)+                 # Or
+    | dbAtom ('^' dbAtom)+                 # And
     ;
 
 conjunctiveQueryBody
@@ -77,6 +85,19 @@ expr
     | spanLiteral
     | stringExpr
     | varExpr
+    ;
+
+supervisionExpr
+    : nullExpr
+    | ifThenElseExpr
+    ;
+
+nullExpr
+    : NullLiteral
+    ;
+
+ifThenElseExpr
+    : 'if' condition 'then' expr ('else' expr)? 'end'
     ;
 
 stringExpr

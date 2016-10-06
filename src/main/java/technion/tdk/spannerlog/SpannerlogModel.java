@@ -19,17 +19,23 @@ class Program {
 abstract class Statement {
 }
 
-abstract class ConjunctiveQuery extends Statement {
-    private ConjunctiveQueryHead head;
-    private ConjunctiveQueryBody body;
+class PredVarDec extends Statement {
+    private String relationSchemaName;
 
-    ConjunctiveQuery(ConjunctiveQueryHead head, ConjunctiveQueryBody body) {
-        this.head = head;
-        this.body = body;
+    PredVarDec(String relationSchemaName) {
+        this.relationSchemaName = relationSchemaName;
     }
 
-    ConjunctiveQueryHead getHead() {
-        return head;
+    String getRelationSchemaName() {
+        return relationSchemaName;
+    }
+}
+
+abstract class RuleWithConjunctiveQuery extends Statement {
+    private ConjunctiveQueryBody body;
+
+    RuleWithConjunctiveQuery(ConjunctiveQueryBody body) {
+        this.body = body;
     }
 
     ConjunctiveQueryBody getBody() {
@@ -37,28 +43,82 @@ abstract class ConjunctiveQuery extends Statement {
     }
 }
 
-class RigidConjunctiveQuery extends ConjunctiveQuery {
-    RigidConjunctiveQuery(ConjunctiveQueryHead head, ConjunctiveQueryBody body) {
-        super(head, body);
+class ExtractionRule extends RuleWithConjunctiveQuery {
+    private DBAtom head;
+
+    ExtractionRule(DBAtom head, ConjunctiveQueryBody body) {
+        super(body);
+        this.head = head;
+    }
+
+    DBAtom getHead() {
+        return head;
     }
 }
 
-class SoftConjunctiveQuery extends ConjunctiveQuery {
-    SoftConjunctiveQuery(ConjunctiveQueryHead head, ConjunctiveQueryBody body) {
-        super(head, body);
+class SupervisionRule extends RuleWithConjunctiveQuery {
+    private DBAtom head;
+    private ExprTerm supervisionExpr;
+
+    SupervisionRule(DBAtom head, ExprTerm supervisionExpr, ConjunctiveQueryBody body) {
+        super(body);
+        this.head = head;
+        this.supervisionExpr = supervisionExpr;
+    }
+
+    DBAtom getHead() {
+        return head;
+    }
+
+    ExprTerm getSupervisionExpr() {
+        return supervisionExpr;
     }
 }
 
-class ConjunctiveQueryHead {
-    private DBAtom headAtom;
+class InferenceRule extends RuleWithConjunctiveQuery {
+    private InferenceRuleHead head;
 
-    ConjunctiveQueryHead(DBAtom headAtom) {
-        this.headAtom = headAtom;
+    InferenceRule(InferenceRuleHead head, ConjunctiveQueryBody body) {
+        super(body);
+        this.head = head;
     }
 
-    DBAtom getHeadAtom() {
-        return headAtom;
+    InferenceRuleHead getHead() {
+        return head;
     }
+}
+
+class InferenceRuleHead {
+    private FactorFunction factorFunction;
+    private List<DBAtom> headAtoms;
+
+    InferenceRuleHead(FactorFunction factorFunction, List<DBAtom> headAtoms) {
+        this.factorFunction = factorFunction;
+        this.headAtoms = headAtoms;
+    }
+
+    FactorFunction getFactorFunction() {
+        return factorFunction;
+    }
+
+    List<DBAtom> getHeadAtoms() {
+        return headAtoms;
+    }
+}
+
+abstract class FactorFunction {
+}
+
+class IsTrue extends FactorFunction {
+}
+
+class Imply extends FactorFunction {
+}
+
+class Or extends FactorFunction {
+}
+
+class And extends FactorFunction {
 }
 
 class ConjunctiveQueryBody {
@@ -162,6 +222,7 @@ class Regex extends IEAtom {
         super(schemaName, terms, inputTerm);
         this.regexString = regexString;
     }
+
     String getRegexString() {
         return regexString;
     }
@@ -227,6 +288,7 @@ class VarTerm extends ExprTerm implements StringTerm, SpanTerm {
 /* A term class that implements this interface can act as a string term, and therefore may have span terms. For more details, see section 4 in http://dl.acm.org/citation.cfm?doid=2932194.2932200 */
 interface StringTerm {
     void setSpans(List<SpanTerm> spans);
+
     List<SpanTerm> getSpans();
 }
 
@@ -313,3 +375,32 @@ class SpanConstExpr extends ConstExprTerm implements SpanTerm {
         return end;
     }
 }
+
+class NullExpr extends ConstExprTerm {
+}
+
+class IfThenElseExpr extends ExprTerm {
+    private Condition cond;
+    private ExprTerm expr;
+    private ExprTerm elseExpr;
+
+    IfThenElseExpr(Condition cond, ExprTerm expr, ExprTerm elseExpr) {
+        this.cond = cond;
+        this.expr = expr;
+        this.elseExpr = elseExpr;
+    }
+
+    Condition getCond() {
+        return cond;
+    }
+
+    ExprTerm getExpr() {
+        return expr;
+    }
+
+    ExprTerm getElseExpr() {
+        return elseExpr;
+    }
+}
+
+

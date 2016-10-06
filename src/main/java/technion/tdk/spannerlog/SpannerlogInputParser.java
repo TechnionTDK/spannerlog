@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 class SpannerlogInputParser {
@@ -46,28 +47,79 @@ class SpannerlogInputParser {
 
     private class StatementVisitor extends SpannerlogBaseVisitor<Statement> {
         @Override
-        public Statement visitRigidConjunctiveQuery(SpannerlogParser.RigidConjunctiveQueryContext ctx) {
-            return new RigidConjunctiveQuery(
-                    ctx.conjunctiveQueryHead().accept(new ConjunctiveQueryHeadVisitor()),
+        public Statement visitPredictionVariableDeclaration(SpannerlogParser.PredictionVariableDeclarationContext ctx) {
+            return new PredVarDec(ctx.relationSchemaName().getText());
+        }
+
+        @Override
+        public Statement visitExtractionRule(SpannerlogParser.ExtractionRuleContext ctx) {
+            return new ExtractionRule(
+                    ctx.dbAtom().accept(new DBAtomVisitor()),
                     ctx.conjunctiveQueryBody().accept(new ConjunctiveQueryBodyVisitor())
             );
         }
 
         @Override
-        public Statement visitSoftConjunctiveQuery(SpannerlogParser.SoftConjunctiveQueryContext ctx) {
-            return new SoftConjunctiveQuery(
-                    ctx.conjunctiveQueryHead().accept(new ConjunctiveQueryHeadVisitor()),
+        public Statement visitSupervisionRule(SpannerlogParser.SupervisionRuleContext ctx) {
+            return new SupervisionRule(
+                    ctx.dbAtom().accept(new DBAtomVisitor()),
+                    ctx.supervisionExpr().accept(new ExprVisitor()),
+                    ctx.conjunctiveQueryBody().accept(new ConjunctiveQueryBodyVisitor())
+            );
+        }
+
+        @Override
+        public Statement visitInferenceRule(SpannerlogParser.InferenceRuleContext ctx) {
+            return new InferenceRule(
+                    ctx.inferenceRuleHead().accept(new InferenceRuleHeadVisitor()),
                     ctx.conjunctiveQueryBody().accept(new ConjunctiveQueryBodyVisitor())
             );
         }
     }
 
-    private class ConjunctiveQueryHeadVisitor extends SpannerlogBaseVisitor<ConjunctiveQueryHead> {
+    private class InferenceRuleHeadVisitor extends SpannerlogBaseVisitor<InferenceRuleHead> {
         @Override
-        public ConjunctiveQueryHead visitConjunctiveQueryHead(SpannerlogParser.ConjunctiveQueryHeadContext ctx) {
+        public InferenceRuleHead visitIsTrue(SpannerlogParser.IsTrueContext ctx) {
+            return new InferenceRuleHead(
+                    new IsTrue(),
+                    Stream.of(ctx.dbAtom().accept(new DBAtomVisitor())).collect(Collectors.toList())
+            );
+        }
+
+        @Override
+        public InferenceRuleHead visitImply(SpannerlogParser.ImplyContext ctx) {
             DBAtomVisitor dbAtomVisitor = new DBAtomVisitor();
-            DBAtom head = ctx.dbAtom().accept(dbAtomVisitor);
-            return new ConjunctiveQueryHead(head);
+            return new InferenceRuleHead(
+                    new Imply(),
+                    ctx.dbAtom()
+                            .stream()
+                            .map(dbAtomContext -> dbAtomContext.accept(dbAtomVisitor))
+                            .collect(Collectors.toList())
+            );
+        }
+
+        @Override
+        public InferenceRuleHead visitOr(SpannerlogParser.OrContext ctx) {
+            DBAtomVisitor dbAtomVisitor = new DBAtomVisitor();
+            return new InferenceRuleHead(
+                    new Or(),
+                    ctx.dbAtom()
+                            .stream()
+                            .map(dbAtomContext -> dbAtomContext.accept(dbAtomVisitor))
+                            .collect(Collectors.toList())
+            );
+        }
+
+        @Override
+        public InferenceRuleHead visitAnd(SpannerlogParser.AndContext ctx) {
+            DBAtomVisitor dbAtomVisitor = new DBAtomVisitor();
+            return new InferenceRuleHead(
+                    new And(),
+                    ctx.dbAtom()
+                            .stream()
+                            .map(dbAtomContext -> dbAtomContext.accept(dbAtomVisitor))
+                            .collect(Collectors.toList())
+            );
         }
     }
 
@@ -247,6 +299,20 @@ class SpannerlogInputParser {
             return new SpanConstExpr(
                     Integer.parseInt(ctx.IntegerLiteral(0).getText()),
                     Integer.parseInt(ctx.IntegerLiteral(1).getText())
+            );
+        }
+
+        @Override
+        public ExprTerm visitNullExpr(SpannerlogParser.NullExprContext ctx) {
+            return new NullExpr();
+        }
+
+        @Override
+        public ExprTerm visitIfThenElseExpr(SpannerlogParser.IfThenElseExprContext ctx) {
+            return new IfThenElseExpr(
+                    ctx.condition().accept(new ConditionVisitor()),
+                    ctx.expr(0).accept(this),
+                    (ctx.getChildCount() > 2) ? ctx.expr(1).accept(this) : null
             );
         }
     }
