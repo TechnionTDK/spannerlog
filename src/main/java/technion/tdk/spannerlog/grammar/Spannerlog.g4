@@ -5,23 +5,28 @@ program
     ;
 
 statement
-    : conjunctiveQuery
+    : ruleWithConjunctiveQuery
     ;
 
-conjunctiveQuery
-    : rigidConjunctiveQuery
-    | softConjunctiveQuery
+ruleWithConjunctiveQuery
+    : extractionRule
+    | supervisionRule
+    | inferenceRule
     ;
 
-rigidConjunctiveQuery
-    : conjunctiveQueryHead RigidSeparator conjunctiveQueryBody '.'
+extractionRule
+    : dbAtom RigidSeparator conjunctiveQueryBody '.'
     ;
 
-softConjunctiveQuery
-    : conjunctiveQueryHead SoftSeparator conjunctiveQueryBody '.'
+supervisionRule
+    : dbAtom '=' expr RigidSeparator conjunctiveQueryBody '.'
     ;
 
-conjunctiveQueryHead
+inferenceRule
+    : inferenceRuleHead SoftSeparator conjunctiveQueryBody '.'
+    ;
+
+inferenceRuleHead
     : dbAtom
     ;
 
@@ -128,6 +133,10 @@ BooleanLiteral
     | 'False'
     ;
 
+NullLiteral
+    : 'NULL'
+    ;
+
 Identifier
     : Letter LetterOrDigit*
     ;
@@ -145,11 +154,11 @@ FloatingPointLiteral
    ;
 
 RigidSeparator
-    : ':-'
+    : '<-'
     ;
 
 SoftSeparator
-    : ':~'
+    : '<~'
     ;
 
 AnnotationSymbol
