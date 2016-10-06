@@ -2,3 +2,9 @@ run/
 /target/
 /.idea/workspace.xml
 /misc/
+/src/main/java/technion/tdk/spannerlog/grammar/SpannerlogBaseVisitor.java
+/src/main/java/technion/tdk/spannerlog/grammar/SpannerlogLexer.tokens
+/src/main/java/technion/tdk/spannerlog/grammar/Spannerlog.tokens
+/src/main/java/technion/tdk/spannerlog/grammar/SpannerlogLexer.java
+/src/main/java/technion/tdk/spannerlog/grammar/SpannerlogParser.java
+/src/main/java/technion/tdk/spannerlog/grammar/SpannerlogVisitor.java
