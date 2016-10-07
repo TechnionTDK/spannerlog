@@ -130,14 +130,6 @@ class SpannerlogSchema {
             hotIESchema.setInputAtoms(ObjectUtils.firstNonNull(hotIESchema.getInputAtoms(), coldIESchema.getInputAtoms()));
         }
 
-        if (hotSchema instanceof IntensionalRelationSchema && !(coldSchema instanceof AmbiguousRelationSchema)) {
-            IntensionalRelationSchema coldISchema = (IntensionalRelationSchema) coldSchema;
-            IntensionalRelationSchema hotISchema = (IntensionalRelationSchema) hotSchema;
-
-            hotISchema.setPredictionVariableSchema(hotISchema.isPredictionVariableSchema()
-                    || coldISchema.isPredictionVariableSchema());
-        }
-
         return hotSchema;
     }
 
