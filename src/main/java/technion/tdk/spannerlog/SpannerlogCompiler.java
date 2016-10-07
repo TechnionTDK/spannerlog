@@ -10,11 +10,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static technion.tdk.spannerlog.utils.match.ClassPattern.inCaseOf;
+import static technion.tdk.spannerlog.utils.match.OtherwisePattern.otherwise;
 
 class SpannerlogCompiler {
 
     Map<String, String> compile(SpannerlogSchema schema) {
-        return  schema.getRelationSchemas()
+        return schema.getRelationSchemas()
                 .stream()
                 .filter(s -> s instanceof IEFunctionSchema)
                 .map(s -> (IEFunctionSchema) s)
@@ -46,29 +47,45 @@ class SpannerlogCompiler {
     @SuppressWarnings("unchecked")
     private Map<String, String> compile(Statement statement) {
         return (Map<String, String>) new PatternMatching(
-                inCaseOf(ConjunctiveQuery.class, this::compile)
+                inCaseOf(ExtractionRule.class, this::compile),
+                inCaseOf(SupervisionRule.class, this::compile),
+                inCaseOf(InferenceRule.class, this::compile),
+                otherwise(stmt -> new HashMap<>())
         ).matchFor(statement);
 
     }
 
-    @SuppressWarnings("unchecked")
-    private Map<String, String> compile(ConjunctiveQuery cq) {
-        return (Map<String, String>) new PatternMatching(
-                inCaseOf(RigidConjunctiveQuery.class, this::compile),
-                inCaseOf(SoftConjunctiveQuery.class, this::compile)
-        ).matchFor(cq);
-    }
-
-    private Map<String, String> compile(SoftConjunctiveQuery cq) {
+    private Map<String, String> compile(ExtractionRule rule) {
         Map<String, String> cqBlock = new HashMap<>();
-        cqBlock.put("statement", compile(cq.getHead()) + " *:- " + compile(cq.getBody()) + ".");
+        cqBlock.put("extraction_rule", compile(rule.getHead()) + " *:- " + compile(rule.getBody()) + ".");
         return cqBlock;
     }
 
-    private Map<String, String> compile(RigidConjunctiveQuery cq) {
+    private Map<String, String> compile(SupervisionRule rule) {
         Map<String, String> cqBlock = new HashMap<>();
-        cqBlock.put("statement", compile(cq.getHead()) + " *:- " + compile(cq.getBody()) + ".");
+        cqBlock.put("supervision_rule", compile(rule.getHead()) + " = " + compile(rule.getSupervisionExpr())
+                + " :- " + compile(rule.getBody()) + ".");
         return cqBlock;
+    }
+
+    private Map<String, String> compile(InferenceRule rule) {
+        Map<String, String> cqBlock = new HashMap<>();
+        cqBlock.put("inference_rule", compile(rule.getHead()) + " :- " + compile(rule.getBody()) + ".");
+        return cqBlock;
+    }
+
+    private String compile(InferenceRuleHead head) {
+        return (String) new PatternMatching(
+                inCaseOf(IsTrue.class, f -> compile(head.getHeadAtoms().get(0))),
+                inCaseOf(Imply.class, f -> {
+                    List<DBAtom> atoms = head.getHeadAtoms();
+                    List<DBAtom> lhs = head.getHeadAtoms().subList(0, atoms.size() - 2); // there are at least two atoms in this case.
+                    return lhs.stream().map(this::compile).collect(Collectors.joining(", "))
+                            + " => " + compile(atoms.get(atoms.size() - 1));
+                }),
+                inCaseOf(Or.class, f -> head.getHeadAtoms().stream().map(this::compile).collect(Collectors.joining(" v "))),
+                inCaseOf(And.class, f -> head.getHeadAtoms().stream().map(this::compile).collect(Collectors.joining(" ^ ")))
+        ).matchFor(head.getFactorFunction());
     }
 
     private String compile(ConjunctiveQueryBody body) {
@@ -121,10 +138,6 @@ class SpannerlogCompiler {
         ).matchFor(atom);
     }
 
-    private String compile(ConjunctiveQueryHead head) {
-        return compile(head.getHeadAtom());
-    }
-
     private String compile(IEAtom ieAtom) {
         return ieAtom.getSchemaName() + "(" + compile(ieAtom.getTerms()) + ")";
     }
@@ -162,8 +175,16 @@ class SpannerlogCompiler {
 
         return (String) new PatternMatching(
                 inCaseOf(ConstExprTerm.class, this::compile),
-                inCaseOf(VarTerm.class, this::compile)
+                inCaseOf(VarTerm.class, this::compile),
+                inCaseOf(IfThenElseExpr.class, this::compile)
         ).matchFor(exprTerm);
+    }
+
+    private String compile(IfThenElseExpr e) {
+        return "if " + compile(e.getCond()) +
+                " then " + compile(e.getExpr()) +
+                ((e.getElseExpr() != null) ? " else " + compile(e.getElseExpr()) : "") +
+                " end";
     }
 
     private String compile(ExprTerm exprTerm, SpanTerm spanTerm) {
@@ -206,34 +227,13 @@ class SpannerlogCompiler {
 
     private String compile(ConstExprTerm constExprTerm) {
         return (String) new PatternMatching(
-                inCaseOf(BooleanConstExpr.class, this::compile),
-                inCaseOf(IntConstExpr.class, this::compile),
-                inCaseOf(FloatConstExpr.class, this::compile),
-                inCaseOf(SpanConstExpr.class, this::compile),
-                inCaseOf(StringConstExpr.class, this::compile)
+                inCaseOf(BooleanConstExpr.class, e -> (e.getValue()) ? "TRUE" : "FALSE"),
+                inCaseOf(IntConstExpr.class, e -> Integer.toString(e.getValue())),
+                inCaseOf(FloatConstExpr.class, e -> Float.toString(e.getValue())),
+                inCaseOf(SpanConstExpr.class, e -> Integer.toString(e.getStart()) + ", " + Integer.toString(e.getEnd())),
+                inCaseOf(StringConstExpr.class, e -> "\"" + e.getValue() + "\""),
+                inCaseOf(NullExpr.class, e -> "NULL")
         ).matchFor(constExprTerm);
-    }
-
-    private String compile(IntConstExpr intConstExpr) {
-        return Integer.toString(intConstExpr.getValue());
-    }
-
-    private String compile(FloatConstExpr floatConstExpr) {
-        return Float.toString(floatConstExpr.getValue());
-    }
-
-    private String compile(SpanConstExpr spanConstExpr) {
-        return Integer.toString(spanConstExpr.getStart()) + ", " + Integer.toString(spanConstExpr.getEnd());
-    }
-
-    private String compile(BooleanConstExpr booleanConstExpr) {
-        if (booleanConstExpr.getValue())
-            return "TRUE";
-        return "FALSE";
-    }
-
-    private String compile(StringConstExpr stringConstExpr) {
-        return "\"" + stringConstExpr.getValue() + "\"";
     }
 
     private String compile(VarTerm varTerm) {
