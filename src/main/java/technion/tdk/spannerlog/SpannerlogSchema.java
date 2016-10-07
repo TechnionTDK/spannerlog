@@ -39,6 +39,7 @@ class SpannerlogSchema {
             spannerlogSchema.validate();
             spannerlogSchema.inferAttributeTypes(program);
             spannerlogSchema.setVariablesType(program);
+            spannerlogSchema.setPredictionVariables(program);
             return spannerlogSchema;
         }
     }
@@ -190,24 +191,34 @@ class SpannerlogSchema {
     @SuppressWarnings("unchecked")
     private List<RelationSchema> extractRelationSchemas(Statement statement) {
         return (List<RelationSchema>) new PatternMatching(
-                inCaseOf(RigidConjunctiveQuery.class, this::extractRelationSchemas),
-                inCaseOf(SoftConjunctiveQuery.class, this::extractRelationSchemas)
+                inCaseOf(ExtractionRule.class, this::extractRelationSchemas),
+                inCaseOf(SupervisionRule.class, this::extractRelationSchemas),
+                inCaseOf(InferenceRule.class, this::extractRelationSchemas),
+                otherwise(stmt -> new ArrayList<>())
         ).matchFor(statement);
     }
 
-    private List<RelationSchema> extractRelationSchemas(RigidConjunctiveQuery cq) {
-        ConjunctiveQueryBody body = cq.getBody();
+    private List<RelationSchema> extractRelationSchemas(ExtractionRule rule) {
+        ConjunctiveQueryBody body = rule.getBody();
         List<RelationSchema> relationSchemas = extractRelationSchemas(body);
-        relationSchemas.add(extractRelationSchema(cq.getHead()));
+        relationSchemas.add(extractIntensionalRelationSchema(rule.getHead()));
         return relationSchemas;
     }
 
-    private List<RelationSchema> extractRelationSchemas(SoftConjunctiveQuery cq) {
-        ConjunctiveQueryBody body = cq.getBody();
+    private List<RelationSchema> extractRelationSchemas(SupervisionRule rule) {
+        ConjunctiveQueryBody body = rule.getBody();
         List<RelationSchema> relationSchemas = extractRelationSchemas(body);
-        IntensionalRelationSchema headSchema = (IntensionalRelationSchema) extractRelationSchema(cq.getHead());
-        headSchema.setPredictionVariableSchema(true);
-        relationSchemas.add(headSchema);
+        relationSchemas.add(extractIntensionalRelationSchema(rule.getHead()));
+        return relationSchemas;
+    }
+
+    private List<RelationSchema> extractRelationSchemas(InferenceRule rule) {
+        List<RelationSchema> relationSchemas = extractRelationSchemas(rule.getBody());
+        relationSchemas.addAll(rule.getHead().getHeadAtoms()
+                .stream()
+                .map(this::extractRelationSchema)
+                .collect(Collectors.toList())
+            );
         return relationSchemas;
     }
 
@@ -249,10 +260,6 @@ class SpannerlogSchema {
     private RelationSchema extractIntensionalRelationSchema(DBAtom dbAtom) {
         return new IntensionalRelationSchema(dbAtom,
                 extractAttributesAndGenColumnNames(dbAtom.getTerms()));
-    }
-
-    private RelationSchema extractRelationSchema(ConjunctiveQueryHead head) {
-        return extractIntensionalRelationSchema(head.getHeadAtom());
     }
 
     private List<Attribute> extractAttributes(List<Term> terms) {
@@ -336,17 +343,20 @@ class SpannerlogSchema {
     }
 
     private Map<Attribute, Set<Attribute>> createDependenciesMap(Program program) {
-        List<ConjunctiveQuery> cqs = program.getStatements()
+        List<RuleWithConjunctiveQuery> rules = program.getStatements()
                 .stream()
-                .filter(stmt -> stmt instanceof ConjunctiveQuery)
-                .map(stmt -> (ConjunctiveQuery) stmt)
+                .filter(stmt -> stmt instanceof ExtractionRule || stmt instanceof SupervisionRule)
+                .map(stmt -> (RuleWithConjunctiveQuery) stmt)
                 .collect(Collectors.toList());
 
         Map<Attribute, Set<Attribute>> dependenciesMap = new HashMap<>();
 
-        for (ConjunctiveQuery cq : cqs) {
-            DBAtom headAtom = cq.getHead().getHeadAtom();
-            List<Atom> bodyAtoms = cq.getBody().getBodyElements()
+        for (RuleWithConjunctiveQuery rule : rules) {
+            DBAtom headAtom = (DBAtom) new PatternMatching(
+                    inCaseOf(ExtractionRule.class, ExtractionRule::getHead),
+                    inCaseOf(SupervisionRule.class, SupervisionRule::getHead)
+                ).matchFor(rule); // TODO handle the InferenceRule case
+            List<Atom> bodyAtoms = rule.getBody().getBodyElements()
                     .stream()
                     .filter(bodyElement -> bodyElement instanceof Atom)
                     .map(bodyElement -> (Atom) bodyElement)
@@ -397,6 +407,22 @@ class SpannerlogSchema {
         return dependenciesMap;
     }
 
+    private void setPredictionVariables(Program program) {
+        List<String> predVarNames = program.getStatements()
+                .stream()
+                .filter(stmt -> stmt instanceof PredVarDec)
+                .map(stmt -> ((PredVarDec) stmt).getRelationSchemaName())
+                .distinct()
+                .collect(Collectors.toList());
+
+        this.relationSchemas
+                .stream()
+                .filter(sch -> sch instanceof IntensionalRelationSchema)
+                .map(sch -> (IntensionalRelationSchema) sch)
+                .filter(sch -> predVarNames.contains(sch.getName()))
+                .forEach(sch -> sch.setPredictionVariableSchema(true));
+    }
+
     private void validate() {
         List<String> AmbiguousSchemaNames = relationSchemas
                 .stream()
@@ -417,20 +443,28 @@ class SpannerlogSchema {
     }
 
     private void setVariablesType(Program program) {
-        List<ConjunctiveQuery> conjunctiveQueries = program.getStatements()
+        List<RuleWithConjunctiveQuery> rules = program.getStatements()
                 .stream()
-                .filter(stmt -> stmt instanceof ConjunctiveQuery)
-                .map(stmt -> (ConjunctiveQuery) stmt)
+                .filter(stmt -> stmt instanceof RuleWithConjunctiveQuery)
+                .map(stmt -> (RuleWithConjunctiveQuery) stmt)
                 .collect(Collectors.toList());
 
-        for (ConjunctiveQuery cq : conjunctiveQueries) {
-            List<Atom> atoms = cq.getBody().getBodyElements()
+        for (RuleWithConjunctiveQuery rule : rules) {
+            List<Atom> atoms = rule.getBody().getBodyElements()
                     .stream()
                     .filter(bodyElement -> bodyElement instanceof Atom)
                     .map(bodyElement -> (Atom) bodyElement)
                     .collect(Collectors.toList());
 
-            atoms.add(cq.getHead().getHeadAtom());
+            if (rule instanceof InferenceRule) {
+                atoms.addAll(((InferenceRule) rule).getHead().getHeadAtoms());
+            } else {
+                atoms.add((DBAtom) new PatternMatching(
+                        inCaseOf(ExtractionRule.class, ExtractionRule::getHead),
+                        inCaseOf(SupervisionRule.class, SupervisionRule::getHead)
+                    ).matchFor(rule)
+                );
+            }
 
             atoms.stream()
                     .flatMap(atom -> atom.getTerms().stream())
@@ -449,7 +483,7 @@ class SpannerlogSchema {
                 }
             }
 
-            List<Condition> conditions = cq.getBody().getBodyElements()
+            List<Condition> conditions = rule.getBody().getBodyElements()
                     .stream()
                     .filter(bodyElement -> bodyElement instanceof Condition)
                     .map(bodyElement -> (Condition) bodyElement)
