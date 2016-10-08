@@ -11,8 +11,8 @@ class SpannerlogDesugarRewriter {
 
         List<Regex> RegexList = program.getStatements()
                 .stream()
-                .filter(stmt -> stmt instanceof ConjunctiveQuery)
-                .map(stmt -> (ConjunctiveQuery) stmt)
+                .filter(stmt -> stmt instanceof RuleWithConjunctiveQuery)
+                .map(stmt -> (RuleWithConjunctiveQuery) stmt)
                 .flatMap(cq -> cq.getBody().getBodyElements().stream())
                 .filter(atom -> atom instanceof Regex)
                 .map(atom -> (Regex) atom)

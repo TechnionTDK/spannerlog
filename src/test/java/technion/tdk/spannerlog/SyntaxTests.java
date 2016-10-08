@@ -26,13 +26,13 @@ public class SyntaxTests {
         String src;
 
         try {
-            src = "Out() :- Doc(s), RGX<s>\\[x{a*}y{b*}]\\, RGX<s[y]>\\[x{b*}]\\.";
+            src = "Out() <- Doc(s), RGX<s>\\[x{a*}y{b*}]\\, RGX<s[y]>\\[x{b*}]\\.";
             parser.parseProgram(new ByteArrayInputStream(src.getBytes(StandardCharsets.UTF_8)));
 
-            src = "Out() :- Doc(s), RGX<s>\\[x{0*}y{1*}]\\, RGX<s[y]>\\[x{1*}]\\.";
+            src = "Out() <- Doc(s), RGX<s>\\[x{0*}y{1*}]\\, RGX<s[y]>\\[x{1*}]\\.";
             parser.parseProgram(new ByteArrayInputStream(src.getBytes(StandardCharsets.UTF_8)));
 
-            src = "Out() :- Doc(\"sdfsd  \"), <s>   \\[   x  {0*}  y               {1*}]\\, <s[y]>\\[x{1*}  ]\\  .\n";
+            src = "Out() <- Doc(\"sdfsd  \"), <s>   \\[   x  {0*}  y               {1*}]\\, <s[y]>\\[x{1*}  ]\\  .\n";
             parser.parseProgram(new ByteArrayInputStream(src.getBytes(StandardCharsets.UTF_8)));
 
 //            src = "Out() :- RGX<\"aaabbb\">\\[x{a*}y{b*}]\\, RGX<s[y]>\\[x{b*}]\\.";
@@ -49,10 +49,10 @@ public class SyntaxTests {
         String src;
 
         try {
-            src = "Q() :- R(x[y][z]).";
+            src = "Q() <- R(x[y][z]).";
             parser.parseProgram(new ByteArrayInputStream(src.getBytes(StandardCharsets.UTF_8)));
 
-            src = "Q() :- R(s[y][1,2][z]), S(s[y]), T(\"abc\"[1,2][y], s[y]).";
+            src = "Q() <- R(s[y][1,2][z]), S(s[y]), T(\"abc\"[1,2][y], s[y]).";
             parser.parseProgram(new ByteArrayInputStream(src.getBytes(StandardCharsets.UTF_8)));
 
         } catch (IOException e) {

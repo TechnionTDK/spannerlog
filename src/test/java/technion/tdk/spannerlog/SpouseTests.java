@@ -10,7 +10,7 @@ public class SpouseTests {
 
     @Test
     public void compileSentences() {
-        String splogSrc = "sentences(doc_id, sentence_index, sentence_text, tokens, pos_tags, ner_tags) :- \n" +
+        String splogSrc = "sentences(doc_id, sentence_index, sentence_text, tokens, pos_tags, ner_tags) <- \n" +
                           "          articles(doc_id, content),\n" +
                           "nlp_markup<content>(sentence_index, sentence_text, tokens, pos_tags, ner_tags).";
         String edbSchema = "{\"articles\":{\"column1\":\"text\",\"column2\":\"text\"}}";
@@ -22,10 +22,10 @@ public class SpouseTests {
 
     @Test
     public void applySpanInIDBAtomShouldSucceed() {
-        String splogSrc = "sentences(doc_id, sentence_index, sentence_text) :- \n" +
+        String splogSrc = "sentences(doc_id, sentence_index, sentence_text) <- \n" +
                           "    articles(doc_id, s), ssplit<s>(sentence_index, sentence_text).\n" +
 
-                          "person_mention(sentence_text[span], doc_id, sentence_index, span) :-\n" +
+                          "person_mention(sentence_text[span], doc_id, sentence_index, span) <-\n" +
                           "    sentences(doc_id, sentence_index, sentence_text), ner<sentence_text>(span, \"PERSON\").\n";
 
         String edbSchema = "{\"articles\":{\"column1\":\"text\",\"column2\":\"text\"}}";
@@ -39,7 +39,7 @@ public class SpouseTests {
     @Test
     public void compileProgramWithCondition() {
         String splogSrc =
-                "spouse_candidate(doc_id, sentence_span, person_span1, person_span2) :-\n" +
+                "spouse_candidate(doc_id, sentence_span, person_span1, person_span2) <-\n" +
                 "   person_mention(name1, doc_id, sentence_span, person_span1),\n" +
                 "   person_mention(name2, doc_id, sentence_span, person_span2),\n" +
                 "   name1 != name2,\n" +

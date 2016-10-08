@@ -18,16 +18,16 @@ public class ParsingTests {
         SpannerlogInputParser parser = new SpannerlogInputParser();
 
         try {
-            String splogSrc = "Q() :- R(True).";
+            String splogSrc = "Q() <- R(True).";
 
             Program program = parser.parseProgram(new ByteArrayInputStream(splogSrc.getBytes(StandardCharsets.UTF_8)));
 
             List<Statement> statements = program.getStatements();
             assertEquals(1, statements.size());
 
-            ConjunctiveQuery cq = (ConjunctiveQuery) statements.get(0);
+            ExtractionRule cq = (ExtractionRule) statements.get(0);
 
-            DBAtom head = cq.getHead().getHeadAtom();
+            DBAtom head = cq.getHead();
             assertEquals(head.getSchemaName(), "Q");
             assertEquals(0, head.getTerms().size());
 
@@ -56,12 +56,12 @@ public class ParsingTests {
         SpannerlogInputParser parser = new SpannerlogInputParser();
 
         try {
-            String splogSrc = "Q() :- R(False, \"Hello\", 4, -2, 0.01, - 1.0,  [3,4]).";
+            String splogSrc = "Q() <- R(False, \"Hello\", 4, -2, 0.01, - 1.0,  [3,4]).";
 
             Program program = parser.parseProgram(new ByteArrayInputStream(splogSrc.getBytes(StandardCharsets.UTF_8)));
 
             List<Statement> statements = program.getStatements();
-            ConjunctiveQuery cq = (ConjunctiveQuery) statements.get(0);
+            ExtractionRule cq = (ExtractionRule) statements.get(0);
 
             List<Atom> bodyAtoms = cq.getBody().getBodyElements()
                     .stream()
@@ -115,12 +115,12 @@ public class ParsingTests {
         SpannerlogInputParser parser = new SpannerlogInputParser();
 
         try {
-            String splogSrc = "Out() :- Doc(s), RGX<s>\\[x{a*}y{b*}]\\, <s[y][0,5]>\\[x{b*}]\\.";
+            String splogSrc = "Out() <- Doc(s), RGX<s>\\[x{a*}y{b*}]\\, <s[y][0,5]>\\[x{b*}]\\.";
 
             Program program = parser.parseProgram(new ByteArrayInputStream(splogSrc.getBytes(StandardCharsets.UTF_8)));
 
             List<Statement> statements = program.getStatements();
-            ConjunctiveQuery cq = (ConjunctiveQuery) statements.get(0);
+            ExtractionRule cq = (ExtractionRule) statements.get(0);
 
             List<Atom> bodyAtoms = cq.getBody().getBodyElements()
                     .stream()

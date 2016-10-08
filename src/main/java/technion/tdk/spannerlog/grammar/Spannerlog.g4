@@ -10,7 +10,7 @@ statement
     ;
 
 predictionVariableDeclaration
-    : '?' relationSchemaName
+    : relationSchemaName '?.'
     ;
 
 ruleWithConjunctiveQuery
