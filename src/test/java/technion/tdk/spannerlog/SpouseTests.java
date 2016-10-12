@@ -1,15 +1,10 @@
 package technion.tdk.spannerlog;
 
 
-import com.google.gson.JsonObject;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static technion.tdk.spannerlog.Utils.checkCompilation;
-import static technion.tdk.spannerlog.Utils.compileToJson;
-import static technion.tdk.spannerlog.Utils.printJsonTree;
 
 public class SpouseTests {
 
@@ -52,12 +47,12 @@ public class SpouseTests {
 
         String edbSchema =
                 "{" +
-                        "\"person_mention\": {" +
-                            "\"name\":\"text\"," +
-                            "\"doc_id\":\"text\"," +
-                            "\"sentence\":\"span\"," +
-                            "\"person\":\"span\"" +
-                        "}" +
+                    "\"person_mention\": {" +
+                        "\"name\":\"text\"," +
+                        "\"doc_id\":\"text\"," +
+                        "\"sentence\":\"span\"," +
+                        "\"person\":\"span\"" +
+                    "}" +
                 "}";
 
 
@@ -79,20 +74,20 @@ public class SpouseTests {
 
         String edbSchema =
                 "{" +
-                        "\"spouse_candidate\": {" +
-                            "\"doc_id\":\"text\"," +
-                            "\"sentence\":\"span\"," +
-                            "\"person1\":\"span\"," +
-                            "\"person2\":\"span\"" +
-                        "}," +
-                        "\"spouses_dbpedia\": {" +
-                            "\"name1\":\"text\"," +
-                            "\"name2\":\"text\"" +
-                        "}," +
-                        "\"articles_prep\": {" +
-                            "\"doc_id\":\"text\"," +
-                            "\"content\":\"text\"" +
-                        "}" +
+                    "\"spouse_candidate\": {" +
+                        "\"doc_id\":\"text\"," +
+                        "\"sentence\":\"span\"," +
+                        "\"person1\":\"span\"," +
+                        "\"person2\":\"span\"" +
+                    "}," +
+                    "\"spouses_dbpedia\": {" +
+                        "\"name1\":\"text\"," +
+                        "\"name2\":\"text\"" +
+                    "}," +
+                    "\"articles_prep\": {" +
+                        "\"doc_id\":\"text\"," +
+                        "\"content\":\"text\"" +
+                    "}" +
                 "}";
 
         assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
@@ -111,18 +106,87 @@ public class SpouseTests {
 
         String edbSchema =
                 "{" +
-                        "\"spouse_candidate\": {" +
-                            "\"doc_id\":\"text\"," +
-                            "\"sentence\":\"span\"," +
-                            "\"person1\":\"span\"," +
-                            "\"person2\":\"span\"" +
-                        "}," +
-                        "\"articles_prep\": {" +
-                            "\"doc_id\":\"text\"," +
-                            "\"content\":\"text\"" +
-                        "}" +
+                    "\"spouse_candidate\": {" +
+                        "\"doc_id\":\"text\"," +
+                        "\"sentence\":\"span\"," +
+                        "\"person1\":\"span\"," +
+                        "\"person2\":\"span\"" +
+                    "}," +
+                    "\"articles_prep\": {" +
+                        "\"doc_id\":\"text\"," +
+                        "\"content\":\"text\"" +
+                    "}" +
                 "}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+    }
+
+    @Test
+    public void compileAggregationFunction() {
+        String splogSrc =
+                "spouse_label_resolved(doc_id, sentence_span, person_span1, person_span2, SUM(vote)) <-\n" +
+                "   spouse_label(doc_id, sentence_span, person_span1, person_span2, vote, rule_id).";
+        String edbSchema =
+                "{" +
+                    "\"spouse_label\": {" +
+                        "\"doc_id\":\"text\"," +
+                        "\"sentence\":\"span\"," +
+                        "\"person1\":\"span\"," +
+                        "\"person2\":\"span\"," +
+                        "\"vote\":\"int\"," +
+                        "\"rule_id\":\"text\"" +
+                    "}" +
+                "}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+    }
+
+    @Test
+    public void compileIfStatement() {
+        String splogSrc =
+                "has_spouse(doc_id, sentence_span, person_span1, person_span2) = " +
+                "   if l > 0 then TRUE\n" +
+                "   else if l < 0 then FALSE\n" +
+                "   else NULL end <- spouse_label_resolved(doc_id, sentence_span, person_span1, person_span2, l).";
+
+        String edbSchema =
+                "{" +
+                    "\"spouse_label_resolved\": {" +
+                        "\"doc_id\":\"text\"," +
+                        "\"sentence\":\"span\"," +
+                        "\"person1\":\"span\"," +
+                        "\"person2\":\"span\"," +
+                        "\"votes\":\"int\"" +
+                    "}" +
+                 "}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+    }
+
+    @Test
+    public void compileInferenceRule() {
+        String splogSrc =
+                "has_spouse(doc_id, sentence_span, person_span1, person_span2) <- spouse_label_resolved(doc_id, sentence_span, person_span1, person_span2, l).\n" +
+                "has_spouse(doc_id, sentence_span, person_span1, person_span2) => has_spouse(doc_id, sentence_span, person_span2, person_span1) <~\n" +
+                "    spouse_candidate(doc_id, sentence_span, person_span1, person_span2).";
+
+        String edbSchema =
+                "{" +
+                    "\"spouse_label_resolved\": {" +
+                        "\"doc_id\":\"text\"," +
+                        "\"sentence\":\"span\"," +
+                        "\"person1\":\"span\"," +
+                        "\"person2\":\"span\"," +
+                        "\"votes\":\"int\"" +
+                    "}," +
+                    "\"spouse_candidate\": {" +
+                        "\"doc_id\":\"text\"," +
+                        "\"sentence\":\"span\"," +
+                        "\"person1\":\"span\"," +
+                        "\"person2\":\"span\"" +
+                    "}" +
+                "}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 }

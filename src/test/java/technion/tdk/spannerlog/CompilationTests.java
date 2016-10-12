@@ -111,7 +111,7 @@ public class CompilationTests {
         assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
-    @Test(expected = SpanAppliedToNonStringTypeAttribute.class)
+    @Test(expected = SpanAppliedToNonStringTypeAttributeException.class)
     public void ApplyingSpansToNonStringTypeAttributeShouldFail() {
         String splogSrc = "Q(\"Hello World\"[1,6][2,4], s[t]) <- R(s,t).";
         String edbSchema = "{\"R\":{\"a1\":\"int\", \"a2\":\"span\"}}";

@@ -79,7 +79,7 @@ class SpannerlogCompiler {
                 inCaseOf(IsTrue.class, f -> compile(head.getHeadAtoms().get(0))),
                 inCaseOf(Imply.class, f -> {
                     List<DBAtom> atoms = head.getHeadAtoms();
-                    List<DBAtom> lhs = head.getHeadAtoms().subList(0, atoms.size() - 2); // there are at least two atoms in this case.
+                    List<DBAtom> lhs = head.getHeadAtoms().subList(0, atoms.size() - 1); // the last atom is the right hand side
                     return lhs.stream().map(this::compile).collect(Collectors.joining(", "))
                             + " => " + compile(atoms.get(atoms.size() - 1));
                 }),
@@ -112,7 +112,7 @@ class SpannerlogCompiler {
         PatternMatching pattern = new PatternMatching(
                 inCaseOf(SpanConstExpr.class, e -> String.valueOf(e.getStart())),
                 inCaseOf(VarTerm.class, e -> {
-                    if (e.getType().equals("span"))
+                    if (e.getType() != null && e.getType().equals("span")) // TODO fix in the case of spans in "IF-ELSE" statements.
                         return e.getVarName() + "_start";
                     return compile((ExprTerm) e);
                 }),
@@ -157,7 +157,7 @@ class SpannerlogCompiler {
         if (exprTerm instanceof StringTerm) {
             List<SpanTerm> spans = ((StringTerm) exprTerm).getSpans();
             if (exprTerm instanceof VarTerm && spans != null && !spans.isEmpty() && !((VarTerm) exprTerm).getType().equals("text"))
-                throw new SpanAppliedToNonStringTypeAttribute(((VarTerm) exprTerm).getVarName());
+                throw new SpanAppliedToNonStringTypeAttributeException(((VarTerm) exprTerm).getVarName());
             if (spans != null && !spans.isEmpty()) {
                 SpanTerm spanTerm = spans.get(spans.size() - 1);
                 spans.remove(spans.size() - 1);
@@ -181,8 +181,13 @@ class SpannerlogCompiler {
     private String compile(IfThenElseExpr e) {
         return "if " + compile(e.getCond()) +
                 " then " + compile(e.getExpr()) +
+                e.getElseIfExprs().stream().map(this::compile).collect(Collectors.joining()) +
                 ((e.getElseExpr() != null) ? " else " + compile(e.getElseExpr()) : "") +
                 " end";
+    }
+
+    private String compile(ElseIfExpr elif) {
+        return " else if " + compile(elif.getCond()) + " then " + compile(elif.getExpr());
     }
 
     private String compile(ExprTerm exprTerm, SpanTerm spanTerm) {
@@ -235,15 +240,15 @@ class SpannerlogCompiler {
     }
 
     private String compile(VarTerm varTerm) {
-        if (varTerm.getType().equals("span"))
+        if (varTerm.getType() != null && varTerm.getType().equals("span"))
             return varTerm.getVarName() + "_start, " + varTerm.getVarName() + "_end";
 
         return varTerm.getVarName();
     }
 }
 
-class SpanAppliedToNonStringTypeAttribute extends RuntimeException {
-    SpanAppliedToNonStringTypeAttribute(String varName) {
-        super("The variable '" + varName + "' must be of type string in order to apply span to it.");
+class SpanAppliedToNonStringTypeAttributeException extends RuntimeException {
+    SpanAppliedToNonStringTypeAttributeException(String varName) {
+        super("The variable '" + varName + "' must be of type string in order to apply span to it");
     }
 }

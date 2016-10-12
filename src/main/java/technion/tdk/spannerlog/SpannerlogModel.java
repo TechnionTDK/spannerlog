@@ -383,11 +383,13 @@ class IfThenElseExpr extends ExprTerm {
     private Condition cond;
     private ExprTerm expr;
     private ExprTerm elseExpr;
+    private List<ElseIfExpr> elseIfExprs;
 
-    IfThenElseExpr(Condition cond, ExprTerm expr, ExprTerm elseExpr) {
+    IfThenElseExpr(Condition cond, ExprTerm expr, ExprTerm elseExpr, List<ElseIfExpr> elseIfExprs) {
         this.cond = cond;
         this.expr = expr;
         this.elseExpr = elseExpr;
+        this.elseIfExprs = elseIfExprs;
     }
 
     Condition getCond() {
@@ -401,15 +403,41 @@ class IfThenElseExpr extends ExprTerm {
     ExprTerm getElseExpr() {
         return elseExpr;
     }
+
+    public List<ElseIfExpr> getElseIfExprs() {
+        return elseIfExprs;
+    }
+}
+
+class ElseIfExpr {
+    private Condition cond;
+    private ExprTerm expr;
+
+    ElseIfExpr(Condition cond, ExprTerm expr) {
+        this.cond = cond;
+        this.expr = expr;
+    }
+
+    Condition getCond() {
+        return cond;
+    }
+
+    ExprTerm getExpr() {
+        return expr;
+    }
 }
 
 class FuncExpr extends ExprTerm {
     private String function;
     private List<ExprTerm> args;
+    private boolean isAggregation;
 
-    FuncExpr(String function, List<ExprTerm> args) {
+    static final String[] AGGREGATION_FUNCTIONS = {"MAX", "SUM", "MIN", "COUNT"};
+
+    FuncExpr(String function, List<ExprTerm> args, boolean isAggregation) {
         this.function = function;
         this.args = args;
+        this.isAggregation = isAggregation;
     }
 
     String getFunction() {
@@ -418,6 +446,10 @@ class FuncExpr extends ExprTerm {
 
     List<ExprTerm> getArgs() {
         return args;
+    }
+
+    boolean isAggregation() {
+        return isAggregation;
     }
 }
 

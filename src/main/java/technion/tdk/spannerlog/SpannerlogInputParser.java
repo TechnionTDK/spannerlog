@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static technion.tdk.spannerlog.FuncExpr.AGGREGATION_FUNCTIONS;
+
 
 class SpannerlogInputParser {
 
@@ -317,15 +319,21 @@ class SpannerlogInputParser {
             return new IfThenElseExpr(
                     ctx.condition().accept(new ConditionVisitor()),
                     ctx.expr(0).accept(this),
-                    (ctx.getChildCount() > 2) ? ctx.expr(1).accept(this) : null
+                    (ctx.expr().size() == 2) ? ctx.expr(1).accept(this) : null,
+                    (ctx.elseIfExpr()
+                            .stream()
+                            .map(elif -> new ElseIfExpr(elif.condition().accept(new ConditionVisitor()), visit(elif.expr())))
+                            .collect(Collectors.toList()))
             );
         }
 
         @Override
         public ExprTerm visitFuncExpr(SpannerlogParser.FuncExprContext ctx) {
+            String funcName = ctx.functionName().getText();
             return new FuncExpr(
-                    ctx.functionName().getText(),
-                    ctx.expr().stream().map(e -> e.accept(this)).collect(Collectors.toList())
+                    funcName,
+                    ctx.expr().stream().map(e -> e.accept(this)).collect(Collectors.toList()),
+                    Stream.of(AGGREGATION_FUNCTIONS).anyMatch(aggFunc -> aggFunc.equalsIgnoreCase(funcName))
             );
         }
     }

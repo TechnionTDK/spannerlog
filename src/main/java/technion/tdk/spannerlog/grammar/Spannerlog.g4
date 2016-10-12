@@ -95,6 +95,7 @@ lexpr
     | stringExpr
     | varExpr
     | funcExpr
+    | nullExpr
     ;
 
 funcExpr
@@ -115,7 +116,11 @@ nullExpr
     ;
 
 ifThenElseExpr
-    : 'if' condition 'then' expr ('else' expr)? 'end'
+    : 'if' condition 'then' expr elseIfExpr* ('else' expr)? 'end'
+    ;
+
+elseIfExpr
+    : 'else if' condition 'then' expr
     ;
 
 stringExpr

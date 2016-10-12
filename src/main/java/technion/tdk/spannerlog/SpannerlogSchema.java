@@ -295,7 +295,12 @@ class SpannerlogSchema {
     private Attribute extractAttribute(ExprTerm exprTerm) {
         return (Attribute) new PatternMatching(
                 inCaseOf(ConstExprTerm.class, this::extractAttribute),
-                inCaseOf(VarTerm.class, t -> new Attribute())
+                inCaseOf(VarTerm.class, t -> new Attribute()),
+                inCaseOf(FuncExpr.class, fe -> {
+                    if (!fe.isAggregation())
+                        throw new functionIsNotAggregationFunctionException(fe.getFunction());
+                    return new Attribute(null, "int");
+                })
         ).matchFor(exprTerm);
     }
 
@@ -958,3 +963,8 @@ class UndefinedRelationSchema extends RuntimeException {
     }
 }
 
+class functionIsNotAggregationFunctionException extends RuntimeException {
+    functionIsNotAggregationFunctionException(String funcName) {
+        super("The function '" + funcName + "' must be a known aggregation function");
+    }
+}
