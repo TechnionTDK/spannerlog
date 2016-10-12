@@ -53,7 +53,7 @@ BeginsWithNonLetter
 
 fragment
 Letter
-    : [a-zA-Z]
+    : [a-zA-Z] | '"' | '|' | '-'
     ;
 
 fragment

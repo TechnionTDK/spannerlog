@@ -189,18 +189,6 @@ NullLiteral
     : 'NULL'
     ;
 
-PositiveLabel
-    : 'POS'
-    ;
-
-NegativeLabel
-    : 'NEG'
-    ;
-
-UnknownLabel
-    : 'UKN'
-    ;
-
 RigidSeparator
     : '<-'
     ;
@@ -289,7 +277,7 @@ LetterOrDigit
 
 fragment
 RegexElememt
-    : [a-zA-Z0-9] | [ \t\r\n] | '{' | '}' | '+' | '*' | '.'
+    : [a-zA-Z0-9] | [ \t\r\n] | '{' | '}' | '+' | '*' | '.' | '"' | '|' | '(' | ')' | '-'
     ;
 
 fragment
