@@ -2,6 +2,7 @@ package technion.tdk.spannerlog;
 
 import technion.tdk.spannerlog.rgx.Rgx;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,7 +28,7 @@ class SpannerlogDesugarRewriter {
             regex.getTerms().addAll(rgx.getCaptureVars()
                     .stream()
                     .sorted((c1, c2) -> String.CASE_INSENSITIVE_ORDER.compare(c1.getName(), c2.getName()))
-                    .map(captureVar -> new VarTerm(captureVar.getName()))
+                    .map(captureVar -> new VarTerm(captureVar.getName(), Collections.emptyList()))
                     .collect(Collectors.toList())
             );
 

@@ -262,6 +262,11 @@ class VarTerm extends ExprTerm implements StringTerm, SpanTerm {
         this.varName = varName;
     }
 
+    public VarTerm(String varName, List<SpanTerm> spans) {
+        this.varName = varName;
+        this.spans = spans;
+    }
+
     String getVarName() {
         return varName;
     }

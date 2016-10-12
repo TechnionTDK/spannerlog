@@ -798,13 +798,11 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
 
         if (exprTerm instanceof StringTerm) {
             List<SpanTerm> spans = ((StringTerm) exprTerm).getSpans();
-            if (spans != null) {
-                vars.addAll(spans
-                        .stream()
-                        .flatMap(s -> getVars(s).stream())
-                        .collect(Collectors.toList())
-                );
-            }
+            vars.addAll(spans
+                    .stream()
+                    .flatMap(s -> getVars(s).stream())
+                    .collect(Collectors.toList())
+            );
         }
         return vars;
     }

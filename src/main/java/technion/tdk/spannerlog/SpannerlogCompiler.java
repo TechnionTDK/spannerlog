@@ -156,9 +156,9 @@ class SpannerlogCompiler {
     private String compile(ExprTerm exprTerm) {
         if (exprTerm instanceof StringTerm) {
             List<SpanTerm> spans = ((StringTerm) exprTerm).getSpans();
-            if (exprTerm instanceof VarTerm && spans != null && !spans.isEmpty() && !((VarTerm) exprTerm).getType().equals("text"))
+            if (exprTerm instanceof VarTerm && !spans.isEmpty() && !((VarTerm) exprTerm).getType().equals("text"))
                 throw new SpanAppliedToNonStringTypeAttributeException(((VarTerm) exprTerm).getVarName());
-            if (spans != null && !spans.isEmpty()) {
+            if (!spans.isEmpty()) {
                 SpanTerm spanTerm = spans.get(spans.size() - 1);
                 spans.remove(spans.size() - 1);
                 return compile(exprTerm, spanTerm);
