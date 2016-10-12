@@ -79,6 +79,15 @@ term
     ;
 
 expr
+    : binaryOpExpr
+    | lexpr
+    ;
+
+binaryOpExpr
+    : lexpr operator expr
+    ;
+
+lexpr
     : integerLiteral
     | floatingPointLiteral
     | booleanLiteral
@@ -86,7 +95,6 @@ expr
     | stringExpr
     | varExpr
     | funcExpr
-    | expr operator expr
     ;
 
 funcExpr

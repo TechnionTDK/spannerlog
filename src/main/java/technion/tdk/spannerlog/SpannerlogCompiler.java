@@ -104,31 +104,21 @@ class SpannerlogCompiler {
 
     private String compile(Condition condition) {
         return (String) new PatternMatching(
-                inCaseOf(BinaryCondition.class, this::compile)
+                inCaseOf(BinaryCondition.class, bc -> compileBinaryOp(bc.getLhs(), bc.getRhs(), bc.getOp()))
         ).matchFor(condition);
     }
 
-    private String compile(BinaryCondition bc) {
-        String lhsString;
-        ExprTerm lhs = bc.getLhs();
-        if (lhs instanceof VarTerm) {
-            lhsString = compileVarInCondition((VarTerm) lhs);
-        } else
-            lhsString = compile(lhs);
-
-        String rhsString;
-        ExprTerm rhs = bc.getRhs();
-        if (rhs instanceof VarTerm)
-            rhsString = compileVarInCondition((VarTerm) rhs);
-        else
-            rhsString = compile(rhs);
-
-        return lhsString + " " + bc.getOp() + " " + rhsString;
-    }
-
-    private String compileVarInCondition(VarTerm varTerm) {
-        return varTerm.getVarName()
-                + (varTerm.getType().equals("span") ? "_start" : "");
+    private String compileBinaryOp(ExprTerm lhs, ExprTerm rhs, String op) {
+        PatternMatching pattern = new PatternMatching(
+                inCaseOf(SpanConstExpr.class, e -> String.valueOf(e.getStart())),
+                inCaseOf(VarTerm.class, e -> {
+                    if (e.getType().equals("span"))
+                        return e.getVarName() + "_start";
+                    return compile((ExprTerm) e);
+                }),
+                otherwise(e -> compile((ExprTerm) e))
+        );
+        return pattern.matchFor(lhs) + " " + op + " " + pattern.matchFor(rhs);
     }
 
     private String compile(Atom atom) {
@@ -179,7 +169,8 @@ class SpannerlogCompiler {
                 inCaseOf(ConstExprTerm.class, this::compile),
                 inCaseOf(VarTerm.class, this::compile),
                 inCaseOf(IfThenElseExpr.class, this::compile),
-                inCaseOf(FuncExpr.class, this::compile)
+                inCaseOf(FuncExpr.class, this::compile),
+                inCaseOf(BinaryOpExpr.class, e -> compileBinaryOp(e.getLhs(), e.getRhs(), e.getOp()))
         ).matchFor(exprTerm);
     }
 

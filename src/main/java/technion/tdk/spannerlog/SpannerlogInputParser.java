@@ -249,6 +249,11 @@ class SpannerlogInputParser {
 
     private class ExprVisitor extends SpannerlogBaseVisitor<ExprTerm> {
         @Override
+        public ExprTerm visitBinaryOpExpr(SpannerlogParser.BinaryOpExprContext ctx) {
+            return new BinaryOpExpr(visit(ctx.lexpr()), visit(ctx.expr()), ctx.operator().getText());
+        }
+
+        @Override
         public ExprTerm visitExpr(SpannerlogParser.ExprContext ctx) {
             return visit(ctx.getChild(0));
         }

@@ -420,3 +420,27 @@ class FuncExpr extends ExprTerm {
         return args;
     }
 }
+
+class BinaryOpExpr extends ExprTerm {
+    private ExprTerm lhs;
+    private ExprTerm rhs;
+    private String op;
+
+    BinaryOpExpr(ExprTerm lhs, ExprTerm rhs, String op) {
+        this.lhs = lhs;
+        this.rhs = rhs;
+        this.op = op;
+    }
+
+    ExprTerm getLhs() {
+        return lhs;
+    }
+
+    ExprTerm getRhs() {
+        return rhs;
+    }
+
+    String getOp() {
+        return op;
+    }
+}

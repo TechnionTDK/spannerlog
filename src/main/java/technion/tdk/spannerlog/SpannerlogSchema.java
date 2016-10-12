@@ -470,6 +470,7 @@ class SpannerlogSchema {
                 }
             }
 
+            // set types in conditions
             List<Condition> conditions = rule.getBody().getBodyElements()
                     .stream()
                     .filter(bodyElement -> bodyElement instanceof Condition)
@@ -526,6 +527,7 @@ class SpannerlogSchema {
         return (List<VarTerm>) new PatternMatching(
                 inCaseOf(VarTerm.class, varTerm -> Stream.of(varTerm).collect(Collectors.toList())),
                 inCaseOf(FuncExpr.class, fe -> fe.getArgs().stream().flatMap(arg -> getConditionVars(arg).stream()).collect(Collectors.toList())),
+                inCaseOf(BinaryOpExpr.class, boe -> Stream.of(boe.getLhs(), boe.getRhs()).flatMap(expr -> getConditionVars(expr).stream()).collect(Collectors.toList())),
                 otherwise(expr -> new ArrayList<>())
         ).matchFor(e);
     }
