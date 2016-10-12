@@ -3,6 +3,8 @@ package technion.tdk.spannerlog;
 
 import org.junit.Test;
 
+import java.io.InputStream;
+
 import static org.junit.Assert.assertTrue;
 import static technion.tdk.spannerlog.Utils.checkCompilation;
 
@@ -94,7 +96,7 @@ public class SpouseTests {
     }
 
     @Test
-    public void compileProgramWithLabelRule() {
+    public void compileProgramWithLabelRule1() {
         String splogSrc =
                 "spouse_label(doc_id, sentence_span, person_span1, person_span2, -1, \"neg:far_apart\") <-\n" +
                 "   spouse_candidate(doc_id, sentence_span, person_span1, person_span2),\n" +
@@ -115,6 +117,41 @@ public class SpouseTests {
                     "\"articles_prep\": {" +
                         "\"doc_id\":\"text\"," +
                         "\"content\":\"text\"" +
+                    "}" +
+                "}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+    }
+
+    @Test
+    public void compileProgramWithLabelRule2() {
+        String splogSrc =
+                "spouse_label(doc_id, sentence_span, person_span1, person_span2, -1, \"neg:third_person_between\") <-\n" +
+                        "\tspouse_candidate(doc_id, sentence_span, person_span1, person_span2),\n" +
+                        "\tarticles_prep(doc_id, content),\n" +
+                        "\tperson_mention(third_person, doc_id, sentence_span, third_person_span),\n" +
+                        "\t<content[sentence_span]>\\[.* x{ .* } .* z{ .* } .* y{ .* } .* ]\\,\n" +
+                        "\tcontent[sentence_span][person_span1] = content[sentence_span][x],\n" +
+                        "\tcontent[sentence_span][person_span2] = content[sentence_span][y],\n" +
+                        "\tthird_person = content[sentence_span][z].";
+
+        String edbSchema =
+                "{" +
+                    "\"spouse_candidate\": {" +
+                        "\"doc_id\":\"text\"," +
+                        "\"sentence\":\"span\"," +
+                        "\"person1\":\"span\"," +
+                        "\"person2\":\"span\"" +
+                    "}," +
+                    "\"articles_prep\": {" +
+                        "\"doc_id\":\"text\"," +
+                        "\"content\":\"text\"" +
+                    "}," +
+                    "\"person_mention\": {" +
+                        "\"name\":\"text\"," +
+                        "\"doc_id\":\"text\"," +
+                        "\"sentence\":\"span\"," +
+                        "\"person\":\"span\"" +
                     "}" +
                 "}";
 
@@ -188,5 +225,44 @@ public class SpouseTests {
                 "}";
 
         assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+    }
+
+    @Test
+    public void compileEntireProgram() {
+        InputStream splogSrc = SyntaxTests.class.getClassLoader().getResourceAsStream("spouse.splog");
+
+        String edbSchema =
+                "{\n" +
+                "    \"articles\": {\n" +
+                "        \"column1\": \"text\",\n" +
+                "        \"column2\": \"text\"\n" +
+                "    },\n" +
+                "    \"spouses_dbpedia\": {\n" +
+                "        \"column1\": \"text\",\n" +
+                "        \"column2\": \"text\"\n" +
+                "    }\n" +
+                "}\n";
+
+        String udfSchema =
+                "{\n" +
+                "    \"ner\": {\n" +
+                "        \"content\": \"text\",\n" +
+                "        \"span\": \"span\",\n" +
+                "        \"ner_tag\": \"text\"\n" +
+                "    },\n" +
+                "    \"preprocess\": {\n" +
+                "        \"content_in\": \"text\",\n" +
+                "        \"content_out\": \"text\"\n" +
+                "    },\n" +
+                "    \"ssplit\": {\n" +
+                "        \"content\": \"text\",\n" +
+                "        \"sentence_index\": \"int\",\n" +
+                "        \"sentence_span\": \"span\"\n" +
+                "    }\n" +
+                "}\n";
+
+
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema, true));
     }
 }

@@ -409,7 +409,7 @@ class IfThenElseExpr extends ExprTerm {
         return elseExpr;
     }
 
-    public List<ElseIfExpr> getElseIfExprs() {
+    List<ElseIfExpr> getElseIfExprs() {
         return elseIfExprs;
     }
 }

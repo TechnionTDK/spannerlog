@@ -1,6 +1,7 @@
 package technion.tdk.spannerlog;
 
 
+import org.junit.Ignore;
 import org.junit.Test;
 import technion.tdk.spannerlog.utils.dependencies.CircularDependencyException;
 
@@ -69,7 +70,7 @@ public class CompilationTests {
         assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
-    @Test(expected = CircularDependencyException.class)
+    @Test(expected = AttributeTypeCannotBeInferredException.class)
     public void programWithCircularDependencyShouldFail() {
         String splogSrc = "R(x,y) <- S(x), T(y).\n" +
                           "T(z) <- R(x,z), S(x).";

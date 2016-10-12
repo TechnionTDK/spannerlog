@@ -31,8 +31,8 @@ public class DependenciesGraph<T> {
             if (!visited.get(t)) {
                 visited.put(t, Boolean.TRUE);
                 for (T s : this.outEdges(t)) {
-                    if (visited.get(s))
-                        throw new CircularDependencyException();
+//                    if (visited.get(s))
+//                        throw new CircularDependencyException();
                     stack.push(s);
                 }
             }

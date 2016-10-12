@@ -27,8 +27,8 @@ class SpannerlogCompiler {
         return program.getStatements()
                 .stream()
                 .map(this::compile)
+                .filter(map -> !map.isEmpty())
                 .collect(Collectors.toList());
-
     }
 
 
