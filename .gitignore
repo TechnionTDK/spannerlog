@@ -8,3 +8,9 @@ run/
 /src/main/java/technion/tdk/spannerlog/grammar/SpannerlogLexer.java
 /src/main/java/technion/tdk/spannerlog/grammar/SpannerlogParser.java
 /src/main/java/technion/tdk/spannerlog/grammar/SpannerlogVisitor.java
+/src/main/java/technion/tdk/spannerlog/rgx/grammar/RgxLexer.tokens
+/src/main/java/technion/tdk/spannerlog/rgx/grammar/RgxLexer.java
+/src/main/java/technion/tdk/spannerlog/rgx/grammar/RgxVisitor.java
+/src/main/java/technion/tdk/spannerlog/rgx/grammar/Rgx.tokens
+/src/main/java/technion/tdk/spannerlog/rgx/grammar/RgxBaseVisitor.java
+/src/main/java/technion/tdk/spannerlog/rgx/grammar/RgxParser.java
