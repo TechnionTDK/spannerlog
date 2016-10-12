@@ -403,4 +403,20 @@ class IfThenElseExpr extends ExprTerm {
     }
 }
 
+class FuncExpr extends ExprTerm {
+    private String function;
+    private List<ExprTerm> args;
 
+    FuncExpr(String function, List<ExprTerm> args) {
+        this.function = function;
+        this.args = args;
+    }
+
+    String getFunction() {
+        return function;
+    }
+
+    List<ExprTerm> getArgs() {
+        return args;
+    }
+}

@@ -458,11 +458,6 @@ class SpannerlogSchema {
                 );
             }
 
-            atoms.stream()
-                    .flatMap(atom -> atom.getTerms().stream())
-                    .filter(term -> term instanceof VarTerm)
-                    .map(term -> (VarTerm) term);
-
             for (Atom atom : atoms) {
                 List<Attribute> atomAttrs = atom.getSchema().getAttrs();
                 ListIterator<Term> it = atom.getTerms().listIterator();
@@ -514,20 +509,25 @@ class SpannerlogSchema {
     @SuppressWarnings("unchecked")
     private List<VarTerm> getConditionVars(Condition c) {
         return (List<VarTerm>) new PatternMatching(
-                inCaseOf(BinaryCondition.class, this::getConditionVars)
+                inCaseOf(BinaryCondition.class, bc -> {
+                    List<VarTerm> vars = getConditionVars(bc.getLhs());
+                    vars.addAll(getConditionVars(bc.getRhs()));
+                    return vars;
+                }),
+                inCaseOf(FuncExpr.class, fe -> fe.getArgs()
+                        .stream()
+                        .flatMap(arg -> getConditionVars(arg).stream())
+                        .collect(Collectors.toList()))
         ).matchFor(c);
     }
 
-    private List<VarTerm> getConditionVars(BinaryCondition bc) {
-        List<VarTerm> varTerms = new ArrayList<>();
-
-        if (bc.getLhs() instanceof VarTerm)
-            varTerms.add((VarTerm) bc.getLhs());
-
-        if (bc.getRhs() instanceof VarTerm)
-            varTerms.add((VarTerm) bc.getRhs());
-
-        return varTerms;
+    @SuppressWarnings("unchecked")
+    private List<VarTerm> getConditionVars(ExprTerm e) {
+        return (List<VarTerm>) new PatternMatching(
+                inCaseOf(VarTerm.class, varTerm -> Stream.of(varTerm).collect(Collectors.toList())),
+                inCaseOf(FuncExpr.class, fe -> fe.getArgs().stream().flatMap(arg -> getConditionVars(arg).stream()).collect(Collectors.toList())),
+                otherwise(expr -> new ArrayList<>())
+        ).matchFor(e);
     }
 }
 

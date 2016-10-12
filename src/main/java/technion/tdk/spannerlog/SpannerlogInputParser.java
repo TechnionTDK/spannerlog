@@ -154,7 +154,7 @@ class SpannerlogInputParser {
         public Condition visitBinaryCondition(SpannerlogParser.BinaryConditionContext ctx) {
             ExprVisitor exprVisitor = new ExprVisitor();
             return new BinaryCondition(ctx.expr(0).accept(exprVisitor),
-                    ctx.CompareOperator().getText(),
+                    ctx.compareOperator().getText(),
                     ctx.expr(1).accept(exprVisitor)
             );
         }
@@ -313,6 +313,14 @@ class SpannerlogInputParser {
                     ctx.condition().accept(new ConditionVisitor()),
                     ctx.expr(0).accept(this),
                     (ctx.getChildCount() > 2) ? ctx.expr(1).accept(this) : null
+            );
+        }
+
+        @Override
+        public ExprTerm visitFuncExpr(SpannerlogParser.FuncExprContext ctx) {
+            return new FuncExpr(
+                    ctx.functionName().getText(),
+                    ctx.expr().stream().map(e -> e.accept(this)).collect(Collectors.toList())
             );
         }
     }

@@ -1,12 +1,8 @@
 package technion.tdk.spannerlog;
 
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 import technion.tdk.spannerlog.utils.dependencies.CircularDependencyException;
-
-import java.io.OutputStream;
-import java.io.PrintStream;
 
 import static org.junit.Assert.assertTrue;
 import static technion.tdk.spannerlog.Utils.checkCompilation;
@@ -28,7 +24,6 @@ public class CompilationTests {
         assertTrue(checkCompilation(splogSrc, null, null, false));
     }
 
-//    @Ignore
     @Test
     public void inferBasicDependency() {
 
@@ -65,7 +60,6 @@ public class CompilationTests {
         assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
-//    @Ignore
     @Test
     public void compileNonBooleanCQ() {
         String splogSrc = "Path(x,y) <- Edge(x,y).\n" +
@@ -102,7 +96,6 @@ public class CompilationTests {
     }
 
 
-//    @Ignore
     @Test
     public void compileQueryWithLiterals() {
         String splogSrc = "Q() <- R(False, \"Hello\", 4, -2, 0.01, - 1.0,  [3,4]).";
@@ -110,9 +103,16 @@ public class CompilationTests {
         assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
-//    @Ignore
     @Test
     public void compileQueryWithSpans() {
+        String splogSrc = "Q(\"Hello World\"[1,6][2,4], s[t]) <- R(s,t).";
+        String edbSchema = "{\"R\":{\"a1\":\"text\", \"a2\":\"span\"}}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+    }
+
+    @Test(expected = SpanAppliedToNonStringTypeAttribute.class)
+    public void ApplyingSpansToNonStringTypeAttributeShouldFail() {
         String splogSrc = "Q(\"Hello World\"[1,6][2,4], s[t]) <- R(s,t).";
         String edbSchema = "{\"R\":{\"a1\":\"int\", \"a2\":\"span\"}}";
 
@@ -128,7 +128,6 @@ public class CompilationTests {
         assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema, false));
     }
 
-//    @Ignore
     @Test
     public void compileAnbnQuery() {
         String splogSrc = "Q() <- doc(s), rgx1<s>(x,y), rgx2<s[y]>(x).";

@@ -1,10 +1,15 @@
 package technion.tdk.spannerlog;
 
 
+import com.google.gson.JsonObject;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static technion.tdk.spannerlog.Utils.checkCompilation;
+import static technion.tdk.spannerlog.Utils.compileToJson;
+import static technion.tdk.spannerlog.Utils.printJsonTree;
 
 public class SpouseTests {
 
@@ -55,6 +60,69 @@ public class SpouseTests {
                         "}" +
                 "}";
 
+
         assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+
+//        JsonObject jsonTree = compileToJson(splogSrc, edbSchema, null);
+//        printJsonTree(jsonTree);
+
+    }
+
+    @Test
+    public void compileProgramWithFunctionOnVariables() {
+        String splogSrc =
+            "spouse_label(doc_id, sentence_span, person_span1, person_span2, 1, \"from_dbpedia\") <-\n" +
+            "   spouse_candidate(doc_id, sentence_span, person_span1, person_span2),\n" +
+            "   spouses_dbpedia(n1, n2),\n" +
+            "   articles_prep(doc_id, content),\n" +
+            "   lower(n1) = lower(content[sentence_span][person_span1]), lower(n2) = lower(content[sentence_span][person_span2]).";
+
+        String edbSchema =
+                "{" +
+                        "\"spouse_candidate\": {" +
+                            "\"doc_id\":\"text\"," +
+                            "\"sentence\":\"span\"," +
+                            "\"person1\":\"span\"," +
+                            "\"person2\":\"span\"" +
+                        "}," +
+                        "\"spouses_dbpedia\": {" +
+                            "\"name1\":\"text\"," +
+                            "\"name2\":\"text\"" +
+                        "}," +
+                        "\"articles_prep\": {" +
+                            "\"doc_id\":\"text\"," +
+                            "\"content\":\"text\"" +
+                        "}" +
+                "}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+    }
+
+    @Test
+    public void compileProgramWithLabelRule() {
+        String splogSrc =
+                "spouse_label(doc_id, sentence_span, person_span1, person_span2, -1, \"neg:far_apart\") <-\n" +
+                "   spouse_candidate(doc_id, sentence_span, person_span1, person_span2),\n" +
+                "   articles_prep(doc_id, content),\n" +
+                "   <content[sentence_span]>\\[.* x{ .* } .* y{ .* } .* ]\\,\n" +
+                "   content[sentence_span][person_span1] = content[sentence_span][x],\n" +
+                "   content[sentence_span][person_span2] = content[sentence_span][y],\n" +
+                "   x - y > 60.";
+
+        String edbSchema =
+                "{" +
+                        "\"spouse_candidate\": {" +
+                            "\"doc_id\":\"text\"," +
+                            "\"sentence\":\"span\"," +
+                            "\"person1\":\"span\"," +
+                            "\"person2\":\"span\"" +
+                        "}," +
+                        "\"articles_prep\": {" +
+                            "\"doc_id\":\"text\"," +
+                            "\"content\":\"text\"" +
+                        "}" +
+                "}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
     }
 }

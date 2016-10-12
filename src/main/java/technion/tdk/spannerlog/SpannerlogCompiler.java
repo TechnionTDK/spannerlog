@@ -166,6 +166,8 @@ class SpannerlogCompiler {
     private String compile(ExprTerm exprTerm) {
         if (exprTerm instanceof StringTerm) {
             List<SpanTerm> spans = ((StringTerm) exprTerm).getSpans();
+            if (exprTerm instanceof VarTerm && spans != null && !spans.isEmpty() && !((VarTerm) exprTerm).getType().equals("text"))
+                throw new SpanAppliedToNonStringTypeAttribute(((VarTerm) exprTerm).getVarName());
             if (spans != null && !spans.isEmpty()) {
                 SpanTerm spanTerm = spans.get(spans.size() - 1);
                 spans.remove(spans.size() - 1);
@@ -176,8 +178,13 @@ class SpannerlogCompiler {
         return (String) new PatternMatching(
                 inCaseOf(ConstExprTerm.class, this::compile),
                 inCaseOf(VarTerm.class, this::compile),
-                inCaseOf(IfThenElseExpr.class, this::compile)
+                inCaseOf(IfThenElseExpr.class, this::compile),
+                inCaseOf(FuncExpr.class, this::compile)
         ).matchFor(exprTerm);
+    }
+
+    private String compile(FuncExpr e) {
+        return e.getFunction() + "(" + e.getArgs().stream().map(this::compile).collect(Collectors.joining(", ")) + ")";
     }
 
     private String compile(IfThenElseExpr e) {
@@ -241,5 +248,11 @@ class SpannerlogCompiler {
             return varTerm.getVarName() + "_start, " + varTerm.getVarName() + "_end";
 
         return varTerm.getVarName();
+    }
+}
+
+class SpanAppliedToNonStringTypeAttribute extends RuntimeException {
+    SpanAppliedToNonStringTypeAttribute(String varName) {
+        super("The variable '" + varName + "' must be of type string in order to apply span to it.");
     }
 }

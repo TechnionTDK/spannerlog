@@ -24,7 +24,7 @@ extractionRule
     ;
 
 supervisionRule
-    : dbAtom '=' supervisionExpr RigidSeparator conjunctiveQueryBody '.'
+    : dbAtom Equal supervisionExpr RigidSeparator conjunctiveQueryBody '.'
     ;
 
 inferenceRule
@@ -52,7 +52,7 @@ condition
     ;
 
 binaryCondition
-    : expr CompareOperator expr
+    : expr compareOperator expr
     ;
 
 atom
@@ -65,8 +65,8 @@ dbAtom
     ;
 
 ieAtom
-    : relationSchemaName '<' varExpr '>' termClause    # IEFunction
-    | ('RGX')? '<' varExpr '>' Regex                   # Rgx
+    : relationSchemaName LANGLE varExpr RANGLE termClause    # IEFunction
+    | ('RGX')? LANGLE varExpr RANGLE Regex                   # Rgx
     ;
 
 termClause
@@ -85,6 +85,16 @@ expr
     | spanLiteral
     | stringExpr
     | varExpr
+    | funcExpr
+    | expr operator expr
+    ;
+
+funcExpr
+    : functionName '(' expr (',' expr)? ')'
+    ;
+
+functionName
+    : Identifier
     ;
 
 supervisionExpr
@@ -114,7 +124,7 @@ span
     ;
 
 spanVarClause
-    : '[' variable ']'
+    : LBRACK variable RBRACK
     ;
 
 relationSchemaName
@@ -130,15 +140,15 @@ placeHolder
     ;
 
 spanLiteral
-    : '[' IntegerLiteral+ ',' IntegerLiteral+ ']'
+    : LBRACK IntegerLiteral+ ',' IntegerLiteral+ RBRACK
     ;
 
 integerLiteral
-    : '-'? IntegerLiteral
+    : Minus? IntegerLiteral
     ;
 
 floatingPointLiteral
-    : '-'? FloatingPointLiteral
+    : Minus? FloatingPointLiteral
     ;
 
 booleanLiteral
@@ -147,6 +157,14 @@ booleanLiteral
 
 stringLiteral
     : StringLiteral
+    ;
+
+operator
+    : Plus | Minus
+    ;
+
+compareOperator
+    : Equal | NotEqual | LANGLE | RANGLE
     ;
 
 BooleanLiteral
@@ -170,6 +188,58 @@ UnknownLabel
     : 'UKN'
     ;
 
+RigidSeparator
+    : '<-'
+    ;
+
+SoftSeparator
+    : '<~'
+    ;
+
+Equal
+    : '='
+    ;
+
+NotEqual
+    : '!='
+    ;
+
+Minus
+    : '-'
+    ;
+
+Plus
+    : '+'
+    ;
+
+LRGX
+    : '\\['
+    ;
+
+RRGX
+    : ']\\'
+    ;
+
+LBRACK
+    : '['
+    ;
+
+RBRACK
+    : ']'
+    ;
+
+LANGLE
+    : '<'
+    ;
+
+RANGLE
+    : '>'
+    ;
+
+Regex
+    :  LRGX RegexElememt* RRGX
+    ;
+
 Identifier
     : Letter LetterOrDigit*
     ;
@@ -185,23 +255,6 @@ IntegerLiteral
 FloatingPointLiteral
    : Digit + '.' Digit+
    ;
-
-RigidSeparator
-    : '<-'
-    ;
-
-SoftSeparator
-    : '<~'
-    ;
-
-CompareOperator
-    : '='
-    | '!='
-    ;
-
-Regex
-    :  '\\[' RegexElememt* ']\\'
-    ;
 
 WS
     : [ \t\r\n]+ -> skip
@@ -223,7 +276,7 @@ LetterOrDigit
 
 fragment
 RegexElememt
-    : [a-zA-Z0-9] | [ \t\r\n] | '{' | '}' | '+' | '*'
+    : [a-zA-Z0-9] | [ \t\r\n] | '{' | '}' | '+' | '*' | '.'
     ;
 
 fragment
