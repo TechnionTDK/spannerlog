@@ -206,7 +206,7 @@ class SpannerlogCompiler {
                     throw new IllegalArgumentException("Illegal argument in '" + e.getFunction() + "': arguments must be of type 'span'");
                 String tn = t.getVarName();
                 String sn = s2.getVarName();
-                return tn + "_start >= " + sn + "_start, " + tn + "_end <= " + sn + "_end" ;
+                return "(" + tn + "_start - 1) < " + sn + "_start, (" + tn + "_end + 1) > " + sn + "_end" ;
         }
         throw new UnknownFunctionException(e.getFunction());
     }

@@ -3,7 +3,6 @@ grammar Rgx;
 regex
     : regex '|' regexSimple
     | regexSimple
-    |
     ;
 
 regexSimple

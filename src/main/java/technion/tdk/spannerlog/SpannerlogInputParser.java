@@ -257,6 +257,11 @@ class SpannerlogInputParser {
         }
 
         @Override
+        public ExprTerm visitCompareExpr(SpannerlogParser.CompareExprContext ctx) {
+            return new BinaryOpExpr(visit(ctx.expr(0)), visit(ctx.expr(1)), ctx.compareOperator().getText());
+        }
+
+        @Override
         public ExprTerm visitExpr(SpannerlogParser.ExprContext ctx) {
             return visit(ctx.getChild(0));
         }

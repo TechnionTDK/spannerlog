@@ -121,7 +121,7 @@ public class SpouseTests {
                     "}" +
                 "}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
     }
 
     @Test
@@ -155,6 +155,39 @@ public class SpouseTests {
                         "\"person\":\"span\"" +
                     "}" +
                 "}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+    }
+
+    @Test
+    public void compileProgramWithLabelRule3() {
+        String splogSrc =
+                "spouse_label(doc_id, sentence_span, person_span1, person_span2, 1, \"pos:wife_husband_between\") <-\n" +
+                        "\tspouse_candidate(doc_id, sentence_span, person_span1, person_span2),\n" +
+                        "\tarticles_prep(doc_id, content),\n" +
+                        "\t<content[sentence_span]>\\[x{ .* } \\s (wife|husband) \\s y{ .* }]\\,\n" +
+                        "\tx.contains(person_span1),\n" +
+                        "\ty.contains(person_span2).";
+
+        String edbSchema =
+                "{" +
+                        "\"spouse_candidate\": {" +
+                        "\"doc_id\":\"text\"," +
+                        "\"sentence\":\"span\"," +
+                        "\"person1\":\"span\"," +
+                        "\"person2\":\"span\"" +
+                        "}," +
+                        "\"articles_prep\": {" +
+                        "\"doc_id\":\"text\"," +
+                        "\"content\":\"text\"" +
+                        "}," +
+                        "\"person_mention\": {" +
+                        "\"name\":\"text\"," +
+                        "\"doc_id\":\"text\"," +
+                        "\"sentence\":\"span\"," +
+                        "\"person\":\"span\"" +
+                        "}" +
+                        "}";
 
         assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
@@ -264,6 +297,6 @@ public class SpouseTests {
 
 
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema, false));
+        assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema, true));
     }
 }

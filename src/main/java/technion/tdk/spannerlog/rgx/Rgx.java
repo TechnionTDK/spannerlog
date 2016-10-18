@@ -79,5 +79,10 @@ public class Rgx {
         public String visitTerminal(TerminalNode node) {
             return node.getText();
         }
+
+        @Override
+        public String visitGroup(RgxParser.GroupContext ctx) {
+            return "(" + visit(ctx.regex()) + ")";
+        }
     }
 }
