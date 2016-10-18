@@ -19,6 +19,7 @@ class SpannerlogCompiler {
                 .stream()
                 .filter(s -> s instanceof IEFunctionSchema)
                 .map(s -> (IEFunctionSchema) s)
+                .filter(s -> s.getInputAtoms() != null)
                 .collect(Collectors.toMap(IEFunctionSchema::getName, this::compile));
     }
 
