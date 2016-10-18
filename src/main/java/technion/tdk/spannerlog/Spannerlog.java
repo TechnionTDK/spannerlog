@@ -55,7 +55,7 @@ public class Spannerlog {
 
         jsonTree.add("ie_functions", gson.toJsonTree(schema.getRelationSchemas()
                 .stream()
-                .filter(s -> s instanceof IEFunctionSchema && iefDeclarationsBlocks.containsKey(s.getName()))
+                .filter(s -> s instanceof IEFunctionSchema)
                 .sorted((s1, s2) -> String.CASE_INSENSITIVE_ORDER.compare(s1.getName(), s2.getName()))
                 .map(s -> toJson((IEFunctionSchema) s, iefDeclarationsBlocks))
                 .collect(Collectors.toList()))

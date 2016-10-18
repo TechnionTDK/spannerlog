@@ -284,10 +284,6 @@ public class SpouseTests {
                 "        \"span\": \"span\",\n" +
                 "        \"ner_tag\": \"text\"\n" +
                 "    },\n" +
-                "    \"preprocess\": {\n" +
-                "        \"content_in\": \"text\",\n" +
-                "        \"content_out\": \"text\"\n" +
-                "    },\n" +
                 "    \"ssplit\": {\n" +
                 "        \"content\": \"text\",\n" +
                 "        \"sentence_index\": \"int\",\n" +
