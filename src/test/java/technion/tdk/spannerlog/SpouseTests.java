@@ -72,7 +72,8 @@ public class SpouseTests {
             "   spouse_candidate(doc_id, sentence_span, person_span1, person_span2),\n" +
             "   spouses_dbpedia(n1, n2),\n" +
             "   articles_prep(doc_id, content),\n" +
-            "   lower(n1) = lower(content[sentence_span][person_span1]), lower(n2) = lower(content[sentence_span][person_span2]).";
+            "   n1.equalsIgnoreCase(content[sentence_span][person_span1]),\n" +
+            "   n2.equalsIgnoreCase(content[sentence_span][person_span2]).";
 
         String edbSchema =
                 "{" +
@@ -263,6 +264,6 @@ public class SpouseTests {
 
 
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema, true));
+        assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema, false));
     }
 }

@@ -139,27 +139,28 @@ abstract class BodyElement {
 abstract class Condition extends BodyElement {
 }
 
-class BinaryCondition extends Condition {
-    private ExprTerm lhs;
-    private String op;
-    private ExprTerm rhs;
+class NegationCondition extends Condition {
+    private Condition cond;
 
-    BinaryCondition(ExprTerm lhs, String op, ExprTerm rhs) {
-        this.lhs = lhs;
-        this.op = op;
-        this.rhs = rhs;
+    NegationCondition(Condition cond) {
+        this.cond = cond;
     }
 
-    ExprTerm getLhs() {
-        return lhs;
+    Condition getCond() {
+        return cond;
+    }
+}
+
+class ExprCondition extends Condition {
+    private ExprTerm expr;
+
+    ExprCondition(ExprTerm expr) {
+        this.expr = expr;
+
     }
 
-    public String getOp() {
-        return op;
-    }
-
-    ExprTerm getRhs() {
-        return rhs;
+    ExprTerm getExpr() {
+        return expr;
     }
 }
 
@@ -262,7 +263,7 @@ class VarTerm extends ExprTerm implements StringTerm, SpanTerm {
         this.varName = varName;
     }
 
-    public VarTerm(String varName, List<SpanTerm> spans) {
+    VarTerm(String varName, List<SpanTerm> spans) {
         this.varName = varName;
         this.spans = spans;
     }
@@ -455,6 +456,30 @@ class FuncExpr extends ExprTerm {
 
     boolean isAggregation() {
         return isAggregation;
+    }
+}
+
+class DotFuncExpr extends ExprTerm {
+    private VarTerm varTerm;
+    private String function;
+    private List<ExprTerm> args;
+
+    DotFuncExpr(VarTerm varTerm, String function, List<ExprTerm> args) {
+        this.varTerm = varTerm;
+        this.function = function;
+        this.args = args;
+    }
+
+    VarTerm getVarTerm() {
+        return varTerm;
+    }
+
+    String getFunction() {
+        return function;
+    }
+
+    List<ExprTerm> getArgs() {
+        return args;
     }
 }
 

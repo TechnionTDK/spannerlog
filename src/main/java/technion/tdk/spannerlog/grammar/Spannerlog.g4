@@ -48,11 +48,17 @@ bodyElement
     ;
 
 condition
-    : binaryCondition
+    : negationCondition
+    | exprCondition
     ;
 
-binaryCondition
-    : expr compareOperator expr
+negationCondition
+    : '!' exprCondition
+    ;
+
+exprCondition
+    : compareExpr
+    | dotFuncExpr
     ;
 
 atom
@@ -80,14 +86,18 @@ term
 
 expr
     : binaryOpExpr
-    | lexpr
+    | exprAux
     ;
 
 binaryOpExpr
-    : lexpr operator expr
+    : exprAux operator expr
     ;
 
-lexpr
+compareExpr
+    : expr compareOperator expr
+    ;
+
+exprAux
     : integerLiteral
     | floatingPointLiteral
     | booleanLiteral
@@ -95,11 +105,16 @@ lexpr
     | stringExpr
     | varExpr
     | funcExpr
+    | dotFuncExpr
     | nullExpr
     ;
 
 funcExpr
     : functionName '(' expr (',' expr)? ')'
+    ;
+
+dotFuncExpr
+    : varExpr '.' functionName '(' expr (',' expr)? ')'
     ;
 
 functionName
@@ -277,7 +292,7 @@ LetterOrDigit
 
 fragment
 RegexElememt
-    : [a-zA-Z0-9] | [ \t\r\n] | '{' | '}' | '+' | '*' | '.' | '"' | '|' | '(' | ')' | '-'
+    : [a-zA-Z0-9] | [ \t\r\n] | '{' | '}' | '+' | '*' | '.' | '"' | '|' | '(' | ')' | '-' | '\\'
     ;
 
 fragment

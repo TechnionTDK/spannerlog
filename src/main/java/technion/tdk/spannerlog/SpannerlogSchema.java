@@ -491,7 +491,7 @@ class SpannerlogSchema {
                         .collect(Collectors.toList());
 
                 for (Condition c : conditions) {
-                    List<VarTerm> condVars = getConditionVars(c);
+                    List<VarTerm> condVars = getVarsInCondition(c);
                     for (VarTerm condVar : condVars) {
                         List<String> possibleTypes = atomsVars
                                 .stream()
@@ -513,26 +513,27 @@ class SpannerlogSchema {
     }
 
     @SuppressWarnings("unchecked")
-    private List<VarTerm> getConditionVars(Condition c) {
+    private List<VarTerm> getVarsInCondition(Condition c) {
         return (List<VarTerm>) new PatternMatching(
-                inCaseOf(BinaryCondition.class, bc -> {
-                    List<VarTerm> vars = getConditionVars(bc.getLhs());
-                    vars.addAll(getConditionVars(bc.getRhs()));
-                    return vars;
-                }),
-                inCaseOf(FuncExpr.class, fe -> fe.getArgs()
-                        .stream()
-                        .flatMap(arg -> getConditionVars(arg).stream())
-                        .collect(Collectors.toList()))
+                inCaseOf(NegationCondition.class, nc -> getVarsInCondition(nc.getCond())),
+                inCaseOf(ExprCondition.class, ec -> getVarsInCondition(ec.getExpr()))
         ).matchFor(c);
     }
 
     @SuppressWarnings("unchecked")
-    private List<VarTerm> getConditionVars(ExprTerm e) {
+    private List<VarTerm> getVarsInCondition(ExprTerm e) {
         return (List<VarTerm>) new PatternMatching(
-                inCaseOf(VarTerm.class, varTerm -> Stream.of(varTerm).collect(Collectors.toList())),
-                inCaseOf(FuncExpr.class, fe -> fe.getArgs().stream().flatMap(arg -> getConditionVars(arg).stream()).collect(Collectors.toList())),
-                inCaseOf(BinaryOpExpr.class, boe -> Stream.of(boe.getLhs(), boe.getRhs()).flatMap(expr -> getConditionVars(expr).stream()).collect(Collectors.toList())),
+                inCaseOf(VarTerm.class, varTerm -> {
+                    List<VarTerm> vars = Stream.of(varTerm).collect(Collectors.toList());
+                    vars.addAll(varTerm.getSpans().stream().filter(s -> s instanceof VarTerm).map(s -> (VarTerm) s).collect(Collectors.toList()));
+                    return vars;
+                }),
+                inCaseOf(DotFuncExpr.class, fe -> {
+                    List<VarTerm> vars = fe.getArgs().stream().flatMap(arg -> getVarsInCondition(arg).stream()).collect(Collectors.toList());
+                    vars.add(fe.getVarTerm());
+                    return vars;
+                }),
+                inCaseOf(BinaryOpExpr.class, boe -> Stream.of(boe.getLhs(), boe.getRhs()).flatMap(expr -> getVarsInCondition(expr).stream()).collect(Collectors.toList())),
                 otherwise(expr -> new ArrayList<>())
         ).matchFor(e);
     }

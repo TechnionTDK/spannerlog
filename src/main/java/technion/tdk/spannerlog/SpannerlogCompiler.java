@@ -70,7 +70,7 @@ class SpannerlogCompiler {
 
     private Map<String, String> compile(InferenceRule rule) {
         Map<String, String> cqBlock = new HashMap<>();
-        cqBlock.put("inference_rule", compile(rule.getHead()) + " :- " + compile(rule.getBody()) + ".");
+        cqBlock.put("inference_rule", "@weight(\"?\")\n" + compile(rule.getHead()) + " :- " + compile(rule.getBody()) + ".");
         return cqBlock;
     }
 
@@ -89,10 +89,22 @@ class SpannerlogCompiler {
     }
 
     private String compile(ConjunctiveQueryBody body) {
-        return body.getBodyElements()
+        String compiledString = body.getBodyElements()
                 .stream()
+                .filter(bodyElement -> bodyElement instanceof Atom)
                 .map(this::compile)
                 .collect(Collectors.joining(", "));
+
+        List<String> conditions = body.getBodyElements()
+                .stream()
+                .filter(bodyElement -> bodyElement instanceof Condition)
+                .map(this::compile)
+                .collect(Collectors.toList());
+
+        if (!conditions.isEmpty())
+            compiledString += ", " + "[" +conditions.stream().collect(Collectors.joining(", ")) + "]";
+
+        return compiledString;
     }
 
     private String compile(BodyElement bodyElement) {
@@ -104,7 +116,8 @@ class SpannerlogCompiler {
 
     private String compile(Condition condition) {
         return (String) new PatternMatching(
-                inCaseOf(BinaryCondition.class, bc -> compileBinaryOp(bc.getLhs(), bc.getRhs(), bc.getOp()))
+                inCaseOf(NegationCondition.class, nc -> "!" + compile(nc.getCond())),
+                inCaseOf(ExprCondition.class, ec -> compile(ec.getExpr()))
         ).matchFor(condition);
     }
 
@@ -170,8 +183,32 @@ class SpannerlogCompiler {
                 inCaseOf(VarTerm.class, this::compile),
                 inCaseOf(IfThenElseExpr.class, this::compile),
                 inCaseOf(FuncExpr.class, this::compile),
-                inCaseOf(BinaryOpExpr.class, e -> compileBinaryOp(e.getLhs(), e.getRhs(), e.getOp()))
+                inCaseOf(BinaryOpExpr.class, e -> compileBinaryOp(e.getLhs(), e.getRhs(), e.getOp())),
+                inCaseOf(DotFuncExpr.class, this::compile)
         ).matchFor(exprTerm);
+    }
+
+    private String compile(DotFuncExpr e) {
+        VarTerm t = e.getVarTerm();
+        switch (e.getFunction()) {
+            case "equalsIgnoreCase":
+                if (e.getArgs().size() != 1)
+                    throw new IllegalArgumentException("Illegal argument in '" + e.getFunction() + "': illegal number of arguments");
+                VarTerm s1 = (VarTerm) e.getArgs().get(0); // TODO handle constants
+                if (!t.getType().equals(s1.getType()))
+                    throw new IllegalArgumentException("Illegal argument in '" + e.getFunction() + "': incompatible data types");
+                return "lower(" + compile((ExprTerm) t) + ") = lower(" + compile((ExprTerm) s1) + ")";
+            case "contains":
+                if (e.getArgs().size() != 1)
+                    throw new IllegalArgumentException("Illegal argument in '" + e.getFunction() + "': illegal number of arguments");
+                VarTerm s2 = (VarTerm) e.getArgs().get(0); // TODO handle constants
+                if (!t.getType().equals("span") || !s2.getType().equals("span"))
+                    throw new IllegalArgumentException("Illegal argument in '" + e.getFunction() + "': arguments must be of type 'span'");
+                String tn = t.getVarName();
+                String sn = s2.getVarName();
+                return tn + "_start >= " + sn + "_start, " + tn + "_end <= " + sn + "_end" ;
+        }
+        throw new UnknownFunctionException(e.getFunction());
     }
 
     private String compile(FuncExpr e) {
@@ -250,5 +287,11 @@ class SpannerlogCompiler {
 class SpanAppliedToNonStringTypeAttributeException extends RuntimeException {
     SpanAppliedToNonStringTypeAttributeException(String varName) {
         super("The variable '" + varName + "' must be of type string in order to apply span to it");
+    }
+}
+
+class UnknownFunctionException extends RuntimeException {
+    UnknownFunctionException(String functionName) {
+        super("The function '" + functionName + "' is unknown");
     }
 }

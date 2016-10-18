@@ -153,12 +153,13 @@ class SpannerlogInputParser {
 
     private class ConditionVisitor extends SpannerlogBaseVisitor<Condition> {
         @Override
-        public Condition visitBinaryCondition(SpannerlogParser.BinaryConditionContext ctx) {
-            ExprVisitor exprVisitor = new ExprVisitor();
-            return new BinaryCondition(ctx.expr(0).accept(exprVisitor),
-                    ctx.compareOperator().getText(),
-                    ctx.expr(1).accept(exprVisitor)
-            );
+        public Condition visitNegationCondition(SpannerlogParser.NegationConditionContext ctx) {
+            return new NegationCondition(visit(ctx.exprCondition()));
+        }
+
+        @Override
+        public Condition visitExprCondition(SpannerlogParser.ExprConditionContext ctx) {
+            return new ExprCondition(ctx.accept(new ExprVisitor()));
         }
     }
 
@@ -252,7 +253,7 @@ class SpannerlogInputParser {
     private class ExprVisitor extends SpannerlogBaseVisitor<ExprTerm> {
         @Override
         public ExprTerm visitBinaryOpExpr(SpannerlogParser.BinaryOpExprContext ctx) {
-            return new BinaryOpExpr(visit(ctx.lexpr()), visit(ctx.expr()), ctx.operator().getText());
+            return new BinaryOpExpr(visit(ctx.exprAux()), visit(ctx.expr()), ctx.operator().getText());
         }
 
         @Override
@@ -334,6 +335,15 @@ class SpannerlogInputParser {
                     funcName,
                     ctx.expr().stream().map(e -> e.accept(this)).collect(Collectors.toList()),
                     Stream.of(AGGREGATION_FUNCTIONS).anyMatch(aggFunc -> aggFunc.equalsIgnoreCase(funcName))
+            );
+        }
+
+        @Override
+        public ExprTerm visitDotFuncExpr(SpannerlogParser.DotFuncExprContext ctx) {
+            return new DotFuncExpr(
+                    ctx.varExpr().accept(new VarExprVisitor()),
+                    ctx.functionName().getText(),
+                    ctx.expr().stream().map(e -> e.accept(this)).collect(Collectors.toList())
             );
         }
     }
