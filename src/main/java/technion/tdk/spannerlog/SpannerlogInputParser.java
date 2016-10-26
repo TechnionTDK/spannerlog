@@ -74,8 +74,31 @@ class SpannerlogInputParser {
         public Statement visitInferenceRule(SpannerlogParser.InferenceRuleContext ctx) {
             return new InferenceRule(
                     ctx.inferenceRuleHead().accept(new InferenceRuleHeadVisitor()),
-                    ctx.conjunctiveQueryBody().accept(new ConjunctiveQueryBodyVisitor())
+                    ctx.conjunctiveQueryBody().accept(new ConjunctiveQueryBodyVisitor()),
+                    ctx.weight().accept(new FactorWeightVisitor())
             );
+        }
+    }
+
+    private class FactorWeightVisitor extends SpannerlogBaseVisitor<FactorWeight> {
+        @Override
+        public FactorWeight visitUnknownWeight(SpannerlogParser.UnknownWeightContext ctx) {
+            return new FactorWeight();
+        }
+
+        @Override
+        public FactorWeight visitUnknownWeightWithFeature(SpannerlogParser.UnknownWeightWithFeatureContext ctx) {
+            return new FactorWeight(ctx.variable().getText());
+        }
+
+        @Override
+        public FactorWeight visitIntegerWeight(SpannerlogParser.IntegerWeightContext ctx) {
+            return new FactorWeight(Integer.parseInt(ctx.integerLiteral().getText()));
+        }
+
+        @Override
+        public FactorWeight visitFloatWeight(SpannerlogParser.FloatWeightContext ctx) {
+            return new FactorWeight(Float.parseFloat(ctx.floatingPointLiteral().getText()));
         }
     }
 

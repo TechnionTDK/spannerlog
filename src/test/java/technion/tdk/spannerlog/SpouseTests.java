@@ -238,7 +238,7 @@ public class SpouseTests {
     public void compileInferenceRule() {
         String splogSrc =
                 "has_spouse(doc_id, sentence_span, person_span1, person_span2) <- spouse_label_resolved(doc_id, sentence_span, person_span1, person_span2, l).\n" +
-                "has_spouse(doc_id, sentence_span, person_span1, person_span2) => has_spouse(doc_id, sentence_span, person_span2, person_span1) <~\n" +
+                "4 * [has_spouse(doc_id, sentence_span, person_span1, person_span2) => has_spouse(doc_id, sentence_span, person_span2, person_span1) ] <-\n" +
                 "    spouse_candidate(doc_id, sentence_span, person_span1, person_span2).";
 
         String edbSchema =
@@ -258,7 +258,7 @@ public class SpouseTests {
                     "}" +
                 "}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
     }
 
     @Test

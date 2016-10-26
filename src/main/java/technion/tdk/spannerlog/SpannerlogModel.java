@@ -77,14 +77,48 @@ class SupervisionRule extends RuleWithConjunctiveQuery {
 
 class InferenceRule extends RuleWithConjunctiveQuery {
     private InferenceRuleHead head;
+    private FactorWeight weight;
 
-    InferenceRule(InferenceRuleHead head, ConjunctiveQueryBody body) {
+    InferenceRule(InferenceRuleHead head, ConjunctiveQueryBody body, FactorWeight weight) {
         super(body);
         this.head = head;
+        this.weight = weight;
     }
 
     InferenceRuleHead getHead() {
         return head;
+    }
+
+    FactorWeight getWeight() {
+        return weight;
+    }
+}
+
+class FactorWeight {
+    private Float value;
+    private String FeatureVariable;
+
+    FactorWeight(Float value) {
+        this.value = value;
+    }
+
+    FactorWeight(int value) {
+        this.value = (float) value;
+    }
+
+    FactorWeight(String featureVariable) {
+        this.FeatureVariable = featureVariable;
+    }
+
+    FactorWeight() {
+    }
+
+    Float getValue() {
+        return value;
+    }
+
+    String getFeatureVariable() {
+        return FeatureVariable;
     }
 }
 

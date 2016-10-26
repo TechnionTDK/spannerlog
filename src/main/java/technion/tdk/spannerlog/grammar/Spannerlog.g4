@@ -20,15 +20,15 @@ ruleWithConjunctiveQuery
     ;
 
 extractionRule
-    : dbAtom RigidSeparator conjunctiveQueryBody '.'
+    : dbAtom Separator conjunctiveQueryBody '.'
     ;
 
 supervisionRule
-    : dbAtom Equal supervisionExpr RigidSeparator conjunctiveQueryBody '.'
+    : dbAtom Equal supervisionExpr Separator conjunctiveQueryBody '.'
     ;
 
 inferenceRule
-    : inferenceRuleHead SoftSeparator conjunctiveQueryBody '.'
+    : weight '*' LBRACK inferenceRuleHead RBRACK Separator conjunctiveQueryBody '.'
     ;
 
 inferenceRuleHead
@@ -36,6 +36,13 @@ inferenceRuleHead
     | dbAtom (',' dbAtom)* '=>' dbAtom     # Imply
     | dbAtom ('v' dbAtom)+                 # Or
     | dbAtom ('^' dbAtom)+                 # And
+    ;
+
+weight
+    : placeHolder                      # UnknownWeight
+    | placeHolder '(' variable ')'     # UnknownWeightWithFeature
+    | integerLiteral                   # IntegerWeight
+    | floatingPointLiteral             # FloatWeight
     ;
 
 conjunctiveQueryBody
@@ -204,12 +211,8 @@ NullLiteral
     : 'NULL'
     ;
 
-RigidSeparator
+Separator
     : '<-'
-    ;
-
-SoftSeparator
-    : '<~'
     ;
 
 Equal

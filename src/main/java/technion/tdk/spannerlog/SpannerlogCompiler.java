@@ -70,8 +70,19 @@ class SpannerlogCompiler {
 
     private Map<String, String> compile(InferenceRule rule) {
         Map<String, String> cqBlock = new HashMap<>();
-        cqBlock.put("inference_rule", "@weight(\"?\")\n" + compile(rule.getHead()) + " :- " + compile(rule.getBody()) + ".");
+        cqBlock.put("inference_rule", "@weight(" + compile(rule.getWeight()) + ")\n" + compile(rule.getHead()) + " :- " + compile(rule.getBody()) + ".");
         return cqBlock;
+    }
+
+    private String compile(FactorWeight weight) {
+        Float value = weight.getValue();
+        String featureVar = weight.getFeatureVariable();
+
+        if (value != null)
+            return Float.toString(value);
+        if (featureVar != null)
+            return featureVar; // TODO check if variable is bound
+        return "\"?\"";
     }
 
     private String compile(InferenceRuleHead head) {
