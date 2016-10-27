@@ -237,14 +237,20 @@ class DBAtom extends Atom {
 
 class IEAtom extends Atom {
     private Term inputTerm;
+    private boolean isMaterialized;
 
-    IEAtom(String schemaName, List<Term> terms, Term inputTerm) {
+    IEAtom(String schemaName, List<Term> terms, Term inputTerm, boolean isMaterialized) {
         super(schemaName, terms);
         this.inputTerm = inputTerm;
+        this.isMaterialized = isMaterialized;
     }
 
     Term getInputTerm() {
         return inputTerm;
+    }
+
+    boolean isMaterialized() {
+        return isMaterialized;
     }
 }
 
@@ -253,8 +259,8 @@ class Regex extends IEAtom {
     private String regexString;
     private String compiledRegexString;
 
-    Regex(String schemaName, List<Term> terms, Term inputTerm, String regexString) {
-        super(schemaName, terms, inputTerm);
+    Regex(String schemaName, List<Term> terms, Term inputTerm, String regexString, boolean isMaterialized) {
+        super(schemaName, terms, inputTerm, isMaterialized);
         this.regexString = regexString;
     }
 

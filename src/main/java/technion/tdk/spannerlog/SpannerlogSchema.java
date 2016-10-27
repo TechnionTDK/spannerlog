@@ -122,12 +122,14 @@ class SpannerlogSchema {
         for (Atom atom : coldSchema.getAtoms())
             atom.setSchema(hotSchema);
 
-        if (hotSchema instanceof IEFunctionSchema) { // According to a previous check, if one schema is of an IE Function, then the other one is as well.
+        if (hotSchema instanceof IEFunctionSchema) { // According to a previous check, if one schema is an IE Function schema, then the other one is as well.
             IEFunctionSchema coldIESchema = (IEFunctionSchema) newSchema;
             IEFunctionSchema hotIESchema = (IEFunctionSchema) hotSchema;
 
             hotIESchema.setInputTerm(ObjectUtils.firstNonNull(hotIESchema.getInputTerm(), coldIESchema.getInputTerm()));
             hotIESchema.setInputAtoms(ObjectUtils.firstNonNull(hotIESchema.getInputAtoms(), coldIESchema.getInputAtoms()));
+
+            hotIESchema.setMaterialized(hotIESchema.isMaterialized() || coldIESchema.isMaterialized());
         }
 
         return hotSchema;
@@ -237,11 +239,11 @@ class SpannerlogSchema {
     }
 
     private RelationSchema extractRegexSchema(Regex regex, ConjunctiveQueryBody body) {
-        return new IEFunctionSchema(regex, body, extractAttributes(regex.getTerms()));
+        return new IEFunctionSchema(regex, body, extractAttributes(regex.getTerms()), regex.isMaterialized());
     }
 
     private RelationSchema extractIEFunctionSchema(IEAtom ieAtom, ConjunctiveQueryBody body) {
-        return new IEFunctionSchema(ieAtom, body, extractAttributes(ieAtom.getTerms()));
+        return new IEFunctionSchema(ieAtom, body, extractAttributes(ieAtom.getTerms()), ieAtom.isMaterialized());
     }
 
     private RelationSchema extractRelationSchema(DBAtom dbAtom) {
@@ -631,6 +633,7 @@ class IntensionalRelationSchema extends RelationSchema {
 class IEFunctionSchema extends ExtensionalRelationSchema {
     private List<Atom> inputAtoms;
     private Term inputTerm;
+    private boolean isMaterialized;
 
     Term getInputTerm() {
         return inputTerm;
@@ -648,12 +651,13 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
         this.inputAtoms = inputAtoms;
     }
 
-    IEFunctionSchema(String name, List<Attribute> attrs) {
+    IEFunctionSchema(String name, List<Attribute> attrs, boolean isMaterialized) {
         super(name, attrs);
+        this.isMaterialized = isMaterialized;
     }
 
-    IEFunctionSchema(Regex regex, ConjunctiveQueryBody body, List<Attribute> attrs) {
-        this((IEAtom) regex, body, attrs);
+    IEFunctionSchema(Regex regex, ConjunctiveQueryBody body, List<Attribute> attrs, boolean isMaterialized) {
+        this((IEAtom) regex, body, attrs, isMaterialized);
 
         attrs.get(0).setName("s");
         attrs.get(0).setType("text");
@@ -665,7 +669,7 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
         }
     }
 
-    IEFunctionSchema(IEAtom ieAtom, ConjunctiveQueryBody body, List<Attribute> attrs) {
+    IEFunctionSchema(IEAtom ieAtom, ConjunctiveQueryBody body, List<Attribute> attrs, boolean isMaterialized) {
         super(ieAtom.getSchemaName(), attrs);
         getAttrs().forEach(attr -> attr.setSchema(this));
         inputTerm = ieAtom.getInputTerm();
@@ -673,6 +677,15 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
         determineInputAtoms(body, ieAtom);
         ieAtom.setSchema(this);
         getAtoms().add(ieAtom);
+        this.isMaterialized = isMaterialized;
+    }
+
+    public boolean isMaterialized() {
+        return isMaterialized;
+    }
+
+    public void setMaterialized(boolean materialized) {
+        isMaterialized = materialized;
     }
 
     private void validateInputTerm(IEAtom ieAtom, ConjunctiveQueryBody body) {
@@ -838,7 +851,7 @@ class RelationSchemaBuilder {
                 relationSchema = new ExtensionalRelationSchema(name, attrs);
                 break;
             case IEFUNCTION:
-                relationSchema = new IEFunctionSchema(name, attrs);
+                relationSchema = new IEFunctionSchema(name, attrs, false);
                 break;
             default:
                 throw new IllegalArgumentException();

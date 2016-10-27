@@ -215,7 +215,8 @@ class SpannerlogInputParser {
                     .map(term -> term.accept(termVisitor))
                     .collect(Collectors.toList());
             terms.add(0, inputTerm);
-            return new IEAtom(relationSchemaName, terms, inputTerm);
+            boolean isMaterialized = ctx.materialized() != null;
+            return new IEAtom(relationSchemaName, terms, inputTerm, isMaterialized);
         }
 
     }
@@ -227,7 +228,8 @@ class SpannerlogInputParser {
             String regex = ctx.Regex().getText();
             List<Term> terms = new ArrayList<>();
             terms.add(inputTerm);
-            return new Regex(null, terms, inputTerm, regex.substring(2, regex.length() - 2));
+            boolean isMaterialized = ctx.materialized() != null;
+            return new Regex(null, terms, inputTerm, regex.substring(2, regex.length() - 2), isMaterialized);
         }
     }
 

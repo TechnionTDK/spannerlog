@@ -78,8 +78,12 @@ dbAtom
     ;
 
 ieAtom
-    : relationSchemaName LANGLE varExpr RANGLE termClause    # IEFunction
-    | ('RGX')? LANGLE varExpr RANGLE Regex                   # Rgx
+    : materialized? relationSchemaName LANGLE varExpr RANGLE termClause    # IEFunction
+    | materialized? ('RGX')? LANGLE varExpr RANGLE Regex                   # Rgx
+    ;
+
+materialized
+    : AT 'materialized'
     ;
 
 termClause
@@ -253,6 +257,10 @@ LANGLE
 
 RANGLE
     : '>'
+    ;
+
+AT
+    : '@'
     ;
 
 Regex
