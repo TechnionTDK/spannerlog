@@ -16,10 +16,10 @@ public class SpouseTests {
                           "          articles(doc_id, content),\n" +
                           "nlp_markup<content>(sentence_index, sentence_text, tokens, pos_tags, ner_tags).";
         String edbSchema = "{\"articles\":{\"column1\":\"text\",\"column2\":\"text\"}}";
-        String udfSchema = "{\"nlp_markup\":{\"content\":\"text\",\"sentence_index\":\"int\",\"sentence_text\":\"text\"," +
+        String iefSchema = "{\"nlp_markup\":{\"content\":\"text\",\"sentence_index\":\"int\",\"sentence_text\":\"text\"," +
                             "\"tokens\":\"text[]\",\"pos_tags\":\"text[]\",\"ner_tags\":\"text[]\"}}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema, false));
+        assertTrue(checkCompilation(splogSrc, edbSchema, iefSchema, false));
     }
 
     @Test
@@ -32,10 +32,10 @@ public class SpouseTests {
 
         String edbSchema = "{\"articles\":{\"column1\":\"text\",\"column2\":\"text\"}}";
 
-        String udfSchema = "{\"ssplit\":{\"content\":\"text\",\"sentence_index\":\"int\",\"sentence_text\":\"text\"}," +
+        String iefSchema = "{\"ssplit\":{\"content\":\"text\",\"sentence_index\":\"int\",\"sentence_text\":\"text\"}," +
                            "\"ner\":{\"content\":\"text\",\"span\":\"span\",\"ner_tag\":\"text\"}}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema, false));
+        assertTrue(checkCompilation(splogSrc, edbSchema, iefSchema, false));
     }
 
     @Test
@@ -121,7 +121,7 @@ public class SpouseTests {
                     "}" +
                 "}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
     @Test
@@ -277,7 +277,7 @@ public class SpouseTests {
                 "    }\n" +
                 "}\n";
 
-        String udfSchema =
+        String iefSchema =
                 "{\n" +
                 "    \"ner\": {\n" +
                 "        \"content\": \"text\",\n" +
@@ -293,6 +293,6 @@ public class SpouseTests {
 
 
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema, true));
+        assertTrue(checkCompilation(splogSrc, edbSchema, iefSchema, false));
     }
 }

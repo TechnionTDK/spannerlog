@@ -109,7 +109,7 @@ public class Spannerlog {
 
             InputStream programInputStream = new FileInputStream(line.getOptionValue("program"));
             Reader edbReader = line.hasOption("edb") ? new FileReader(line.getOptionValue("edb")) : null;
-            Reader udfReader = line.hasOption("udf") ? new FileReader(line.getOptionValue("udf")) : null;
+            Reader udfReader = line.hasOption("ief") ? new FileReader(line.getOptionValue("ief")) : null;
 
             JsonObject jsonTree = new Spannerlog().init(programInputStream, edbReader, udfReader);
 
@@ -156,10 +156,10 @@ public class Spannerlog {
                 .build());
 
         options.addOption(Option
-                .builder("udf")
+                .builder("ief")
                 .hasArg()
                 .numberOfArgs(1)
-                .desc("the UDF schemas (required if UDFs are used)")
+                .desc("the ief schemas (required if IEFs are used)")
                 .build());
 
         options.addOption(Option
