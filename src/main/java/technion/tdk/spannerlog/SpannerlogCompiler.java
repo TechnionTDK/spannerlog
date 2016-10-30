@@ -63,7 +63,10 @@ class SpannerlogCompiler {
 
     private Map<String, String> compile(SupervisionRule rule) {
         Map<String, String> cqBlock = new HashMap<>();
-        cqBlock.put("supervision_rule", compile(rule.getHead()) + " = " + compile(rule.getSupervisionExpr())
+        cqBlock.put("supervision_rule", compile(rule.getHead())
+                + " = if " + compile(rule.getPosCond()) + " then TRUE"
+                + " else if " + compile(rule.getNegCond()) + " then FALSE"
+                + " else NULL end"
                 + " :- " + compile(rule.getBody()) + ".");
         return cqBlock;
     }
@@ -192,7 +195,6 @@ class SpannerlogCompiler {
         return (String) new PatternMatching(
                 inCaseOf(ConstExprTerm.class, this::compile),
                 inCaseOf(VarTerm.class, this::compile),
-                inCaseOf(IfThenElseExpr.class, this::compile),
                 inCaseOf(FuncExpr.class, this::compile),
                 inCaseOf(BinaryOpExpr.class, e -> compileBinaryOp(e.getLhs(), e.getRhs(), e.getOp())),
                 inCaseOf(DotFuncExpr.class, this::compile)
@@ -224,18 +226,6 @@ class SpannerlogCompiler {
 
     private String compile(FuncExpr e) {
         return e.getFunction() + "(" + e.getArgs().stream().map(this::compile).collect(Collectors.joining(", ")) + ")";
-    }
-
-    private String compile(IfThenElseExpr e) {
-        return "if " + compile(e.getCond()) +
-                " then " + compile(e.getExpr()) +
-                e.getElseIfExprs().stream().map(this::compile).collect(Collectors.joining()) +
-                ((e.getElseExpr() != null) ? " else " + compile(e.getElseExpr()) : "") +
-                " end";
-    }
-
-    private String compile(ElseIfExpr elif) {
-        return " else if " + compile(elif.getCond()) + " then " + compile(elif.getExpr());
     }
 
     private String compile(ExprTerm exprTerm, SpanTerm spanTerm) {

@@ -63,10 +63,12 @@ class SpannerlogInputParser {
 
         @Override
         public Statement visitSupervisionRule(SpannerlogParser.SupervisionRuleContext ctx) {
+            ConditionVisitor conditionVisitor = new ConditionVisitor();
             return new SupervisionRule(
+                    ctx.conjunctiveQueryBody().accept(new ConjunctiveQueryBodyVisitor()),
                     ctx.dbAtom().accept(new DBAtomVisitor()),
-                    ctx.supervisionExpr().accept(new ExprVisitor()),
-                    ctx.conjunctiveQueryBody().accept(new ConjunctiveQueryBodyVisitor())
+                    ctx.supervisionExpr().condition(0).accept(conditionVisitor),
+                    ctx.supervisionExpr().condition(1).accept(conditionVisitor)
             );
         }
 
@@ -343,19 +345,6 @@ class SpannerlogInputParser {
         @Override
         public ExprTerm visitNullExpr(SpannerlogParser.NullExprContext ctx) {
             return new NullExpr();
-        }
-
-        @Override
-        public ExprTerm visitIfThenElseExpr(SpannerlogParser.IfThenElseExprContext ctx) {
-            return new IfThenElseExpr(
-                    ctx.condition().accept(new ConditionVisitor()),
-                    ctx.expr(0).accept(this),
-                    (ctx.expr().size() == 2) ? ctx.expr(1).accept(this) : null,
-                    (ctx.elseIfExpr()
-                            .stream()
-                            .map(elif -> new ElseIfExpr(elif.condition().accept(new ConditionVisitor()), visit(elif.expr())))
-                            .collect(Collectors.toList()))
-            );
         }
 
         @Override

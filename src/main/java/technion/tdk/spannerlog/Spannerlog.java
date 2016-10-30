@@ -78,6 +78,9 @@ public class Spannerlog {
             schemaJsonObject.addProperty("regex", ((Regex) atoms.get(0)).getCompiledRegexString());
         }
 
+        if (schema.isMaterialized())
+            schemaJsonObject.addProperty("materialized", true);
+
         return schemaJsonObject;
     }
 
@@ -87,7 +90,7 @@ public class Spannerlog {
 
         if (schema instanceof IntensionalRelationSchema
                 && ((IntensionalRelationSchema) schema).isPredictionVariableSchema()) {
-            schemaJsonObject.addProperty("predict_var", true);
+            schemaJsonObject.addProperty("variable_type", "boolean"); // TODO support categorical variables
         }
 
         JsonObject attributesJsonObject = new JsonObject();

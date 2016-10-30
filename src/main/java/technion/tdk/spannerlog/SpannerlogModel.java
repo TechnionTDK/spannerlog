@@ -58,20 +58,26 @@ class ExtractionRule extends RuleWithConjunctiveQuery {
 
 class SupervisionRule extends RuleWithConjunctiveQuery {
     private DBAtom head;
-    private ExprTerm supervisionExpr;
+    private Condition posCond;
+    private Condition negCond;
 
-    SupervisionRule(DBAtom head, ExprTerm supervisionExpr, ConjunctiveQueryBody body) {
+    SupervisionRule(ConjunctiveQueryBody body, DBAtom head, Condition posCond, Condition negCond) {
         super(body);
         this.head = head;
-        this.supervisionExpr = supervisionExpr;
+        this.posCond = posCond;
+        this.negCond = negCond;
     }
 
     DBAtom getHead() {
         return head;
     }
 
-    ExprTerm getSupervisionExpr() {
-        return supervisionExpr;
+    Condition getPosCond() {
+        return posCond;
+    }
+
+    Condition getNegCond() {
+        return negCond;
     }
 }
 
@@ -423,54 +429,6 @@ class SpanConstExpr extends ConstExprTerm implements SpanTerm {
 }
 
 class NullExpr extends ConstExprTerm {
-}
-
-class IfThenElseExpr extends ExprTerm {
-    private Condition cond;
-    private ExprTerm expr;
-    private ExprTerm elseExpr;
-    private List<ElseIfExpr> elseIfExprs;
-
-    IfThenElseExpr(Condition cond, ExprTerm expr, ExprTerm elseExpr, List<ElseIfExpr> elseIfExprs) {
-        this.cond = cond;
-        this.expr = expr;
-        this.elseExpr = elseExpr;
-        this.elseIfExprs = elseIfExprs;
-    }
-
-    Condition getCond() {
-        return cond;
-    }
-
-    ExprTerm getExpr() {
-        return expr;
-    }
-
-    ExprTerm getElseExpr() {
-        return elseExpr;
-    }
-
-    List<ElseIfExpr> getElseIfExprs() {
-        return elseIfExprs;
-    }
-}
-
-class ElseIfExpr {
-    private Condition cond;
-    private ExprTerm expr;
-
-    ElseIfExpr(Condition cond, ExprTerm expr) {
-        this.cond = cond;
-        this.expr = expr;
-    }
-
-    Condition getCond() {
-        return cond;
-    }
-
-    ExprTerm getExpr() {
-        return expr;
-    }
 }
 
 class FuncExpr extends ExprTerm {

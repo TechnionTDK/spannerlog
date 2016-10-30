@@ -165,7 +165,7 @@ public class SpouseTests {
                 "spouse_label(doc_id, sentence_span, person_span1, person_span2, 1, \"pos:wife_husband_between\") <-\n" +
                         "\tspouse_candidate(doc_id, sentence_span, person_span1, person_span2),\n" +
                         "\tarticles_prep(doc_id, content),\n" +
-                        "\t<content[sentence_span]>\\[x{ .* } \\s (wife|husband) \\s y{ .* }]\\,\n" +
+                        "\t@materialized <content[sentence_span]>\\[x{ .* } \\s (wife|husband) \\s y{ .* }]\\,\n" +
                         "\tx.contains(person_span1),\n" +
                         "\ty.contains(person_span2).";
 
@@ -215,10 +215,10 @@ public class SpouseTests {
     @Test
     public void compileIfStatement() {
         String splogSrc =
-                "has_spouse(doc_id, sentence_span, person_span1, person_span2) = " +
-                "   if l > 0 then TRUE\n" +
-                "   else if l < 0 then FALSE\n" +
-                "   else NULL end <- spouse_label_resolved(doc_id, sentence_span, person_span1, person_span2, l).";
+                "has_spouse(doc_id, sentence_span, person_span1, person_span2) = {" +
+                "   POS: l > 0;\n" +
+                "   NEG: l < 0\n" +
+                "   } <- spouse_label_resolved(doc_id, sentence_span, person_span1, person_span2, l).";
 
         String edbSchema =
                 "{" +
@@ -258,7 +258,7 @@ public class SpouseTests {
                     "}" +
                 "}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
     @Test

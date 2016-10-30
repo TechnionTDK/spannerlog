@@ -133,20 +133,11 @@ functionName
     ;
 
 supervisionExpr
-    : nullExpr
-    | ifThenElseExpr
+    : '{' PosLabel ':' condition ';' NegLabel ':' condition '}'
     ;
 
 nullExpr
     : NullLiteral
-    ;
-
-ifThenElseExpr
-    : 'if' condition 'then' expr elseIfExpr* ('else' expr)? 'end'
-    ;
-
-elseIfExpr
-    : 'else if' condition 'then' expr
     ;
 
 stringExpr
@@ -209,6 +200,14 @@ compareOperator
 BooleanLiteral
     : 'True'
     | 'False'
+    ;
+
+PosLabel
+    : 'POS'
+    ;
+
+NegLabel
+    : 'NEG'
     ;
 
 NullLiteral
