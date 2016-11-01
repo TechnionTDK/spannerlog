@@ -65,8 +65,8 @@ class SpannerlogInputParser {
         public Statement visitSupervisionRule(SpannerlogParser.SupervisionRuleContext ctx) {
             ConditionVisitor conditionVisitor = new ConditionVisitor();
             return new SupervisionRule(
-                    ctx.conjunctiveQueryBody().accept(new ConjunctiveQueryBodyVisitor()),
                     ctx.dbAtom().accept(new DBAtomVisitor()),
+                    ctx.conjunctiveQueryBody().accept(new ConjunctiveQueryBodyVisitor()),
                     ctx.supervisionExpr().condition(0).accept(conditionVisitor),
                     ctx.supervisionExpr().condition(1).accept(conditionVisitor)
             );

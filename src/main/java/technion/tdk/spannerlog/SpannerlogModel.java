@@ -56,20 +56,14 @@ class ExtractionRule extends RuleWithConjunctiveQuery {
     }
 }
 
-class SupervisionRule extends RuleWithConjunctiveQuery {
-    private DBAtom head;
+class SupervisionRule extends ExtractionRule {
     private Condition posCond;
     private Condition negCond;
 
-    SupervisionRule(ConjunctiveQueryBody body, DBAtom head, Condition posCond, Condition negCond) {
-        super(body);
-        this.head = head;
+    SupervisionRule(DBAtom head, ConjunctiveQueryBody body, Condition posCond, Condition negCond) {
+        super(head, body);
         this.posCond = posCond;
         this.negCond = negCond;
-    }
-
-    DBAtom getHead() {
-        return head;
     }
 
     Condition getPosCond() {

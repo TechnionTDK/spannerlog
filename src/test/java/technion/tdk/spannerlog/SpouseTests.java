@@ -293,6 +293,6 @@ public class SpouseTests {
 
 
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, iefSchema, false));
+        assertTrue(checkCompilation(splogSrc, edbSchema, iefSchema, true));
     }
 }

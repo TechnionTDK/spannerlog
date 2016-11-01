@@ -4,13 +4,16 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import org.apache.commons.cli.*;
+import technion.tdk.spannerlog.utils.match.PatternMatching;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.lang.System.exit;
+import static technion.tdk.spannerlog.utils.match.ClassPattern.inCaseOf;
 
 public class Spannerlog {
 
@@ -46,12 +49,24 @@ public class Spannerlog {
         JsonObject jsonTree = new JsonObject();
         Gson gson = new GsonBuilder().serializeNulls().create();
 
-        jsonTree.add("schema", gson.toJsonTree(schema.getRelationSchemas()
-                .stream()
-                .sorted((s1, s2) -> String.CASE_INSENSITIVE_ORDER.compare(s1.getName(), s2.getName()))
-                .map(this::toJson)
-                .collect(Collectors.toList()))
+        List<JsonObject> edbSchemas = new ArrayList<>();
+        List<JsonObject> iefSchemas = new ArrayList<>();
+        List<JsonObject> idbSchemas = new ArrayList<>();
+
+        PatternMatching pattern = new PatternMatching(
+                inCaseOf(ExtensionalRelationSchema.class, s -> edbSchemas.add(toJson(s, gson))),
+                inCaseOf(IEFunctionSchema.class, s -> iefSchemas.add(toJson(s, gson))),
+                inCaseOf(IntensionalRelationSchema.class, s -> idbSchemas.add(toJson(s, gson)))
         );
+
+        schema.getRelationSchemas().forEach(pattern::matchFor);
+
+        JsonObject schemaObject = new JsonObject();
+        schemaObject.add("edb", gson.toJsonTree(edbSchemas));
+        schemaObject.add("ief", gson.toJsonTree(iefSchemas));
+        schemaObject.add("idb", gson.toJsonTree(idbSchemas));
+
+        jsonTree.add("schema", schemaObject);
 
         jsonTree.add("ie_functions", gson.toJsonTree(schema.getRelationSchemas()
                 .stream()
@@ -84,13 +99,17 @@ public class Spannerlog {
         return schemaJsonObject;
     }
 
-    private JsonObject toJson(RelationSchema schema) {
+    private JsonObject toJson(RelationSchema schema, Gson gson) {
         JsonObject schemaJsonObject = new JsonObject();
         schemaJsonObject.addProperty("name", schema.getName());
 
-        if (schema instanceof IntensionalRelationSchema
-                && ((IntensionalRelationSchema) schema).isPredictionVariableSchema()) {
-            schemaJsonObject.addProperty("variable_type", "boolean"); // TODO support categorical variables
+        if (schema instanceof IntensionalRelationSchema) {
+            IntensionalRelationSchema iSchema = (IntensionalRelationSchema) schema;
+
+            schemaJsonObject.add("input_schemas", gson.toJsonTree(iSchema.getInputSchemas()));
+
+            if (iSchema.isPredictionVariableSchema())
+                schemaJsonObject.addProperty("variable_type", "boolean"); // TODO support categorical variables
         }
 
         JsonObject attributesJsonObject = new JsonObject();
