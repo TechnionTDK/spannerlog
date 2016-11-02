@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import org.apache.commons.cli.*;
+import technion.tdk.spannerlog.utils.graph.DiGraph;
 import technion.tdk.spannerlog.utils.match.PatternMatching;
 
 import java.io.*;
@@ -25,8 +26,7 @@ public class Spannerlog {
         new SpannerlogDesugarRewriter().derive(program);
 
         // build schema
-        SpannerlogSchema.Builder builder = SpannerlogSchema
-                .builder();
+        SpannerlogSchema.Builder builder = SpannerlogSchema.builder();
         if (edbReader != null)
             builder.readSchemaFromJson(edbReader, RelationSchema.builder().type(RelationSchemaType.EXTENSIONAL));
         if (udfReader != null)
@@ -40,11 +40,40 @@ public class Spannerlog {
         Map<String, String> iefDeclarationsBlocks = compiler.compile(schema);
         List<Map<String, String>> cqBlocks = compiler.compile(program);
 
-        return export(schema, iefDeclarationsBlocks, cqBlocks);
+        // build execution plan
+        List<String> plan = BuildExecutionPlan(schema);
+
+        return export(schema, iefDeclarationsBlocks, cqBlocks, plan);
+    }
+
+    private List<String> BuildExecutionPlan(SpannerlogSchema schema) {
+
+        List<String> iSchemasNames = schema.getRelationSchemas()
+                .stream()
+                .filter(sch -> sch instanceof IntensionalRelationSchema)
+                .map(RelationSchema::getName)
+                .collect(Collectors.toList());
+
+
+        DiGraph.Builder<String> builder = new DiGraph.Builder<>();
+
+        schema.getRelationSchemas()
+                .stream()
+                .filter(sch -> sch instanceof IntensionalRelationSchema)
+                .map(sch -> (IntensionalRelationSchema) sch)
+                .forEach(sch -> {
+                    builder.addNode(sch.getName());
+                    sch.getInputSchemas()
+                            .stream()
+                            .filter(iSchemasNames::contains)
+                            .forEach(iSch -> builder.addEdge(iSch, sch.getName()));
+                });
+
+        return builder.build().sortTopologically();
     }
 
     private JsonObject export(SpannerlogSchema schema, Map<String, String> iefDeclarationsBlocks,
-                              List<Map<String, String>> cqBlocks) {
+                              List<Map<String, String>> cqBlocks, List<String> plan) {
 
         JsonObject jsonTree = new JsonObject();
         Gson gson = new GsonBuilder().serializeNulls().create();
@@ -77,6 +106,8 @@ public class Spannerlog {
         );
 
         jsonTree.add("rules", gson.toJsonTree(cqBlocks));
+
+        jsonTree.add("execution", gson.toJsonTree(plan));
 
         return jsonTree;
     }

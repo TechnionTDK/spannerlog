@@ -3,7 +3,7 @@ package technion.tdk.spannerlog;
 
 import com.google.gson.stream.JsonReader;
 import org.apache.commons.lang3.ObjectUtils;
-import technion.tdk.spannerlog.utils.dependencies.DependenciesGraph;
+import technion.tdk.spannerlog.utils.graph.DiGraph;
 import technion.tdk.spannerlog.utils.match.PatternMatching;
 
 import java.io.IOException;
@@ -331,14 +331,14 @@ class SpannerlogSchema {
     private void inferAttributeTypes(Program program) {
 
         Map<Attribute, Set<Attribute>> dependenciesMap = createDependenciesMap(program);
-        DependenciesGraph<Attribute> depGraph = new DependenciesGraph<>(dependenciesMap);
+        DiGraph<Attribute> depGraph = new DiGraph<>(dependenciesMap);
         Set<Attribute> rootAttrs = dependenciesMap.keySet()
                 .stream()
                 .filter(attr -> attr.getType() == null)
                 .collect(Collectors.toSet());
 
         for (Attribute rootAttr : rootAttrs) {
-            List<String> possibleTypes = depGraph.getDependencies(rootAttr)
+            List<String> possibleTypes = depGraph.getReachables(rootAttr)
                     .stream()
                     .filter(attr -> attr.getType() != null)
                     .map(Attribute::getType)
@@ -733,21 +733,21 @@ class IEFunctionSchema extends RelationSchema {
                 .map(bodyElement -> (Atom) bodyElement)
                 .collect(Collectors.toList());
 
-        DependenciesGraph<Integer> depGraph = createDependenciesGraph(bodyAtoms);
-        List<Integer> dependencies = depGraph.getDependencies(bodyAtoms.indexOf(ieAtom));
+        DiGraph<Integer> depGraph = createDependenciesGraph(bodyAtoms);
+        List<Integer> dependencies = depGraph.getReachables(bodyAtoms.indexOf(ieAtom));
         inputAtoms = dependencies
                 .stream()
                 .map(bodyAtoms::get)
                 .collect(Collectors.toList());
     }
 
-    private DependenciesGraph<Integer> createDependenciesGraph(List<Atom> bodyAtoms) {
+    private DiGraph<Integer> createDependenciesGraph(List<Atom> bodyAtoms) {
         Map<Integer, Set<Integer>> adjacencyMap =
                 IntStream.range(0, bodyAtoms.size())
                         .boxed()
                         .collect(Collectors.toMap(i -> i, i -> calcDependencies(i, bodyAtoms)));
 
-        return new DependenciesGraph<>(adjacencyMap);
+        return new DiGraph<>(adjacencyMap);
     }
 
     private Set<Integer> calcDependencies(int idx, List<Atom> bodyAtoms) {

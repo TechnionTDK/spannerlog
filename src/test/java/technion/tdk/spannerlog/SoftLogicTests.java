@@ -32,7 +32,7 @@ public class SoftLogicTests {
         String edbSchema = "{\"S\":{\"column1\":\"text\",\"column2\":\"text\"}}";
 
         JsonObject jsonTree = compileToJson(splogSrc, edbSchema, null);
-        JsonObject rSchema = jsonTree.getAsJsonArray("schema").get(0).getAsJsonObject();
+        JsonObject rSchema = jsonTree.getAsJsonObject("schema").getAsJsonArray("idb").get(0).getAsJsonObject();
         assertEquals("R", rSchema.get("name").getAsString());
         assertEquals(rSchema.get("variable_type").getAsString(), "boolean");
 

@@ -1,9 +1,7 @@
 package technion.tdk.spannerlog;
 
 
-import org.junit.Ignore;
 import org.junit.Test;
-import technion.tdk.spannerlog.utils.dependencies.CircularDependencyException;
 
 import static org.junit.Assert.assertTrue;
 import static technion.tdk.spannerlog.Utils.checkCompilation;
