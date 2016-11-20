@@ -263,7 +263,7 @@ public class SpouseTests {
 
     @Test
     public void compileEntireProgram() {
-        InputStream splogSrc = SyntaxTests.class.getClassLoader().getResourceAsStream("spouse.splog");
+        InputStream splogSrc = BasicSyntaxTests.class.getClassLoader().getResourceAsStream("spouse.splog");
 
         String edbSchema =
                 "{\n" +

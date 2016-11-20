@@ -7,7 +7,7 @@ import static org.junit.Assert.assertTrue;
 import static technion.tdk.spannerlog.Utils.checkCompilation;
 
 
-public class CompilationTests {
+public class BasicCompilationTests {
 
     @Test(expected = UndefinedRelationSchema.class)
     public void programWithUndefinedSchemaShouldFail() {
