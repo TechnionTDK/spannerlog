@@ -54,7 +54,6 @@ public class Spannerlog {
                 .map(RelationSchema::getName)
                 .collect(Collectors.toList());
 
-
         DiGraph.Builder<String> builder = new DiGraph.Builder<>();
 
         schema.getRelationSchemas()

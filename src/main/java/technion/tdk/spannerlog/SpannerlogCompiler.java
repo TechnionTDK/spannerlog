@@ -4,9 +4,7 @@ package technion.tdk.spannerlog;
 import technion.tdk.spannerlog.utils.match.PatternMatching;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static technion.tdk.spannerlog.utils.match.ClassPattern.inCaseOf;
@@ -57,7 +55,41 @@ class SpannerlogCompiler {
 
     private Map<String, String> compile(ExtractionRule rule) {
         Map<String, String> cqBlock = new HashMap<>();
-        cqBlock.put("extraction_rule", compile(rule.getHead()) + " *:- " + compile(rule.getBody()) + ".");
+
+        List<BodyElement> bodyElements = rule.getBody().getBodyElements();
+        if (bodyElements.stream().anyMatch(e -> e instanceof IEAtom)) {
+            List<Atom> bodyAtoms = bodyElements
+                    .stream()
+                    .filter(e -> e instanceof Atom)
+                    .map(e -> (Atom) e)
+                    .collect(Collectors.toList());
+
+            int cnt = 0;
+            StringJoiner schemasNamesJoiner = new StringJoiner(", ");
+            for (Atom atom : bodyAtoms)
+                schemasNamesJoiner.add(atom.getSchemaName() + " AS R" + cnt++);
+
+            List<Condition> conditions = bodyElements
+                    .stream()
+                    .filter(e -> e instanceof Condition)
+                    .map(e -> (Condition) e)
+                    .collect(Collectors.toList());
+
+            StringJoiner conditionsJoiner = new StringJoiner(", ");
+            for (Condition cond : conditions)
+                conditionsJoiner.add(compile(cond));
+
+            String block =
+                    "INSERT INTO " + rule.getHead().getSchemaName() +
+                    " SELECT DISTINCT " + compile(rule.getHead().getTerms()) +
+                    " FROM " + schemasNamesJoiner +
+                    (conditions.isEmpty() ? "" : " WHERE " + conditionsJoiner);
+
+            cqBlock.put("extraction_rule", block);
+        } else {
+            cqBlock.put("extraction_rule", compile(rule.getHead()) + " *:- " + compile(rule.getBody()) + ".");
+        }
+
         return cqBlock;
     }
 

@@ -49,11 +49,8 @@ public class DiGraph<T> {
 
     /*
      * Returns a topological sort of the graph (if exists).
-     *
-     * Source: https://en.wikipedia.org/wiki/Topological_sorting
      */
     public List<T> sortTopologically() {
-
         // empty list that will contain the sorted elements
         List<T> sorting = new ArrayList<>();
 
@@ -92,7 +89,6 @@ public class DiGraph<T> {
      * Runs DFS on the graph and returns all reachable vertices from the given root.
      */
     public List<T> getReachables(T root) {
-
         Map<T, Boolean> visited = outEdges.keySet()
                 .stream()
                 .collect(Collectors.toMap(t -> t, t -> Boolean.FALSE));
