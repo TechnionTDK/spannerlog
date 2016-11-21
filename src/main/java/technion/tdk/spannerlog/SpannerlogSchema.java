@@ -669,7 +669,7 @@ class IEFunctionSchema extends RelationSchema {
     IEFunctionSchema(Regex regex, ConjunctiveQueryBody body, List<Attribute> attrs, boolean isMaterialized) {
         this((IEAtom) regex, body, attrs, isMaterialized);
 
-        attrs.get(0).setName("s");
+        attrs.get(0).setName("input");
         attrs.get(0).setType("text");
         int n = getAttrs().size();
         for (int i = 1; i < n; i++) { // skipping the input term (always the first term)

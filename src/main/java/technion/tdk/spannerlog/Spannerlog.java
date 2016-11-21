@@ -65,7 +65,7 @@ public class Spannerlog {
                     sch.getInputSchemas()
                             .stream()
                             .filter(iSchemasNames::contains)
-                            .forEach(iSch -> builder.addEdge(iSch, sch.getName()));
+                            .forEach(iSch -> {if (!iSch.equals(sch.getName())) builder.addEdge(iSch, sch.getName());});
                 });
 
         return builder.build().sortTopologically();
