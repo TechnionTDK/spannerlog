@@ -12,15 +12,15 @@ public class CompilationToSqlTests {
     @Test
     public void compileBasicQueryToSQL() {
         String splogSrc =
-                "Married(id, x, y) <-" +
-                "       Articles(id, c)," +
+                "married(id, x, y) <-" +
+                "       articles(id, c)," +
                 "       <c>\\[.* x{ [A-Z][a-z]*(\\s[A-Z][a-z]*)* } .* \\s married \\s .* y{ [A-Z][a-z]*(\\s[A-Z][a-z]*)* } .* ]\\," +
-                "       NER<c>(x, \"PERSON\")," +
-                "       NER<c>(y, \"PERSON\").\n";
+                "       ner<c>(x, \"PERSON\")," +
+                "       ner<c>(y, \"PERSON\").\n";
 
         String edbSchema =
                 "{" +
-                        "\"Articles\": {" +
+                        "\"articles\": {" +
                             "\"id\":\"text\"," +
                             "\"content\":\"text\"" +
                         "}" +
@@ -28,7 +28,7 @@ public class CompilationToSqlTests {
 
         String iefSchema =
                 "{" +
-                        "\"NER\": {" +
+                        "\"ner\": {" +
                             "\"input\":\"text\"," +
                             "\"entity\":\"span\"," +
                             "\"category\":\"text\"" +

@@ -135,4 +135,33 @@ public class BasicCompilationTests {
 
         assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema, false));
     }
+
+    @Test(expected = UndefinedRelationSchema.class)
+    public void compileBasicQueryToSQL() {
+        String splogSrc =
+                "married(id, x, y) <-" +
+                        "       articles(id, c)," +
+                        "       <c>\\[.* x{ [A-Z][a-z]*(\\s[A-Z][a-z]*)* } .* \\s married \\s .* y{ [A-Z][a-z]*(\\s[A-Z][a-z]*)* } .* ]\\," +
+                        "       ner<c>(x, \"PERSON\")," +
+                        "       ner2<c>(y, \"PERSON\").\n";
+
+        String edbSchema =
+                "{" +
+                        "\"articles\": {" +
+                                "\"id\":\"text\"," +
+                                "\"content\":\"text\"" +
+                            "}" +
+                        "}";
+
+        String iefSchema =
+                "{" +
+                        "\"ner\": {" +
+                                "\"input\":\"text\"," +
+                                "\"entity\":\"span\"," +
+                                "\"category\":\"text\"" +
+                            "}" +
+                        "}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, iefSchema, true));
+    }
 }

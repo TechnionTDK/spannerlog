@@ -67,7 +67,7 @@ class SpannerlogCompiler {
             int cnt = 0;
             StringJoiner schemasNamesJoiner = new StringJoiner(", ");
             for (Atom atom : bodyAtoms)
-                schemasNamesJoiner.add(atom.getSchemaName() + " AS R" + cnt++);
+                schemasNamesJoiner.add(atom.getSchemaName() + " R" + cnt++);
 
             List<Condition> conditions = bodyElements
                     .stream()
@@ -81,7 +81,7 @@ class SpannerlogCompiler {
 
             String block =
                     "INSERT INTO " + rule.getHead().getSchemaName() +
-                    " SELECT DISTINCT " + compile(rule.getHead().getTerms()) +
+                    " SELECT " + compile(rule.getHead().getTerms()) +
                     " FROM " + schemasNamesJoiner +
                     (conditions.isEmpty() ? "" : " WHERE " + conditionsJoiner);
 

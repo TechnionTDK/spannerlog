@@ -60,7 +60,7 @@ class SpannerlogSchema {
 
             jsonReader.beginObject();
             while (jsonReader.hasNext()) {
-                String name = jsonReader.nextName();
+                String name = jsonReader.nextName().toLowerCase();
                 List<Attribute> attrs = readAttributes(jsonReader);
 
                 relationSchemas.add(builder.build(name, attrs));
@@ -255,6 +255,8 @@ class SpannerlogSchema {
     }
 
     private RelationSchema extractIEFunctionSchema(IEAtom ieAtom, ConjunctiveQueryBody body) {
+        if (!this.relationSchemas.stream().anyMatch(sch -> sch.getName().equalsIgnoreCase(ieAtom.getSchemaName())))
+            throw new UndefinedRelationSchema(ieAtom.getSchemaName());
         return new IEFunctionSchema(ieAtom, body, extractAttributes(ieAtom.getTerms()), ieAtom.isMaterialized());
     }
 
@@ -437,14 +439,6 @@ class SpannerlogSchema {
                 .filter(schema -> schema instanceof AmbiguousRelationSchema)
                 .map(RelationSchema::getName)
                 .collect(Collectors.toList());
-
-        List<String> UnambiguousSchemaNames = relationSchemas
-                .stream()
-                .filter(schema -> !(schema instanceof AmbiguousRelationSchema))
-                .map(RelationSchema::getName)
-                .collect(Collectors.toList());
-
-        AmbiguousSchemaNames.removeAll(UnambiguousSchemaNames);
 
         if (!AmbiguousSchemaNames.isEmpty())
             throw new UndefinedRelationSchema(AmbiguousSchemaNames.get(0));
@@ -980,8 +974,8 @@ class UnboundVariableException extends RuntimeException {
 }
 
 class UndefinedRelationSchema extends RuntimeException {
-    UndefinedRelationSchema(String message) {
-        super("The relation schema for '" + message + "' is undefined");
+    UndefinedRelationSchema(String schemaName) {
+        super("The relation schema for '" + schemaName + "' is undefined");
     }
 }
 

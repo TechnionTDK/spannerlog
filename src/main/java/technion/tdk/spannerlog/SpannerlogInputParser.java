@@ -209,7 +209,7 @@ class SpannerlogInputParser {
     private class IEAtomVisitor extends SpannerlogBaseVisitor<IEAtom> {
         @Override
         public IEAtom visitIEFunction(SpannerlogParser.IEFunctionContext ctx) {
-            String relationSchemaName = ctx.relationSchemaName().getText();
+            String relationSchemaName = ctx.relationSchemaName().getText().toLowerCase();
             Term inputTerm = ctx.varExpr().accept(new VarExprVisitor());
             TermVisitor termVisitor = new TermVisitor();
             List<Term> terms = ctx.termClause().term()
@@ -238,7 +238,7 @@ class SpannerlogInputParser {
     private class DBAtomVisitor extends SpannerlogBaseVisitor<DBAtom> {
         @Override
         public DBAtom visitDbAtom(SpannerlogParser.DbAtomContext ctx) {
-            String relationSchemaName = ctx.relationSchemaName().getText();
+            String relationSchemaName = ctx.relationSchemaName().getText().toLowerCase();
             TermVisitor termVisitor = new TermVisitor();
             List<Term> terms = ctx.termClause().term()
                     .stream()
