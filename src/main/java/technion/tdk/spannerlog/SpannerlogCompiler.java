@@ -85,7 +85,8 @@ class SpannerlogCompiler {
                     " FROM " + schemasNamesJoiner +
                     (conditions.isEmpty() ? "" : " WHERE " + conditionsJoiner);
 
-            cqBlock.put("extraction_rule", block);
+//            cqBlock.put("extraction_rule", block);
+            cqBlock.put("extraction_rule", new QueryCompiler(rule).generateSQL());
         } else {
             cqBlock.put("extraction_rule", compile(rule.getHead()) + " *:- " + compile(rule.getBody()) + ".");
         }
@@ -314,6 +315,60 @@ class SpannerlogCompiler {
             return varTerm.getVarName() + "_start, " + varTerm.getVarName() + "_end";
 
         return varTerm.getVarName();
+    }
+}
+
+class QueryCompiler {
+    private RuleWithConjunctiveQuery query;
+
+    QueryCompiler(RuleWithConjunctiveQuery query) {
+        this.query = query;
+    }
+
+    String generateSQL() {
+        String body = generateSQLBody(query.getBody());
+
+        return body;
+
+    }
+
+    private String generateSQLBody(ConjunctiveQueryBody body) {
+
+        return "FROM " + generateFromClause(body);
+    }
+
+    private String generateFromClause(ConjunctiveQueryBody body) {
+
+        StringJoiner relationsJoiner = new StringJoiner(", ");
+
+        // Handle DB atoms
+        List<DBAtom> dbAtoms = body.getBodyElements()
+                .stream()
+                .filter(e -> e instanceof DBAtom)
+                .map(e -> (DBAtom) e)
+                .collect(Collectors.toList());
+
+        int cnt = 0;
+        for (DBAtom atom : dbAtoms)
+            relationsJoiner.add(atom.getSchemaName() + " R" + cnt++);
+
+        // Handling IE atoms
+        List<IEAtom> ieAtoms = body.getBodyElements()
+                .stream()
+                .filter(e -> e instanceof IEAtom)
+                .map(e -> (IEAtom) e)
+                .collect(Collectors.toList());
+
+        cnt = 0;
+        for (IEAtom atom : ieAtoms)
+            relationsJoiner.add(atom.getSchemaName() + "(" + resolveAttr(atom.getInputTerm(), body) + ") F" + cnt++);
+
+        return relationsJoiner.toString();
+    }
+
+    private String resolveAttr(Term inputTerm, ConjunctiveQueryBody body) {
+        // Look at inferAttributeTypes in SpannerlogSchema to reuse ideas.
+        return "";
     }
 }
 
