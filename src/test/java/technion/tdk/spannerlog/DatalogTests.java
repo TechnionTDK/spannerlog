@@ -40,7 +40,7 @@ public class DatalogTests {
             ExtractionRule cq = (ExtractionRule) statements.get(0);
 
             DBAtom head = cq.getHead();
-            assertEquals(head.getSchemaName(), "Q");
+            assertEquals(head.getSchemaName(), "q");
             assertEquals(0, head.getTerms().size());
 
             List<Atom> body = cq.getBody().getBodyElements()
@@ -51,7 +51,7 @@ public class DatalogTests {
 
             assertEquals(1, body.size());
             DBAtom atomR = (DBAtom) body.get(0);
-            assertEquals(atomR.getSchemaName(), "R");
+            assertEquals(atomR.getSchemaName(), "r");
             List<Term> terms = atomR.getTerms();
             assertEquals(1, terms.size());
             ExprTerm exprTerm = (ExprTerm) terms.get(0);

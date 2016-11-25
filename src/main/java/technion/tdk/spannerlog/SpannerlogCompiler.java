@@ -348,9 +348,13 @@ class QueryCompiler {
                 .map(e -> (DBAtom) e)
                 .collect(Collectors.toList());
 
+        Map<String, String> aliases = new HashMap<>();
         int cnt = 0;
-        for (DBAtom atom : dbAtoms)
-            relationsJoiner.add(atom.getSchemaName() + " R" + cnt++);
+        for (DBAtom atom : dbAtoms) {
+            String alias = "R" + cnt++;
+            relationsJoiner.add(atom.getSchemaName() + " " + alias);
+            aliases.put(atom.getSchemaName(), alias);
+        }
 
         // Handling IE atoms
         List<IEAtom> ieAtoms = body.getBodyElements()
@@ -360,15 +364,29 @@ class QueryCompiler {
                 .collect(Collectors.toList());
 
         cnt = 0;
-        for (IEAtom atom : ieAtoms)
-            relationsJoiner.add(atom.getSchemaName() + "(" + resolveAttr(atom.getInputTerm(), body) + ") F" + cnt++);
+        for (IEAtom ieAtom : ieAtoms)
+            relationsJoiner.add(ieAtom.getSchemaName() + "(" + resolveAttr(ieAtom, body, aliases) + ") F" + cnt++);
 
         return relationsJoiner.toString();
     }
 
-    private String resolveAttr(Term inputTerm, ConjunctiveQueryBody body) {
-        // Look at inferAttributeTypes in SpannerlogSchema to reuse ideas.
-        return "";
+    private String resolveAttr(IEAtom ieAtom, ConjunctiveQueryBody body, Map<String, String> aliases) {
+        Term inputTerm = ieAtom.getInputTerm();
+        if (inputTerm instanceof VarTerm) {
+            VarTerm inVar = (VarTerm) inputTerm;
+            Attribute attr = body.getBodyElements()
+                    .stream()
+                    .filter(e -> e instanceof DBAtom)
+                    .flatMap(e -> ((DBAtom) e).getTerms().stream().filter(t -> t instanceof VarTerm))
+                    .filter(t -> ((VarTerm) t).getVarName().equals(inVar.getVarName()))
+                    .findAny()
+                    .orElseThrow(() -> new UndefinedInputVariableException(inVar.getVarName()))
+                    .getAttribute();
+
+            return aliases.get(attr.getSchema().getName()) + "." + attr.getName();
+        }
+
+        throw new UnsupportedOperationException(); // TODO remove exception
     }
 }
 
@@ -381,5 +399,11 @@ class SpanAppliedToNonStringTypeAttributeException extends RuntimeException {
 class UnknownFunctionException extends RuntimeException {
     UnknownFunctionException(String functionName) {
         super("The function '" + functionName + "' is unknown");
+    }
+}
+
+class UndefinedInputVariableException extends RuntimeException {
+    UndefinedInputVariableException(String varName) {
+        super("The variable '" + varName + "' is undefined");
     }
 }

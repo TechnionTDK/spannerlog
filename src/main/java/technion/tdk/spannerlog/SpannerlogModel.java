@@ -278,6 +278,15 @@ class Regex extends IEAtom {
 }
 
 abstract class Term {
+    private Attribute attr;
+
+    void setAttribute(Attribute attr) {
+        this.attr = attr;
+    }
+
+    Attribute getAttribute() {
+        return attr;
+    }
 }
 
 class PlaceHolderTerm extends Term { // singleton

@@ -137,7 +137,7 @@ public class BasicCompilationTests {
     }
 
     @Test(expected = UndefinedRelationSchema.class)
-    public void compileBasicQueryToSQL() {
+    public void usingUndefinedIEFShouldFail() {
         String splogSrc =
                 "married(id, x, y) <-" +
                         "       articles(id, c)," +
@@ -160,6 +160,35 @@ public class BasicCompilationTests {
                                 "\"entity\":\"span\"," +
                                 "\"category\":\"text\"" +
                             "}" +
+                        "}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, iefSchema, true));
+    }
+
+    @Test(expected = UndefinedInputVariableException.class)
+    public void usingUndefinedInputTermShouldFail() {
+        String splogSrc =
+                "married(id, x, y) <-" +
+                        "       articles(id, c)," +
+                        "       <c1>\\[.* x{ [A-Z][a-z]*(\\s[A-Z][a-z]*)* } .* \\s married \\s .* y{ [A-Z][a-z]*(\\s[A-Z][a-z]*)* } .* ]\\," +
+                        "       ner<c>(x, \"PERSON\")," +
+                        "       ner<c>(y, \"PERSON\").\n";
+
+        String edbSchema =
+                "{" +
+                        "\"articles\": {" +
+                        "\"id\":\"text\"," +
+                        "\"content\":\"text\"" +
+                        "}" +
+                        "}";
+
+        String iefSchema =
+                "{" +
+                        "\"ner\": {" +
+                        "\"input\":\"text\"," +
+                        "\"entity\":\"span\"," +
+                        "\"category\":\"text\"" +
+                        "}" +
                         "}";
 
         assertTrue(checkCompilation(splogSrc, edbSchema, iefSchema, true));

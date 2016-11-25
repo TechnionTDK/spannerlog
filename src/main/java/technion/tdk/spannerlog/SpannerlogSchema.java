@@ -37,6 +37,7 @@ class SpannerlogSchema {
 
         SpannerlogSchema build() {
             spannerlogSchema.validate();
+            spannerlogSchema.linkTermsToAttributes(program); // TODO This function was created before inferAttributeTypes, setVariablesType and setPredictionVariables. See if can be used in them for a clearer code.
             spannerlogSchema.inferAttributeTypes(program);
             spannerlogSchema.setVariablesType(program);
             spannerlogSchema.setPredictionVariables(program);
@@ -417,6 +418,35 @@ class SpannerlogSchema {
         return dependenciesMap;
     }
 
+    private void linkTermsToAttributes(Program program) {
+        List<RuleWithConjunctiveQuery> rules = program.getStatements()
+                .stream()
+                .filter(stmt -> stmt instanceof ExtractionRule)
+                .map(stmt -> (RuleWithConjunctiveQuery) stmt)
+                .collect(Collectors.toList());
+
+        for (RuleWithConjunctiveQuery rule : rules) {
+            List<Atom> bodyAtoms = rule.getBody().getBodyElements()
+                    .stream()
+                    .filter(bodyElement -> bodyElement instanceof Atom)
+                    .map(bodyElement -> (Atom) bodyElement)
+                    .collect(Collectors.toList());
+
+            for (Atom bodyAtom : bodyAtoms) {
+                ListIterator<Term> it = bodyAtom.getTerms().listIterator();
+                while (it.hasNext()) {
+                    it.next().setAttribute(bodyAtom.getSchema().getAttrs().get(it.previousIndex()));
+                }
+            }
+
+            DBAtom headAtom = ((ExtractionRule) rule).getHead(); // TODO handle the InferenceRule case
+            ListIterator<Term> it = headAtom.getTerms().listIterator();
+            while (it.hasNext()) {
+                it.next().setAttribute(headAtom.getSchema().getAttrs().get(it.previousIndex()));
+            }
+        }
+    }
+
     private void setPredictionVariables(Program program) {
         List<String> predVarNames = program.getStatements()
                 .stream()
@@ -430,7 +460,7 @@ class SpannerlogSchema {
                 .filter(sch -> sch instanceof IntensionalRelationSchema)
                 .map(sch -> (IntensionalRelationSchema) sch)
                 .filter(sch -> predVarNames.contains(sch.getName()))
-                .forEach(sch -> sch.setPredictionVariableSchema(true));
+                .forEach(IntensionalRelationSchema::setAsPredictionVariable);
     }
 
     private void validate() {
@@ -625,8 +655,8 @@ class IntensionalRelationSchema extends RelationSchema {
         return isPredictionVariableSchema;
     }
 
-    void setPredictionVariableSchema(boolean predictionVariableSchema) {
-        isPredictionVariableSchema = predictionVariableSchema;
+    void setAsPredictionVariable() {
+        isPredictionVariableSchema = true;
     }
 
     Set<String> getInputSchemas() {

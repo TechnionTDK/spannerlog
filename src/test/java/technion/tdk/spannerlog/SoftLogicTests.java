@@ -33,7 +33,7 @@ public class SoftLogicTests {
 
         JsonObject jsonTree = compileToJson(splogSrc, edbSchema, null);
         JsonObject rSchema = jsonTree.getAsJsonObject("schema").getAsJsonArray("idb").get(0).getAsJsonObject();
-        assertEquals("R", rSchema.get("name").getAsString());
+        assertEquals("r", rSchema.get("name").getAsString());
         assertEquals(rSchema.get("variable_type").getAsString(), "boolean");
 
 //        printJsonTree(jsonTree);

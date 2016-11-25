@@ -50,7 +50,7 @@ class SpannerlogInputParser {
     private class StatementVisitor extends SpannerlogBaseVisitor<Statement> {
         @Override
         public Statement visitPredictionVariableDeclaration(SpannerlogParser.PredictionVariableDeclarationContext ctx) {
-            return new PredVarDec(ctx.relationSchemaName().getText());
+            return new PredVarDec(ctx.relationSchemaName().getText().toLowerCase());
         }
 
         @Override

@@ -1,6 +1,7 @@
 package technion.tdk.spannerlog;
 
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.InputStream;
@@ -261,6 +262,7 @@ public class SpouseTests {
         assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
+    @Ignore
     @Test
     public void compileEntireProgram() {
         InputStream splogSrc = BasicSyntaxTests.class.getClassLoader().getResourceAsStream("spouse.splog");
