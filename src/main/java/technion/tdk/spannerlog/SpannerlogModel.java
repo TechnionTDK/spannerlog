@@ -304,21 +304,21 @@ abstract class ExprTerm extends Term {
 }
 
 class VarTerm extends ExprTerm implements StringTerm, SpanTerm {
-    private String varName;
+    private String name;
     private List<SpanTerm> spans;
     private String type;
 
-    VarTerm(String varName) {
-        this.varName = varName;
+    VarTerm(String name) {
+        this.name = name;
     }
 
-    VarTerm(String varName, List<SpanTerm> spans) {
-        this.varName = varName;
+    VarTerm(String name, List<SpanTerm> spans) {
+        this.name = name;
         this.spans = spans;
     }
 
-    String getVarName() {
-        return varName;
+    String getName() {
+        return name;
     }
 
     @Override

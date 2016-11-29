@@ -77,17 +77,17 @@ public class BasicSyntaxTests {
             // First regex
             rgx = (Regex) bodyAtoms.get(1);
             VarTerm varTerm = (VarTerm) rgx.getInputTerm();
-            assertEquals("s", varTerm.getVarName());
+            assertEquals("s", varTerm.getName());
             assertTrue(varTerm.getSpans().isEmpty());
             assertEquals("x{a*}y{b*}", rgx.getRegexString());
 
             // Second regex
             rgx = (Regex) bodyAtoms.get(2);
             varTerm = (VarTerm) rgx.getInputTerm();
-            assertEquals("s", varTerm.getVarName());
+            assertEquals("s", varTerm.getName());
             List<SpanTerm> spans = varTerm.getSpans();
             assertEquals(2, spans.size());
-            assertEquals("y", ((VarTerm) spans.get(0)).getVarName());
+            assertEquals("y", ((VarTerm) spans.get(0)).getName());
             SpanConstExpr spanConstExpr = (SpanConstExpr) spans.get(1);
             assertEquals(0, spanConstExpr.getStart());
             assertEquals(5, spanConstExpr.getEnd());

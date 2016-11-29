@@ -191,6 +191,6 @@ public class BasicCompilationTests {
                         "}" +
                         "}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, iefSchema, true));
+        assertTrue(checkCompilation(splogSrc, edbSchema, iefSchema, false));
     }
 }

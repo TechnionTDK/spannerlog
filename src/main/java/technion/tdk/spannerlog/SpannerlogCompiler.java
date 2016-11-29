@@ -6,6 +6,7 @@ import technion.tdk.spannerlog.utils.match.PatternMatching;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static technion.tdk.spannerlog.utils.match.ClassPattern.inCaseOf;
 import static technion.tdk.spannerlog.utils.match.OtherwisePattern.otherwise;
@@ -173,7 +174,7 @@ class SpannerlogCompiler {
                 inCaseOf(SpanConstExpr.class, e -> String.valueOf(e.getStart())),
                 inCaseOf(VarTerm.class, e -> {
                     if (e.getType() != null && e.getType().equals("span")) // TODO fix in the case of spans in "IF-ELSE" statements.
-                        return e.getVarName() + "_start";
+                        return e.getName() + "_start";
                     return compile((ExprTerm) e);
                 }),
                 otherwise(e -> compile((ExprTerm) e))
@@ -217,7 +218,7 @@ class SpannerlogCompiler {
         if (exprTerm instanceof StringTerm) {
             List<SpanTerm> spans = ((StringTerm) exprTerm).getSpans();
             if (exprTerm instanceof VarTerm && !spans.isEmpty() && !((VarTerm) exprTerm).getType().equals("text"))
-                throw new SpanAppliedToNonStringTypeAttributeException(((VarTerm) exprTerm).getVarName());
+                throw new SpanAppliedToNonStringTypeAttributeException(((VarTerm) exprTerm).getName());
             if (!spans.isEmpty()) {
                 SpanTerm spanTerm = spans.get(spans.size() - 1);
                 spans.remove(spans.size() - 1);
@@ -250,8 +251,8 @@ class SpannerlogCompiler {
                 VarTerm s2 = (VarTerm) e.getArgs().get(0); // TODO handle constants
                 if (!t.getType().equals("span") || !s2.getType().equals("span"))
                     throw new IllegalArgumentException("Illegal argument in '" + e.getFunction() + "': arguments must be of type 'span'");
-                String tn = t.getVarName();
-                String sn = s2.getVarName();
+                String tn = t.getName();
+                String sn = s2.getName();
                 return "(" + tn + "_start - 1) < " + sn + "_start, (" + tn + "_end + 1) > " + sn + "_end" ;
         }
         throw new UnknownFunctionException(e.getFunction());
@@ -269,7 +270,7 @@ class SpannerlogCompiler {
     }
 
     private String compile(ExprTerm exprTerm, VarTerm varTerm) {
-        String varName = varTerm.getVarName();
+        String varName = varTerm.getName();
 
         String block = "substr(" +
                 compile(exprTerm) +
@@ -312,17 +313,52 @@ class SpannerlogCompiler {
 
     private String compile(VarTerm varTerm) {
         if (varTerm.getType() != null && varTerm.getType().equals("span"))
-            return varTerm.getVarName() + "_start, " + varTerm.getVarName() + "_end";
+            return varTerm.getName() + "_start, " + varTerm.getName() + "_end";
 
-        return varTerm.getVarName();
+        return varTerm.getName();
     }
 }
 
 class QueryCompiler {
     private RuleWithConjunctiveQuery query;
+    private Map<String, Variable> dbVars = new HashMap<>();
+
+    private class Variable {
+        int attrIndex;
+        int relIndex;
+        VarTerm varTerm;
+    }
 
     QueryCompiler(RuleWithConjunctiveQuery query) {
         this.query = query;
+        generateCanonicalDBVarMap();
+    }
+
+    // Maps each variable name to a canonical version of itself (first occurrence in body in left-to-right order)
+    // This is useful to translate to SQL (join conditions, select, etc.)
+    private void generateCanonicalDBVarMap() {
+
+        List<BodyElement> bodyElements = query.getBody().getBodyElements();
+
+        IntStream.range(0, bodyElements.size())
+                .forEach(i -> {
+                    if (bodyElements.get(i) instanceof Atom) {
+                        Atom a = (Atom) bodyElements.get(i);
+                        List<Term> terms = a.getTerms();
+                        IntStream.range((a instanceof IEAtom) ? 1 : 0, terms.size())
+                                .filter(j -> terms.get(j) instanceof VarTerm)
+                                .forEach(j -> {
+                                    VarTerm v = (VarTerm) terms.get(j);
+                                    if (!dbVars.containsKey(v.getName())) {
+                                        Variable var = new Variable();
+                                        var.varTerm = v;
+                                        var.relIndex = i;
+                                        var.attrIndex = j;
+                                        dbVars.put(v.getName(), var);
+                                    }
+                                });
+                    }
+                });
     }
 
     String generateSQL() {
@@ -334,7 +370,46 @@ class QueryCompiler {
 
     private String generateSQLBody(ConjunctiveQueryBody body) {
 
-        return "FROM " + generateFromClause(body);
+        return "FROM " + generateFromClause(body) + optionalClause(" WHERE", generateWhereClause(body));
+    }
+
+    private String generateWhereClause(ConjunctiveQueryBody body) {
+
+        List<BodyElement> bodyElements = query.getBody().getBodyElements();
+
+        StringJoiner joiner = new StringJoiner(" AND ");
+
+        IntStream.range(0, bodyElements.size())
+                .forEach(i -> {
+                    if (bodyElements.get(i) instanceof Atom) {
+                        Atom a = (Atom) bodyElements.get(i);
+                        List<Term> terms = a.getTerms();
+                        IntStream.range((a instanceof IEAtom) ? 1 : 0, terms.size())
+                                .forEach(j -> {
+                                    Term t = terms.get(j);
+                                    if (t instanceof VarTerm && dbVars.containsKey(((VarTerm) terms.get(j)).getName())) {
+                                        VarTerm v = (VarTerm) t;
+                                        Variable var = dbVars.get((v).getName());
+                                        if (i != var.relIndex) {
+                                            joiner.add(resolveAttr(v, i) + " = " + resolveCanonicalAttr(var.varTerm));
+                                        }
+                                    } else if (t instanceof StringConstExpr) {
+                                        joiner.add("R" + i + "." + t.getAttribute().getName() + " = '"
+                                                + ((StringConstExpr) t).getValue() + "'");
+                                    } else {
+                                        throw new UnsupportedOperationException(); // TODO remove exception
+                                    }
+                                });
+                    }
+                });
+
+        return joiner.toString();
+    }
+
+    private String optionalClause(String prefix, String clause) {
+        if (clause.isEmpty())
+            return "";
+        return prefix + " " + clause;
     }
 
     private String generateFromClause(ConjunctiveQueryBody body) {
@@ -342,48 +417,41 @@ class QueryCompiler {
         StringJoiner relationsJoiner = new StringJoiner(", ");
 
         // Handle DB atoms
-        List<DBAtom> dbAtoms = body.getBodyElements()
+        List<Atom> atoms = body.getBodyElements()
                 .stream()
-                .filter(e -> e instanceof DBAtom)
-                .map(e -> (DBAtom) e)
+                .filter(e -> e instanceof Atom)
+                .map(e -> (Atom) e)
                 .collect(Collectors.toList());
 
-        Map<String, String> aliases = new HashMap<>();
-        int cnt = 0;
-        for (DBAtom atom : dbAtoms) {
-            String alias = "R" + cnt++;
-            relationsJoiner.add(atom.getSchemaName() + " " + alias);
-            aliases.put(atom.getSchemaName(), alias);
-        }
-
-        // Handling IE atoms
-        List<IEAtom> ieAtoms = body.getBodyElements()
-                .stream()
-                .filter(e -> e instanceof IEAtom)
-                .map(e -> (IEAtom) e)
-                .collect(Collectors.toList());
-
-        cnt = 0;
-        for (IEAtom ieAtom : ieAtoms)
-            relationsJoiner.add(ieAtom.getSchemaName() + "(" + resolveAttr(ieAtom, body, aliases) + ") F" + cnt++);
+        IntStream.range(0, atoms.size())
+                .forEach(i ->
+                    new PatternMatching(
+                        inCaseOf(DBAtom.class, a -> relationsJoiner.add(atoms.get(i).getSchemaName() + " R" + i)),
+                        inCaseOf(IEAtom.class, a -> relationsJoiner.add(atoms.get(i).getSchemaName() + "("
+                                  + resolveCanonicalAttr(((IEAtom) atoms.get(i)).getInputTerm()) + ") R" + i)
+                        )
+                    ).matchFor(atoms.get(i))
+                );
 
         return relationsJoiner.toString();
     }
 
-    private String resolveAttr(IEAtom ieAtom, ConjunctiveQueryBody body, Map<String, String> aliases) {
-        Term inputTerm = ieAtom.getInputTerm();
-        if (inputTerm instanceof VarTerm) {
-            VarTerm inVar = (VarTerm) inputTerm;
-            Attribute attr = body.getBodyElements()
-                    .stream()
-                    .filter(e -> e instanceof DBAtom)
-                    .flatMap(e -> ((DBAtom) e).getTerms().stream().filter(t -> t instanceof VarTerm))
-                    .filter(t -> ((VarTerm) t).getVarName().equals(inVar.getVarName()))
-                    .findAny()
-                    .orElseThrow(() -> new UndefinedInputVariableException(inVar.getVarName()))
-                    .getAttribute();
+    private String resolveAttr(Term t, int i) {
+        if (t instanceof VarTerm) {
+            return "R" + i + "." + t.getAttribute().getName() + ((((VarTerm) t).getType().equals("span")) ? "_start" : "");
+        }
 
-            return aliases.get(attr.getSchema().getName()) + "." + attr.getName();
+        throw new UnsupportedOperationException(); // TODO remove exception
+    }
+
+    private String resolveCanonicalAttr(Term t) {
+        if (t instanceof VarTerm) {
+            VarTerm v = (VarTerm) t;
+            if (dbVars.containsKey(v.getName())) {
+                Variable var = dbVars.get(v.getName());
+                return resolveAttr(var.varTerm, var.relIndex);
+            } else
+                throw new UndefinedInputVariableException(v.getName());
         }
 
         throw new UnsupportedOperationException(); // TODO remove exception

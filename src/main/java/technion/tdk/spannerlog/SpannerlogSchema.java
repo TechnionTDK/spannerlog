@@ -386,7 +386,7 @@ class SpannerlogSchema {
                     continue;
                 List<Attribute> localDependencies = new ArrayList<>();
 
-                String headVarName = ((VarTerm) headTerm).getVarName();
+                String headVarName = ((VarTerm) headTerm).getName();
 
                 for (Atom bodyAtom : bodyAtoms) {
                     ListIterator<Term> it2 = bodyAtom.getTerms().listIterator();
@@ -394,7 +394,7 @@ class SpannerlogSchema {
                         Term bodyTerm = it2.next();
                         if (!(bodyTerm instanceof VarTerm))
                             continue;
-                        String bodyVarName = ((VarTerm) bodyTerm).getVarName();
+                        String bodyVarName = ((VarTerm) bodyTerm).getName();
                         if (headVarName.equals(bodyVarName)) {
                             Attribute bodyAttr = bodyAtom.getSchema().getAttrs().get(it2.previousIndex());
                             localDependencies.add(bodyAttr);
@@ -526,7 +526,7 @@ class SpannerlogSchema {
                     for (VarTerm condVar : condVars) {
                         List<String> possibleTypes = atomsVars
                                 .stream()
-                                .filter(atomVar -> atomVar.getVarName().equals(condVar.getVarName()))
+                                .filter(atomVar -> atomVar.getName().equals(condVar.getName()))
                                 .map(VarTerm::getType)
                                 .distinct()
                                 .collect(Collectors.toList());
@@ -699,7 +699,7 @@ class IEFunctionSchema extends RelationSchema {
         for (int i = 1; i < n; i++) { // skipping the input term (always the first term)
             Attribute attr = getAttrs().get(i);
             attr.setType("span");
-            attr.setName(((VarTerm) regex.getTerms().get(i)).getVarName());
+            attr.setName(((VarTerm) regex.getTerms().get(i)).getName());
         }
     }
 
@@ -735,13 +735,13 @@ class IEFunctionSchema extends RelationSchema {
                 .filter(atom -> atom != ieAtom)
                 .flatMap(atom -> atom.getTerms().stream())
                 .filter(term -> term instanceof VarTerm)
-                .map(term -> ((VarTerm) term).getVarName())
+                .map(term -> ((VarTerm) term).getName())
                 .collect(Collectors.toList());
 
         List<String> spanVarNames = spans
                 .stream()
                 .filter(spanTerm -> spanTerm instanceof VarTerm)
-                .map(spanTerm -> ((VarTerm) spanTerm).getVarName())
+                .map(spanTerm -> ((VarTerm) spanTerm).getName())
                 .collect(Collectors.toList());
 
         spanVarNames.removeAll(bodyVarNames);
@@ -840,7 +840,7 @@ class IEFunctionSchema extends RelationSchema {
     @SuppressWarnings("unchecked")
     private List<String> getVars(ExprTerm exprTerm) {
         List<String> vars = (List<String>) new PatternMatching(
-                inCaseOf(VarTerm.class, varTerm -> Stream.of(varTerm.getVarName()).collect(Collectors.toList())),
+                inCaseOf(VarTerm.class, varTerm -> Stream.of(varTerm.getName()).collect(Collectors.toList())),
                 otherwise(t -> new ArrayList<>())
         ).matchFor(exprTerm);
 
@@ -858,7 +858,7 @@ class IEFunctionSchema extends RelationSchema {
     @SuppressWarnings("unchecked")
     private List<String> getVars(SpanTerm spanTerm) {
         return (List<String>) new PatternMatching(
-                inCaseOf(VarTerm.class, varTerm -> Stream.of(varTerm.getVarName()).collect(Collectors.toList())),
+                inCaseOf(VarTerm.class, varTerm -> Stream.of(varTerm.getName()).collect(Collectors.toList())),
                 otherwise(t -> new ArrayList<>())
         ).matchFor(spanTerm);
     }
@@ -993,7 +993,7 @@ class AttributeTypeCannotBeInferredException extends RuntimeException {
 
 class VariableTypeCannotBeInferredException extends RuntimeException {
     VariableTypeCannotBeInferredException(VarTerm varTerm) {
-        super("The type of the variable '" + varTerm.getVarName() + "' cannot be inferred");
+        super("The type of the variable '" + varTerm.getName() + "' cannot be inferred");
     }
 }
 
