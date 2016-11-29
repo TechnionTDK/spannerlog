@@ -59,34 +59,6 @@ class SpannerlogCompiler {
 
         List<BodyElement> bodyElements = rule.getBody().getBodyElements();
         if (bodyElements.stream().anyMatch(e -> e instanceof IEAtom)) {
-            List<Atom> bodyAtoms = bodyElements
-                    .stream()
-                    .filter(e -> e instanceof Atom)
-                    .map(e -> (Atom) e)
-                    .collect(Collectors.toList());
-
-            int cnt = 0;
-            StringJoiner schemasNamesJoiner = new StringJoiner(", ");
-            for (Atom atom : bodyAtoms)
-                schemasNamesJoiner.add(atom.getSchemaName() + " R" + cnt++);
-
-            List<Condition> conditions = bodyElements
-                    .stream()
-                    .filter(e -> e instanceof Condition)
-                    .map(e -> (Condition) e)
-                    .collect(Collectors.toList());
-
-            StringJoiner conditionsJoiner = new StringJoiner(", ");
-            for (Condition cond : conditions)
-                conditionsJoiner.add(compile(cond));
-
-            String block =
-                    "INSERT INTO " + rule.getHead().getSchemaName() +
-                    " SELECT " + compile(rule.getHead().getTerms()) +
-                    " FROM " + schemasNamesJoiner +
-                    (conditions.isEmpty() ? "" : " WHERE " + conditionsJoiner);
-
-//            cqBlock.put("extraction_rule", block);
             cqBlock.put("extraction_rule", new QueryCompiler(rule).generateSQL());
         } else {
             cqBlock.put("extraction_rule", compile(rule.getHead()) + " *:- " + compile(rule.getBody()) + ".");
@@ -362,18 +334,48 @@ class QueryCompiler {
     }
 
     String generateSQL() {
-        String body = generateSQLBody(query.getBody());
+        String head = generateSQLHead();
+        String body = generateSQLBody();
 
-        return body;
+        return head + body; // TODO support union of CQs.
 
     }
 
-    private String generateSQLBody(ConjunctiveQueryBody body) {
+    private String generateSQLHead() {
+        List<Term> terms = ((ExtractionRule) query).getHead().getTerms();
+        if (terms.isEmpty()) {
+            return "SELECT TRUE";
+        }
+        StringJoiner joiner = new StringJoiner(", ");
+        terms.forEach(t -> {
+            String compiledAttr = resolveCanonicalAttr(t);
+            if (t instanceof VarTerm && ((VarTerm) t).getType().equals("span"))
+                joiner.add(compiledAttr + "_start, " + compiledAttr + "_end");
+            else
+                joiner.add(compiledAttr);
+        });
 
-        return "FROM " + generateFromClause(body) + optionalClause(" WHERE", generateWhereClause(body));
+        return "SELECT " + joiner;
     }
 
-    private String generateWhereClause(ConjunctiveQueryBody body) {
+    private String maybeToSpanStart(VarTerm t, String compiledAttr) {
+        if (t.getType().equals("span"))
+            return compiledAttr + "_start";
+        return compiledAttr;
+    }
+
+    private String maybeToSpanEnd(VarTerm t, String compiledAttr) {
+        if (t.getType().equals("span"))
+            return compiledAttr + "_end";
+        return compiledAttr;
+    }
+
+    private String generateSQLBody() {
+
+        return " FROM " + generateFromClause() + optionalClause(" WHERE", generateWhereClause());
+    }
+
+    private String generateWhereClause() {
 
         List<BodyElement> bodyElements = query.getBody().getBodyElements();
 
@@ -391,7 +393,7 @@ class QueryCompiler {
                                         VarTerm v = (VarTerm) t;
                                         Variable var = dbVars.get((v).getName());
                                         if (i != var.relIndex) {
-                                            joiner.add(resolveAttr(v, i) + " = " + resolveCanonicalAttr(var.varTerm));
+                                            joiner.add(maybeToSpanStart(v, resolveAttr(v, i)) + " = " + maybeToSpanStart(var.varTerm, resolveCanonicalAttr(var.varTerm)));
                                         }
                                     } else if (t instanceof StringConstExpr) {
                                         joiner.add("R" + i + "." + t.getAttribute().getName() + " = '"
@@ -412,12 +414,12 @@ class QueryCompiler {
         return prefix + " " + clause;
     }
 
-    private String generateFromClause(ConjunctiveQueryBody body) {
+    private String generateFromClause() {
 
         StringJoiner relationsJoiner = new StringJoiner(", ");
 
         // Handle DB atoms
-        List<Atom> atoms = body.getBodyElements()
+        List<Atom> atoms = query.getBody().getBodyElements()
                 .stream()
                 .filter(e -> e instanceof Atom)
                 .map(e -> (Atom) e)
@@ -438,7 +440,7 @@ class QueryCompiler {
 
     private String resolveAttr(Term t, int i) {
         if (t instanceof VarTerm) {
-            return "R" + i + "." + t.getAttribute().getName() + ((((VarTerm) t).getType().equals("span")) ? "_start" : "");
+            return "R" + i + "." + t.getAttribute().getName();
         }
 
         throw new UnsupportedOperationException(); // TODO remove exception
