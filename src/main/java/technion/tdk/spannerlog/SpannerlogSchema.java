@@ -22,20 +22,15 @@ class SpannerlogSchema {
 
     static class Builder {
         private SpannerlogSchema spannerlogSchema = new SpannerlogSchema();
-        private Program program;
 
         Builder readSchemaFromJson(Reader reader, RelationSchemaBuilder builder) throws IOException {
             spannerlogSchema.readSchemaFromJson(reader, builder);
             return this;
         }
 
-        Builder extractRelationSchemas(Program program) {
+        SpannerlogSchema build(Program program) {
+            spannerlogSchema.includeBuiltInIEFSchemas();
             spannerlogSchema.extractRelationSchemas(program);
-            this.program = program;
-            return this;
-        }
-
-        SpannerlogSchema build() {
             spannerlogSchema.validate();
             spannerlogSchema.linkTermsToAttributes(program); // TODO This function was created before inferAttributeTypes, setVariablesType and setPredictionVariables. See if can be used in them for a clearer code.
             spannerlogSchema.inferAttributeTypes(program);
@@ -70,6 +65,21 @@ class SpannerlogSchema {
 
             mergeRelationSchemas(relationSchemas);
         }
+    }
+
+    private void includeBuiltInIEFSchemas() {
+        List<RelationSchema> relationSchemas = new ArrayList<>();
+        RelationSchemaBuilder rsBuilder = RelationSchema.builder().type(RelationSchemaType.IEFUNCTION);
+
+        // NER
+        String name = "ner";
+        List<Attribute> attrs = new ArrayList<>();
+        attrs.add(new Attribute("input", "text"));
+        attrs.add(new Attribute("entity", "span"));
+        attrs.add(new Attribute("category", "text"));
+        relationSchemas.add(rsBuilder.build(name, attrs));
+
+        mergeRelationSchemas(relationSchemas);
     }
 
     private List<Attribute> readAttributes(JsonReader jsonReader) throws IOException {

@@ -26,16 +26,7 @@ public class CompilationToSqlTests {
                         "}" +
                 "}";
 
-        String iefSchema =
-                "{" +
-                        "\"ner\": {" +
-                            "\"input\":\"text\"," +
-                            "\"entity\":\"span\"," +
-                            "\"category\":\"text\"" +
-                        "}" +
-                "}";
-
-        assertTrue(checkCompilation(splogSrc, edbSchema, iefSchema, true));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
     }
 
 }

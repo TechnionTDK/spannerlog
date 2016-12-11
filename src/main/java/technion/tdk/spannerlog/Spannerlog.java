@@ -31,9 +31,7 @@ public class Spannerlog {
             builder.readSchemaFromJson(edbReader, RelationSchema.builder().type(RelationSchemaType.EXTENSIONAL));
         if (udfReader != null)
             builder.readSchemaFromJson(udfReader, RelationSchema.builder().type(RelationSchemaType.IEFUNCTION));
-        SpannerlogSchema schema = builder
-                .extractRelationSchemas(program)
-                .build();
+        SpannerlogSchema schema = builder.build(program);
 
         // compile
         SpannerlogCompiler compiler = new SpannerlogCompiler();

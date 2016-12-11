@@ -59,9 +59,11 @@ class SpannerlogCompiler {
 
         List<BodyElement> bodyElements = rule.getBody().getBodyElements();
         if (bodyElements.stream().anyMatch(e -> e instanceof IEAtom)) {
-            cqBlock.put("extraction_rule", new QueryCompiler(rule).generateSQL());
+            cqBlock.put("statement", new QueryCompiler(rule).generateSQL());
+            cqBlock.put("format", "sql");
         } else {
-            cqBlock.put("extraction_rule", compile(rule.getHead()) + " *:- " + compile(rule.getBody()) + ".");
+            cqBlock.put("statement", compile(rule.getHead()) + " *:- " + compile(rule.getBody()) + ".");
+            cqBlock.put("format", "ddlog");
         }
 
         return cqBlock;
