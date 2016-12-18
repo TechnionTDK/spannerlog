@@ -148,6 +148,7 @@ class SpannerlogSchema {
 
             hotIESchema.setInputTerm(ObjectUtils.firstNonNull(hotIESchema.getInputTerm(), coldIESchema.getInputTerm()));
             hotIESchema.setInputAtoms(ObjectUtils.firstNonNull(hotIESchema.getInputAtoms(), coldIESchema.getInputAtoms()));
+            hotIESchema.getAtoms().addAll(coldIESchema.getAtoms());
 
             hotIESchema.setMaterialized(hotIESchema.isMaterialized() || coldIESchema.isMaterialized());
         } else if (hotSchema instanceof IntensionalRelationSchema && coldSchema instanceof IntensionalRelationSchema) {

@@ -36,7 +36,7 @@ negativeSet
     ;
 
 setItems
-    : setItem setItems?
+    : setItem+
     ;
 
 setItem

@@ -94,13 +94,24 @@ public class Spannerlog {
 
         jsonTree.add("schema", schemaObject);
 
-        jsonTree.add("ie_functions", gson.toJsonTree(schema.getRelationSchemas()
+        JsonObject iefs = new JsonObject();
+        iefs.add("rgx", gson.toJsonTree(schema.getRelationSchemas()
                 .stream()
-                .filter(s -> s instanceof IEFunctionSchema)
+                .filter(s -> s instanceof IEFunctionSchema && s.getAtoms().get(0) instanceof Regex)
                 .sorted((s1, s2) -> String.CASE_INSENSITIVE_ORDER.compare(s1.getName(), s2.getName()))
                 .map(s -> toJson((IEFunctionSchema) s, iefDeclarationsBlocks))
-                .collect(Collectors.toList()))
-        );
+                .collect(Collectors.toList())));
+
+
+        iefs.add("udf", gson.toJsonTree(schema.getRelationSchemas()
+                .stream()
+                .filter(s -> s instanceof IEFunctionSchema && !(s.getAtoms().get(0) instanceof Regex))
+                .sorted((s1, s2) -> String.CASE_INSENSITIVE_ORDER.compare(s1.getName(), s2.getName()))
+                .map(s -> toJson((IEFunctionSchema) s, iefDeclarationsBlocks))
+                .collect(Collectors.toList())));
+
+
+        jsonTree.add("ief", gson.toJsonTree(iefs));
 
         jsonTree.add("rules", gson.toJsonTree(cqBlocks));
 

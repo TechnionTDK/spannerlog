@@ -84,5 +84,15 @@ public class Rgx {
         public String visitGroup(RgxParser.GroupContext ctx) {
             return "(" + visit(ctx.regex()) + ")";
         }
+
+        @Override
+        public String visitPositiveSet(RgxParser.PositiveSetContext ctx) {
+            return ctx.getText();
+        }
+
+        @Override
+        public String visitChars(RgxParser.CharsContext ctx) {
+            return ctx.getText();
+        }
     }
 }
