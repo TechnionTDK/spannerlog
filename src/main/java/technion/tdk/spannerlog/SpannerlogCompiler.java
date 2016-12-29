@@ -5,6 +5,7 @@ import technion.tdk.spannerlog.utils.match.PatternMatching;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -22,12 +23,15 @@ class SpannerlogCompiler {
     }
 
 
-    List<Map<String, String>> compile(Program program) throws IOException {
+    Map<String, CompiledStmt> compile(Program program) throws IOException {
         return program.getStatements()
                 .stream()
                 .map(this::compile)
-                .filter(map -> !map.isEmpty())
-                .collect(Collectors.toList());
+                .filter(c -> c.getKey() != null)
+                .collect(Collectors.toMap(CompiledStmt::getKey, Function.identity(), (s1, s2) -> {
+                    s1.setValue(s1.getValue() + "\nUNION ALL\n" + s2.getValue());
+                    return s1;
+                }));
     }
 
 
@@ -43,46 +47,45 @@ class SpannerlogCompiler {
                 + ".";
     }
 
-    @SuppressWarnings("unchecked")
-    private Map<String, String> compile(Statement statement) {
-        return (Map<String, String>) new PatternMatching(
+    private CompiledStmt compile(Statement statement) {
+        return (CompiledStmt) new PatternMatching(
                 inCaseOf(ExtractionRule.class, this::compile),
                 inCaseOf(SupervisionRule.class, this::compile),
-                inCaseOf(InferenceRule.class, this::compile),
-                otherwise(stmt -> new HashMap<>())
+                inCaseOf(InferenceRule.class, this::compile)
         ).matchFor(statement);
 
     }
 
-    private Map<String, String> compile(ExtractionRule rule) {
-        Map<String, String> cqBlock = new HashMap<>();
+    private CompiledStmt compile(ExtractionRule rule) {
+        CompiledExtractionRule compiledRule = new CompiledExtractionRule();
 
+        compiledRule.setKey(rule.getHead().getSchemaName());
         List<BodyElement> bodyElements = rule.getBody().getBodyElements();
         if (bodyElements.stream().anyMatch(e -> e instanceof IEAtom)) {
-            cqBlock.put("statement", new QueryCompiler(rule).generateSQL());
-            cqBlock.put("format", "sql");
-        } else {
-            cqBlock.put("statement", compile(rule.getHead()) + " *:- " + compile(rule.getBody()) + ".");
-            cqBlock.put("format", "ddlog");
+            compiledRule.setValue(new QueryCompiler(rule).generateSQL());
+            compiledRule.setTarget("sql");
         }
+        else
+            compiledRule.setValue(compile(rule.getHead()) + " *:- " + compile(rule.getBody()) + ".");
 
-        return cqBlock;
+        return compiledRule;
     }
 
-    private Map<String, String> compile(SupervisionRule rule) {
-        Map<String, String> cqBlock = new HashMap<>();
-        cqBlock.put("supervision_rule", compile(rule.getHead())
+    private CompiledStmt compile(SupervisionRule rule) {
+        CompiledSupervisionRule compiledRule = new CompiledSupervisionRule();
+        compiledRule.setKey(rule.getHead().getSchemaName());
+        compiledRule.setValue(compile(rule.getHead())
                 + " = if " + compile(rule.getPosCond()) + " then TRUE"
                 + " else if " + compile(rule.getNegCond()) + " then FALSE"
                 + " else NULL end"
                 + " :- " + compile(rule.getBody()) + ".");
-        return cqBlock;
+        return compiledRule;
     }
 
-    private Map<String, String> compile(InferenceRule rule) {
-        Map<String, String> cqBlock = new HashMap<>();
-        cqBlock.put("inference_rule", "@weight(" + compile(rule.getWeight()) + ")\n" + compile(rule.getHead()) + " :- " + compile(rule.getBody()) + ".");
-        return cqBlock;
+    private CompiledStmt compile(InferenceRule rule) {
+        CompiledInferenceRule compiledRule = new CompiledInferenceRule();
+        compiledRule.setValue("@weight(" + compile(rule.getWeight()) + ")\n" + compile(rule.getHead()) + " :- " + compile(rule.getBody()) + ".");
+        return compiledRule;
     }
 
     private String compile(FactorWeight weight) {
@@ -461,6 +464,41 @@ class QueryCompiler {
         throw new UnsupportedOperationException(); // TODO remove exception
     }
 }
+
+class CompiledStmt {
+    private String key;
+    private String value;
+    private String target = "ddlog";
+
+    public String getTarget() {
+        return target;
+    }
+
+    public void setTarget(String target) {
+        this.target = target;
+    }
+
+    String getKey() {
+        return key;
+    }
+
+    void setKey(String key) {
+        this.key = key;
+    }
+
+    String getValue() {
+        return value;
+    }
+
+    void setValue(String value) {
+        this.value = value;
+    }
+}
+
+class CompiledExtractionRule extends CompiledStmt {}
+class CompiledSupervisionRule extends CompiledStmt {}
+class CompiledInferenceRule extends CompiledStmt {}
+
 
 class SpanAppliedToNonStringTypeAttributeException extends RuntimeException {
     SpanAppliedToNonStringTypeAttributeException(String varName) {
