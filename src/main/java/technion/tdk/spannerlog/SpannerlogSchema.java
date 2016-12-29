@@ -267,7 +267,7 @@ class SpannerlogSchema {
     }
 
     private RelationSchema extractIEFunctionSchema(IEAtom ieAtom, ConjunctiveQueryBody body) {
-        if (!this.relationSchemas.stream().anyMatch(sch -> sch.getName().equalsIgnoreCase(ieAtom.getSchemaName())))
+        if (this.relationSchemas.stream().noneMatch(sch -> sch.getName().equalsIgnoreCase(ieAtom.getSchemaName())))
             throw new UndefinedRelationSchema(ieAtom.getSchemaName());
         return new IEFunctionSchema(ieAtom, body, extractAttributes(ieAtom.getTerms()), ieAtom.isMaterialized());
     }

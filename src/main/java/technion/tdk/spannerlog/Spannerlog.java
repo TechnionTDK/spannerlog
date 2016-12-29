@@ -69,7 +69,7 @@ public class Spannerlog {
                             .forEach(iSch -> {if (!iSch.equals(sch.getName())) builder.addEdge(iSch, sch.getName());});
                 });
 
-        return builder.build().sortTopologically() ;
+        return builder.build().sortTopologically();
     }
 
     private JsonObject export(SpannerlogSchema schema, Map<String, String> iefDeclarationsBlocks, List<String> planOrder, Map<String, CompiledStmt> compiledStmts) {
