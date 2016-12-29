@@ -29,7 +29,7 @@ class SpannerlogSchema {
         }
 
         SpannerlogSchema build(Program program) {
-            spannerlogSchema.includeBuiltInIEFSchemas();
+//            spannerlogSchema.includeBuiltInIEFSchemas();
             spannerlogSchema.extractRelationSchemas(program);
             spannerlogSchema.validate();
             spannerlogSchema.linkTermsToAttributes(program); // TODO This function was created before inferAttributeTypes, setVariablesType and setPredictionVariables. See if can be used in them for a clearer code.
@@ -67,20 +67,20 @@ class SpannerlogSchema {
         }
     }
 
-    private void includeBuiltInIEFSchemas() {
-        List<RelationSchema> relationSchemas = new ArrayList<>();
-        RelationSchemaBuilder rsBuilder = RelationSchema.builder().type(RelationSchemaType.IEFUNCTION);
-
-        // NER
-        String name = "ner";
-        List<Attribute> attrs = new ArrayList<>();
-        attrs.add(new Attribute("input", "text"));
-        attrs.add(new Attribute("entity", "span"));
-        attrs.add(new Attribute("category", "text"));
-        relationSchemas.add(rsBuilder.build(name, attrs));
-
-        mergeRelationSchemas(relationSchemas);
-    }
+//    private void includeBuiltInIEFSchemas() {
+//        List<RelationSchema> relationSchemas = new ArrayList<>();
+//        RelationSchemaBuilder rsBuilder = RelationSchema.builder().type(RelationSchemaType.IEFUNCTION);
+//
+//        // NER
+//        String name = "ner";
+//        List<Attribute> attrs = new ArrayList<>();
+//        attrs.add(new Attribute("input", "text"));
+//        attrs.add(new Attribute("entity", "span"));
+//        attrs.add(new Attribute("category", "text"));
+//        relationSchemas.add(rsBuilder.build(name, attrs));
+//
+//        mergeRelationSchemas(relationSchemas);
+//    }
 
     private List<Attribute> readAttributes(JsonReader jsonReader) throws IOException {
         List<Attribute> attrs = new ArrayList<>();
@@ -267,9 +267,18 @@ class SpannerlogSchema {
     }
 
     private RelationSchema extractIEFunctionSchema(IEAtom ieAtom, ConjunctiveQueryBody body) {
-        if (this.relationSchemas.stream().noneMatch(sch -> sch.getName().equalsIgnoreCase(ieAtom.getSchemaName())))
+//        if (BuiltInIefManager.getInstance().isBuiltInIef(ieAtom.getSchemaName()))
+//            return BuiltInIefManager.getInstance().getBuiltInIEF(ieAtom.getSchemaName());
+        boolean isBuiltIn = BuiltInIefManager.getInstance().isBuiltInIef(ieAtom.getSchemaName());
+        if (this.relationSchemas.stream().noneMatch(sch -> sch.getName().equalsIgnoreCase(ieAtom.getSchemaName()))
+                && !isBuiltIn)
             throw new UndefinedRelationSchema(ieAtom.getSchemaName());
-        return new IEFunctionSchema(ieAtom, body, extractAttributes(ieAtom.getTerms()), ieAtom.isMaterialized());
+
+        IEFunctionSchema sch = new IEFunctionSchema(ieAtom, body, extractAttributes(ieAtom.getTerms()), ieAtom.isMaterialized());
+        if (isBuiltIn)
+            BuiltInIefManager.getInstance().setAttrsNames(sch.getName(), sch.getAttrs());
+
+        return sch;
     }
 
     private RelationSchema extractRelationSchema(DBAtom dbAtom) {
@@ -973,6 +982,40 @@ class Attribute {
                 "name='" + name + '\'' +
                 ", type='" + type + '\'' +
                 '}';
+    }
+}
+
+class BuiltInIefManager {
+    private static BuiltInIefManager ourInstance = new BuiltInIefManager();
+
+    static BuiltInIefManager getInstance() {
+        return ourInstance;
+    }
+
+    private BuiltInIefManager() {
+        builtInIefs = new HashSet<>();
+        builtInIefs.add("ner");
+    }
+
+    private static Set<String> builtInIefs;
+
+    boolean isBuiltInIef(String schemaName) {
+        return builtInIefs.contains(schemaName);
+    }
+
+    void setAttrsNames(String schemaName, List<Attribute> attrs) {
+        // TODO initialize in a smarter way?
+        // NER
+        if (schemaName.equals("ner")) {
+            attrs.get(0).setName("input");
+            attrs.get(0).setType("text");
+
+            attrs.get(1).setName("entity");
+            attrs.get(1).setType("span");
+
+            attrs.get(2).setName("category");
+            attrs.get(2).setType("text");
+        }
     }
 }
 

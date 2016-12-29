@@ -26,7 +26,7 @@ public class CompilationToSqlTests {
                         "}" +
                 "}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
 }

@@ -27,7 +27,7 @@ class SpannerlogCompiler {
         return program.getStatements()
                 .stream()
                 .map(this::compile)
-                .filter(c -> c.getKey() != null)
+                .filter(c -> c != null && c.getKey() != null)
                 .collect(Collectors.toMap(CompiledStmt::getKey, Function.identity(), (s1, s2) -> {
                     s1.setValue(s1.getValue() + "\nUNION ALL\n" + s2.getValue());
                     return s1;
@@ -51,7 +51,8 @@ class SpannerlogCompiler {
         return (CompiledStmt) new PatternMatching(
                 inCaseOf(ExtractionRule.class, this::compile),
                 inCaseOf(SupervisionRule.class, this::compile),
-                inCaseOf(InferenceRule.class, this::compile)
+                inCaseOf(InferenceRule.class, this::compile),
+                otherwise(stmt -> null)
         ).matchFor(statement);
 
     }
@@ -470,11 +471,11 @@ class CompiledStmt {
     private String value;
     private String target = "ddlog";
 
-    public String getTarget() {
+    String getTarget() {
         return target;
     }
 
-    public void setTarget(String target) {
+    void setTarget(String target) {
         this.target = target;
     }
 
