@@ -1,6 +1,7 @@
 package technion.tdk.spannerlog;
 
 
+import technion.tdk.spannerlog.grammar.SpannerlogParser;
 import technion.tdk.spannerlog.utils.match.PatternMatching;
 
 import java.io.IOException;
@@ -404,6 +405,11 @@ class QueryCompiler {
                                     } else if (t instanceof StringConstExpr) {
                                         joiner.add("R" + i + "." + t.getAttribute().getName() + " = '"
                                                 + ((StringConstExpr) t).getValue() + "'");
+//                                    } else if (t instanceof IntConstExpr) {
+//                                        joiner.add("R" + i + "." + t.getAttribute().getName() + " = '"
+//                                                + ((IntConstExpr) t).getValue() + "'");
+                                    } else if (t instanceof PlaceHolderTerm) {
+                                        return;
                                     } else {
                                         throw new UnsupportedOperationException(); // TODO remove exception
                                     }

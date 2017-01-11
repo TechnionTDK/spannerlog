@@ -995,6 +995,7 @@ class BuiltInIefManager {
     private BuiltInIefManager() {
         builtInIefs = new HashSet<>();
         builtInIefs.add("ner");
+        builtInIefs.add("ssplit");
     }
 
     private static Set<String> builtInIefs;
@@ -1015,6 +1016,16 @@ class BuiltInIefManager {
 
             attrs.get(2).setName("category");
             attrs.get(2).setType("text");
+
+        } else if (schemaName.equals("ssplit")) {
+            attrs.get(0).setName("input");
+            attrs.get(0).setType("text");
+
+            attrs.get(1).setName("sentence_index");
+            attrs.get(1).setType("int");
+
+            attrs.get(2).setName("boundary");
+            attrs.get(2).setType("span");
         }
     }
 }

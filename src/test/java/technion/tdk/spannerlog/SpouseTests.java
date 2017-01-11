@@ -11,59 +11,66 @@ import static technion.tdk.spannerlog.Utils.checkCompilation;
 
 public class SpouseTests {
 
-    @Test
-    public void compileSentences() {
-        String splogSrc = "sentences(doc_id, sentence_index, sentence_text, tokens, pos_tags, ner_tags) <- \n" +
-                          "          articles(doc_id, content),\n" +
-                          "nlp_markup<content>(sentence_index, sentence_text, tokens, pos_tags, ner_tags).";
-        String edbSchema = "{\"articles\":{\"column1\":\"text\",\"column2\":\"text\"}}";
-        String iefSchema = "{\"nlp_markup\":{\"content\":\"text\",\"sentence_index\":\"int\",\"sentence_text\":\"text\"," +
-                            "\"tokens\":\"text[]\",\"pos_tags\":\"text[]\",\"ner_tags\":\"text[]\"}}";
-
-        assertTrue(checkCompilation(splogSrc, edbSchema, iefSchema, false));
-    }
-
-    @Test
-    public void applySpanInIDBAtomShouldSucceed() {
-        String splogSrc = "sentences(doc_id, sentence_index, sentence_text) <- \n" +
-                          "    articles(doc_id, s), ssplit<s>(sentence_index, sentence_text).\n" +
-
-                          "person_mention(sentence_text[span], doc_id, sentence_index, span) <-\n" +
-                          "    sentences(doc_id, sentence_index, sentence_text), ner<sentence_text>(span, \"PERSON\").\n";
-
-        String edbSchema = "{\"articles\":{\"column1\":\"text\",\"column2\":\"text\"}}";
-
-        String iefSchema = "{\"ssplit\":{\"content\":\"text\",\"sentence_index\":\"int\",\"sentence_text\":\"text\"}," +
-                           "\"ner\":{\"content\":\"text\",\"span\":\"span\",\"ner_tag\":\"text\"}}";
-
-        assertTrue(checkCompilation(splogSrc, edbSchema, iefSchema, false));
-    }
+//    @Test
+//    public void compileSentences() {
+//        String splogSrc = "sentences(doc_id, sentence_index, sentence_text, tokens, pos_tags, ner_tags) <- \n" +
+//                          "          articles(doc_id, content),\n" +
+//                          "nlp_markup<content>(sentence_index, sentence_text, tokens, pos_tags, ner_tags).";
+//        String edbSchema = "{\"articles\":{\"column1\":\"text\",\"column2\":\"text\"}}";
+//        String iefSchema = "{\"nlp_markup\":{\"content\":\"text\",\"sentence_index\":\"int\",\"sentence_text\":\"text\"," +
+//                            "\"tokens\":\"text[]\",\"pos_tags\":\"text[]\",\"ner_tags\":\"text[]\"}}";
+//
+//        assertTrue(checkCompilation(splogSrc, edbSchema, iefSchema, true));
+//    }
 
     @Test
-    public void compileProgramWithCondition() {
+    public void compilePersonMention() {
         String splogSrc =
-                "spouse_candidate(doc_id, sentence_span, person_span1, person_span2) <-\n" +
-                "   person_mention(name1, doc_id, sentence_span, person_span1),\n" +
-                "   person_mention(name2, doc_id, sentence_span, person_span2),\n" +
-                "   name1 != name2,\n" +
-                "   person_span1 != person_span2.";
+                "person_mention(content[sentence_span][ner_span], doc_id, sentence_span, ner_span) <- \n" +
+                    "articles(doc_id, content),\n" +
+                    "ssplit<content>(_, sentence_span)," +
+                    "ner<content[sentence_span]>(ner_span, \"PERSON\").";
+
+        String edbSchema =
+                "{\"articles\":" +
+                        "{" +
+                            "\"column1\":\"text\"," +
+                            "\"column2\":\"text\"" +
+                        "}" +
+                "}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
+    }
+
+    @Test
+    public void compileSpouseCandidate() {
+        String splogSrc =
+                "spouse_candidate(doc_id, sentence_span, person_span1, person_span2) <-" +
+                        "person_mention(name1, doc_id, sentence_span, person_span1)," +
+                        "person_mention(name2, doc_id, sentence_span, person_span2)," +
+                        "name1 != name2," +
+                        "person_span1 != person_span2.";
 
         String edbSchema =
                 "{" +
-                    "\"person_mention\": {" +
-                        "\"name\":\"text\"," +
-                        "\"doc_id\":\"text\"," +
-                        "\"sentence\":\"span\"," +
-                        "\"person\":\"span\"" +
-                    "}" +
+                        "\"articles\":\n" +
+                            "{\n" +
+                                "\"column1\":\"text\",\n" +
+                                "\"column2\":\"text\"\n" +
+                            "},\n" +
+                        "\"person_mention\":" +
+                            "{\n" +
+                                "\"column1\": \"text\",\n" +
+                                "\"column2\": \"text\",\n" +
+                                "\"column3\": \"span\",\n" +
+                                "\"column4\": \"span\"\n" +
+                            "}\n" +
                 "}";
 
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
-
-//        JsonObject jsonTree = compileToJson(splogSrc, edbSchema, null);
-//        printJsonTree(jsonTree);
-
+        //        JsonObject jsonTree = compileToJson(splogSrc, edbSchema, null);
+        //        printJsonTree(jsonTree);
     }
 
     @Test
@@ -72,7 +79,7 @@ public class SpouseTests {
             "spouse_label(doc_id, sentence_span, person_span1, person_span2, 1, \"from_dbpedia\") <-\n" +
             "   spouse_candidate(doc_id, sentence_span, person_span1, person_span2),\n" +
             "   spouses_dbpedia(n1, n2),\n" +
-            "   articles_prep(doc_id, content),\n" +
+            "   articles(doc_id, content),\n" +
             "   n1.equalsIgnoreCase(content[sentence_span][person_span1]),\n" +
             "   n2.equalsIgnoreCase(content[sentence_span][person_span2]).";
 
@@ -88,13 +95,13 @@ public class SpouseTests {
                         "\"name1\":\"text\"," +
                         "\"name2\":\"text\"" +
                     "}," +
-                    "\"articles_prep\": {" +
+                    "\"articles\": {" +
                         "\"doc_id\":\"text\"," +
                         "\"content\":\"text\"" +
                     "}" +
                 "}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
     }
 
     @Test
