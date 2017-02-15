@@ -1024,7 +1024,7 @@ class BuiltInIefManager {
             attrs.get(1).setName("sentence_index");
             attrs.get(1).setType("int");
 
-            attrs.get(2).setName("boundary");
+            attrs.get(2).setName("sentence");
             attrs.get(2).setType("span");
         }
     }

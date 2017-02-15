@@ -321,6 +321,10 @@ class VarTerm extends ExprTerm implements StringTerm, SpanTerm {
         return name;
     }
 
+    void setName(String name) {
+        this.name = name;
+    }
+
     @Override
     public void setSpans(List<SpanTerm> spans) {
         this.spans = spans;

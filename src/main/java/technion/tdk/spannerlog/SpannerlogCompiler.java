@@ -1,11 +1,13 @@
 package technion.tdk.spannerlog;
 
 
-import technion.tdk.spannerlog.grammar.SpannerlogParser;
 import technion.tdk.spannerlog.utils.match.PatternMatching;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.StringJoiner;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -64,7 +66,7 @@ class SpannerlogCompiler {
         compiledRule.setKey(rule.getHead().getSchemaName());
         List<BodyElement> bodyElements = rule.getBody().getBodyElements();
         if (bodyElements.stream().anyMatch(e -> e instanceof IEAtom)) {
-            compiledRule.setValue(new QueryCompiler(rule).generateSQL());
+            compiledRule.setValue(new QueryCompiler(rule, this).generateSQL());
             compiledRule.setTarget("sql");
         }
         else
@@ -186,7 +188,7 @@ class SpannerlogCompiler {
                 .collect(Collectors.joining(", "));
     }
 
-    private String compile(Term term) {
+    String compile(Term term) {
         return (String) new PatternMatching(
                 inCaseOf(PlaceHolderTerm.class, t -> "_"),
                 inCaseOf(ExprTerm.class, this::compile)
@@ -301,6 +303,7 @@ class SpannerlogCompiler {
 class QueryCompiler {
     private RuleWithConjunctiveQuery query;
     private Map<String, Variable> dbVars = new HashMap<>();
+    private SpannerlogCompiler compiler;
 
     private class Variable {
         int attrIndex;
@@ -308,8 +311,9 @@ class QueryCompiler {
         VarTerm varTerm;
     }
 
-    QueryCompiler(RuleWithConjunctiveQuery query) {
+    QueryCompiler(RuleWithConjunctiveQuery query, SpannerlogCompiler compiler) {
         this.query = query;
+        this.compiler = compiler;
         generateCanonicalDBVarMap();
     }
 
@@ -320,7 +324,7 @@ class QueryCompiler {
         List<BodyElement> bodyElements = query.getBody().getBodyElements();
 
         IntStream.range(0, bodyElements.size())
-                .forEach(i -> {
+                .forEach( i -> {
                     if (bodyElements.get(i) instanceof Atom) {
                         Atom a = (Atom) bodyElements.get(i);
                         List<Term> terms = a.getTerms();
@@ -354,12 +358,22 @@ class QueryCompiler {
             return "SELECT TRUE";
         }
         StringJoiner joiner = new StringJoiner(", ");
-        terms.forEach(t -> {
-            String compiledAttr = resolveCanonicalAttr(t);
-            if (t instanceof VarTerm && ((VarTerm) t).getType().equals("span"))
-                joiner.add(compiledAttr + "_start, " + compiledAttr + "_end");
-            else
-                joiner.add(compiledAttr);
+        List<Attribute> attrs = ((ExtractionRule) query).getHead().getSchema().getAttrs();
+        IntStream.range(0, terms.size()).forEach( i -> {
+            Term t = terms.get(i);
+
+            String attrName = attrs.get(i).getName();
+
+            if (t instanceof VarTerm) {
+                ((VarTerm) t).setName(resolveCanonicalAttr(t));
+            }
+
+            if (t instanceof VarTerm && ((VarTerm) t).getType().equals("span")) {
+                joiner.add(((VarTerm) t).getName() + "_start AS " + attrName + "_start, " + ((VarTerm) t).getName() + "_end AS " + attrName + "_end");
+            } else {
+                String compiledTerm = compiler.compile(t);
+                joiner.add(compiledTerm + " AS " + attrName);
+            }
         });
 
         return "SELECT " + joiner;

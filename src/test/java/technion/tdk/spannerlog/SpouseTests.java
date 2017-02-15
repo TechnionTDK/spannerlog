@@ -11,20 +11,9 @@ import static technion.tdk.spannerlog.Utils.checkCompilation;
 
 public class SpouseTests {
 
-//    @Test
-//    public void compileSentences() {
-//        String splogSrc = "sentences(doc_id, sentence_index, sentence_text, tokens, pos_tags, ner_tags) <- \n" +
-//                          "          articles(doc_id, content),\n" +
-//                          "nlp_markup<content>(sentence_index, sentence_text, tokens, pos_tags, ner_tags).";
-//        String edbSchema = "{\"articles\":{\"column1\":\"text\",\"column2\":\"text\"}}";
-//        String iefSchema = "{\"nlp_markup\":{\"content\":\"text\",\"sentence_index\":\"int\",\"sentence_text\":\"text\"," +
-//                            "\"tokens\":\"text[]\",\"pos_tags\":\"text[]\",\"ner_tags\":\"text[]\"}}";
-//
-//        assertTrue(checkCompilation(splogSrc, edbSchema, iefSchema, true));
-//    }
 
     @Test
-    public void compilePersonMention() {
+    public void compilePersonMentionOld() {
         String splogSrc =
                 "person_mention(content[sentence_span][ner_span], doc_id, sentence_span, ner_span) <- \n" +
                     "articles(doc_id, content),\n" +
@@ -36,6 +25,46 @@ public class SpouseTests {
                         "{" +
                             "\"column1\":\"text\"," +
                             "\"column2\":\"text\"" +
+                        "}" +
+                "}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+    }
+
+    @Test
+    public void compileSentences() {
+        String splogSrc = "sentences(doc_id, sentence, content[sentence]) <-\n" +
+                "\tarticles(doc_id, content),\n" +
+                "\tssplit<content>(_, sentence).";
+
+        String edbSchema =
+                "{" +
+                        "\"articles\": {" +
+                            "\"column1\":\"text\"," +
+                            "\"column2\":\"text\"" +
+                        "}" +
+                "}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
+    }
+
+    @Test
+    public void compilePersonMention() {
+        String splogSrc =
+                "person_mention(doc_id, sentence, entity) <-\n" +
+                        "\tsentences(doc_id, sentence, content),\n" +
+                        "\tner<content>(entity, \"PERSON\").";
+
+        String edbSchema =
+                "{" +
+                        "\"articles\": {" +
+                            "\"column1\":\"text\"," +
+                            "\"column2\":\"text\"" +
+                        "}," +
+                        "\"sentences\": {" +
+                            "\"column1\": \"text\"," +
+                            "\"column2\": \"span\"," +
+                            "\"column3\": \"text\"" +
                         "}" +
                 "}";
 
@@ -67,7 +96,7 @@ public class SpouseTests {
                             "}\n" +
                 "}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
 
         //        JsonObject jsonTree = compileToJson(splogSrc, edbSchema, null);
         //        printJsonTree(jsonTree);
@@ -101,9 +130,10 @@ public class SpouseTests {
                     "}" +
                 "}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
+    @Ignore
     @Test
     public void compileProgramWithLabelRule1() {
         String splogSrc =
@@ -132,6 +162,7 @@ public class SpouseTests {
         assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
+    @Ignore
     @Test
     public void compileProgramWithLabelRule2() {
         String splogSrc =
@@ -167,6 +198,7 @@ public class SpouseTests {
         assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
+    @Ignore
     @Test
     public void compileProgramWithLabelRule3() {
         String splogSrc =
