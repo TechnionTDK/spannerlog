@@ -38,7 +38,7 @@ public class Spannerlog {
         // compile
         SpannerlogCompiler compiler = new SpannerlogCompiler();
         Map<String, String> iefDeclarationsBlocks = compiler.compile(schema);
-        Map<String, CompiledStmt> compiledStmts = compiler.compile(program);
+        Map<String, List<CompiledStmt>> compiledStmts = compiler.compile(program);
 
         // build execution plan
         List<String> planOrder = BuildExecutionPlan(schema);
@@ -72,7 +72,7 @@ public class Spannerlog {
         return builder.build().sortTopologically();
     }
 
-    private JsonObject export(SpannerlogSchema schema, Map<String, String> iefDeclarationsBlocks, List<String> planOrder, Map<String, CompiledStmt> compiledStmts) {
+    private JsonObject export(SpannerlogSchema schema, Map<String, String> iefDeclarationsBlocks, List<String> planOrder, Map<String, List<CompiledStmt>> compiledStmts) {
 
         JsonObject jsonTree = new JsonObject();
         Gson gson = new GsonBuilder().serializeNulls().create();
@@ -126,18 +126,28 @@ public class Spannerlog {
         execution.add("edb", gson.toJsonTree(edbSchemasNames));
 
         // Associating the execution code to each relation in the relation order
-        LinkedHashMap<String, JsonObject> idbPlan = new LinkedHashMap<>();
-        for (String sch : planOrder) {
-            JsonObject executionStep = new JsonObject();
-            executionStep.addProperty("cmd", compiledStmts.get(sch).getValue());
-            executionStep.addProperty("target", compiledStmts.get(sch).getTarget());
-            idbPlan.put(sch, executionStep);
-        }
+        LinkedHashMap<String, List<JsonObject>> idbPlan = new LinkedHashMap<>();
+        planOrder.forEach(sch ->
+                idbPlan.put(sch,
+                        compiledStmts.get(sch)
+                                .stream()
+                                .map(cs -> toJson(cs, gson))
+                                .collect(Collectors.toList())
+                )
+        );
+
 
         execution.add("idb", gson.toJsonTree(idbPlan));
         jsonTree.add("execution", execution);
 
         return jsonTree;
+    }
+
+    private JsonObject toJson(CompiledStmt cs, Gson gson) {
+        JsonObject executionStep = new JsonObject();
+        executionStep.addProperty("cmd", cs.getValue());
+        executionStep.addProperty("target", cs.getTarget());
+        return executionStep;
     }
 
     private JsonObject toJson(IEFunctionSchema schema, Map<String, String> iefDeclarationsBlocks) {

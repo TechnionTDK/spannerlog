@@ -4,10 +4,7 @@ package technion.tdk.spannerlog;
 import technion.tdk.spannerlog.utils.match.PatternMatching;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.StringJoiner;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -26,14 +23,18 @@ class SpannerlogCompiler {
     }
 
 
-    Map<String, CompiledStmt> compile(Program program) throws IOException {
+    Map<String, List<CompiledStmt>> compile(Program program) throws IOException {
         return program.getStatements()
                 .stream()
                 .map(this::compile)
                 .filter(c -> c != null && c.getKey() != null)
-                .collect(Collectors.toMap(CompiledStmt::getKey, Function.identity(), (s1, s2) -> {
-                    s1.setValue(s1.getValue() + "\nUNION ALL\n" + s2.getValue());
-                    return s1;
+                .collect(Collectors.toMap(CompiledStmt::getKey, s -> {
+                    ArrayList<CompiledStmt> l = new ArrayList<>();
+                    l.add(s);
+                    return l;
+                }, (l1, l2) -> {
+                    l1.addAll(l2);
+                    return l1;
                 }));
     }
 

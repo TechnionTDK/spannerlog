@@ -301,14 +301,24 @@ public class SpouseTests {
         assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
-    @Ignore
     @Test
     public void compileEntireProgram() {
-        InputStream splogSrc = BasicSyntaxTests.class.getClassLoader().getResourceAsStream("spouse.splog");
+        InputStream splogSrc = BasicSyntaxTests.class.getClassLoader().getResourceAsStream("spouse-inline.splog");
 
         String edbSchema =
                 "{\n" +
+                "    \"anchor\": {\n" +
+                "        \"column1\": \"int\"\n" +
+                "    },\n" +
                 "    \"articles\": {\n" +
+                "        \"column1\": \"text\",\n" +
+                "        \"column2\": \"text\"\n" +
+                "    },\n" +
+                "    \"articles_2\": {\n" +
+                "        \"column1\": \"text\",\n" +
+                "        \"column2\": \"text\"\n" +
+                "    },\n" +
+                "    \"articles_3\": {\n" +
                 "        \"column1\": \"text\",\n" +
                 "        \"column2\": \"text\"\n" +
                 "    },\n" +
@@ -318,22 +328,6 @@ public class SpouseTests {
                 "    }\n" +
                 "}\n";
 
-        String iefSchema =
-                "{\n" +
-                "    \"ner\": {\n" +
-                "        \"content\": \"text\",\n" +
-                "        \"span\": \"span\",\n" +
-                "        \"ner_tag\": \"text\"\n" +
-                "    },\n" +
-                "    \"ssplit\": {\n" +
-                "        \"content\": \"text\",\n" +
-                "        \"sentence_index\": \"int\",\n" +
-                "        \"sentence_span\": \"span\"\n" +
-                "    }\n" +
-                "}\n";
-
-
-
-        assertTrue(checkCompilation(splogSrc, edbSchema, iefSchema, true));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
     }
 }
