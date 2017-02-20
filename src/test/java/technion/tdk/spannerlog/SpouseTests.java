@@ -74,11 +74,11 @@ public class SpouseTests {
     @Test
     public void compileSpouseCandidate() {
         String splogSrc =
-                "spouse_candidate(doc_id, sentence_span, person_span1, person_span2) <-" +
-                        "person_mention(name1, doc_id, sentence_span, person_span1)," +
-                        "person_mention(name2, doc_id, sentence_span, person_span2)," +
-                        "name1 != name2," +
-                        "person_span1 != person_span2.";
+                "spouse_candidate(doc_id, sentence, entity1, name1, entity2, name2) <-\n" +
+                        "\tperson_mention(doc_id, sentence, entity1, name1),\n" +
+                        "\tperson_mention(doc_id, sentence, entity2, name2),\n" +
+                        "\tname1 != name2,\n" +
+                        "\tentity1 < entity2.";
 
         String edbSchema =
                 "{" +
@@ -89,14 +89,14 @@ public class SpouseTests {
                             "},\n" +
                         "\"person_mention\":" +
                             "{\n" +
-                                "\"column1\": \"text\",\n" +
-                                "\"column2\": \"text\",\n" +
-                                "\"column3\": \"span\",\n" +
-                                "\"column4\": \"span\"\n" +
-                            "}\n" +
+                        "          \"column1\": \"text\",\n" +
+                        "          \"column2\": \"span\",\n" +
+                        "          \"column3\": \"span\",\n" +
+                        "          \"column4\": \"text\"\n" +
+                        "        }\n" +
                 "}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
 
         //        JsonObject jsonTree = compileToJson(splogSrc, edbSchema, null);
         //        printJsonTree(jsonTree);
@@ -236,21 +236,23 @@ public class SpouseTests {
     @Test
     public void compileAggregationFunction() {
         String splogSrc =
-                "spouse_label_resolved(doc_id, sentence_span, person_span1, person_span2, SUM(vote)) <-\n" +
-                "   spouse_label(doc_id, sentence_span, person_span1, person_span2, vote, rule_id).";
+                "spouse_label_resolved(name1, name2, SUM(vote)) <-\n" +
+                        "\tspouse_label(_, _, _, name1, _, name2, vote, _).";
         String edbSchema =
                 "{" +
-                    "\"spouse_label\": {" +
-                        "\"doc_id\":\"text\"," +
-                        "\"sentence\":\"span\"," +
-                        "\"person1\":\"span\"," +
-                        "\"person2\":\"span\"," +
-                        "\"vote\":\"int\"," +
-                        "\"rule_id\":\"text\"" +
-                    "}" +
+                    "\"spouse_label\": {\n" +
+                        "          \"column1\": \"text\",\n" +
+                        "          \"column2\": \"span\",\n" +
+                        "          \"column3\": \"span\",\n" +
+                        "          \"column4\": \"text\",\n" +
+                        "          \"column5\": \"span\",\n" +
+                        "          \"column6\": \"text\",\n" +
+                        "          \"column7\": \"int\",\n" +
+                        "          \"column8\": \"text\"\n" +
+                        "        }" +
                 "}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
     }
 
     @Test

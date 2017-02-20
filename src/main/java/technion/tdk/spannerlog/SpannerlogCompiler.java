@@ -190,7 +190,11 @@ class SpannerlogCompiler {
 
     String compile(Term term) {
         return (String) new PatternMatching(
-                inCaseOf(PlaceHolderTerm.class, t -> "_"),
+                inCaseOf(PlaceHolderTerm.class, t -> {
+                    if (t.getAttribute().getType().equals("span")) // TODO continue from here; run SpouseTests.compileAggregationFunction; look for setAttribute and figure out problem.
+                        return "_, _";
+                    return "_";
+                }),
                 inCaseOf(ExprTerm.class, this::compile)
         ).matchFor(term);
     }
