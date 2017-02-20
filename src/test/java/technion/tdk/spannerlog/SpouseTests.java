@@ -198,38 +198,39 @@ public class SpouseTests {
         assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
-    @Ignore
     @Test
     public void compileProgramWithLabelRule3() {
         String splogSrc =
-                "spouse_label(doc_id, sentence_span, person_span1, person_span2, 1, \"pos:wife_husband_between\") <-\n" +
-                        "\tspouse_candidate(doc_id, sentence_span, person_span1, person_span2),\n" +
-                        "\tarticles_prep(doc_id, content),\n" +
-                        "\t@materialized <content[sentence_span]>\\[x{ .* } \\s (wife|husband) \\s y{ .* }]\\,\n" +
-                        "\tx.contains(person_span1),\n" +
-                        "\ty.contains(person_span2).";
+                "spouse_label(doc_id, sentence, entity1, name1, entity2, name2, -1, \"neg:familial_between\") <-\n" +
+                        "\tspouse_candidate(doc_id, sentence, entity1, name1, entity2, name2),\n" +
+                        "\tarticles(doc_id, content),\n" +
+                        "\t<content[sentence]>\\[x{ .* } \\s (mother|father|sister|brother) \\s y{ .* } ]\\,\n" +
+                        "\tx.contains(entity1),\n" +
+                        "\ty.contains(entity2).";
 
         String edbSchema =
                 "{" +
-                        "\"spouse_candidate\": {" +
-                        "\"doc_id\":\"text\"," +
-                        "\"sentence\":\"span\"," +
-                        "\"person1\":\"span\"," +
-                        "\"person2\":\"span\"" +
-                        "}," +
-                        "\"articles_prep\": {" +
-                        "\"doc_id\":\"text\"," +
-                        "\"content\":\"text\"" +
-                        "}," +
-                        "\"person_mention\": {" +
-                        "\"name\":\"text\"," +
-                        "\"doc_id\":\"text\"," +
-                        "\"sentence\":\"span\"," +
-                        "\"person\":\"span\"" +
-                        "}" +
+                        "\"spouse_candidate\": {\n" +
+                        "          \"column1\": \"text\",\n" +
+                        "          \"column2\": \"span\",\n" +
+                        "          \"column3\": \"span\",\n" +
+                        "          \"column4\": \"text\",\n" +
+                        "          \"column5\": \"span\",\n" +
+                        "          \"column6\": \"text\"\n" +
+                        "        }," +
+                        "\"articles\": {\n" +
+                        "          \"column1\": \"text\",\n" +
+                        "          \"column2\": \"text\"\n" +
+                        "        }," +
+                        "\"person_mention\": {\n" +
+                        "          \"column1\": \"text\",\n" +
+                        "          \"column2\": \"span\",\n" +
+                        "          \"column3\": \"span\",\n" +
+                        "          \"column4\": \"text\"\n" +
+                        "        }" +
                         "}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
     }
 
     @Test
@@ -300,6 +301,8 @@ public class SpouseTests {
 
         assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
+
+
 
     @Test
     public void compileEntireProgram() {

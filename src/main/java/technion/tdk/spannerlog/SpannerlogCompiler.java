@@ -5,7 +5,6 @@ import technion.tdk.spannerlog.utils.match.PatternMatching;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -213,11 +212,11 @@ class SpannerlogCompiler {
                 inCaseOf(VarTerm.class, this::compile),
                 inCaseOf(FuncExpr.class, this::compile),
                 inCaseOf(BinaryOpExpr.class, e -> compileBinaryOp(e.getLhs(), e.getRhs(), e.getOp())),
-                inCaseOf(DotFuncExpr.class, this::compile)
+                inCaseOf(DotFuncExpr.class, e -> String.join(", ", compile(e)))
         ).matchFor(exprTerm);
     }
 
-    private String compile(DotFuncExpr e) {
+    List<String> compile(DotFuncExpr e) {
         VarTerm t = e.getVarTerm();
         switch (e.getFunction()) {
             case "equalsIgnoreCase":
@@ -226,7 +225,7 @@ class SpannerlogCompiler {
                 VarTerm s1 = (VarTerm) e.getArgs().get(0); // TODO handle constants
                 if (!t.getType().equals(s1.getType()))
                     throw new IllegalArgumentException("Illegal argument in '" + e.getFunction() + "': incompatible data types");
-                return "lower(" + compile((ExprTerm) t) + ") = lower(" + compile((ExprTerm) s1) + ")";
+                return Collections.singletonList("lower(" + compile((ExprTerm) t) + ") = lower(" + compile((ExprTerm) s1) + ")");
             case "contains":
                 if (e.getArgs().size() != 1)
                     throw new IllegalArgumentException("Illegal argument in '" + e.getFunction() + "': illegal number of arguments");
@@ -235,7 +234,7 @@ class SpannerlogCompiler {
                     throw new IllegalArgumentException("Illegal argument in '" + e.getFunction() + "': arguments must be of type 'span'");
                 String tn = t.getName();
                 String sn = s2.getName();
-                return "(" + tn + "_start - 1) < " + sn + "_start, (" + tn + "_end + 1) > " + sn + "_end" ;
+                return Arrays.asList("(" + tn + "_start - 1) < " + sn + "_start", "(" + tn + "_end + 1) > " + sn + "_end");
         }
         throw new UnknownFunctionException(e.getFunction());
     }
@@ -397,43 +396,72 @@ class QueryCompiler {
         return " FROM " + generateFromClause() + optionalClause(" WHERE", generateWhereClause());
     }
 
+    private void generateWherePredicateForAtom(Atom atom, int idx, StringJoiner joiner) {
+        List<Term> terms = atom.getTerms();
+        IntStream.range((atom instanceof IEAtom) ? 1 : 0, terms.size()) // iterating over terms of a body element
+            .forEach(j -> {
+                Term t = terms.get(j);
+                if (t instanceof VarTerm && dbVars.containsKey(((VarTerm) terms.get(j)).getName())) { // term is variable
+                    VarTerm v = (VarTerm) t;
+                    Variable var = dbVars.get(v.getName());
+                    if (idx != var.relIndex) {
+                        joiner.add(maybeToSpanStart(v, resolveAttr(v, idx)) + " = " + maybeToSpanStart(var.varTerm, resolveCanonicalAttr(var.varTerm)));
+                    }
+                } else if (t instanceof StringConstExpr) { // term is string constant
+                    joiner.add("R" + idx + "." + t.getAttribute().getName() + " = '"
+                            + ((StringConstExpr) t).getValue() + "'");
+//                                    } else if (t instanceof IntConstExpr) {
+//                                        joiner.add("R" + i + "." + t.getAttribute().getName() + " = '"
+//                                                + ((IntConstExpr) t).getValue() + "'");
+                } else if (!(t instanceof PlaceHolderTerm)) { // term is irrelevant ("_")
+                    throw new UnsupportedOperationException();
+                }
+            });
+    }
+
+    private void generateWherePredicateForCondition(Condition element, StringJoiner joiner) {
+        if (!(element instanceof ExprCondition))
+            return; // TODO handle other conditions than ExprCondition
+
+        ExprTerm expr = ((ExprCondition) element).getExpr();
+        if (expr instanceof DotFuncExpr) {
+            DotFuncExpr dotFuncTerm = (DotFuncExpr) expr;
+
+            VarTerm varTerm = dotFuncTerm.getVarTerm();
+            varTerm.setName(resolveCanonicalAttr(varTerm));
+
+            dotFuncTerm.getArgs().forEach(arg -> {
+                if (!(arg instanceof VarTerm))
+                    throw new UnsupportedOperationException(); // TODO handle the general case
+                VarTerm v = (VarTerm) arg;
+                v.setName(resolveCanonicalAttr(v));
+            });
+
+            compiler.compile((DotFuncExpr) expr).forEach(joiner::add);
+        } else
+            joiner.add(this.compiler.compile(expr));
+    }
+
     private String generateWhereClause() {
 
         List<BodyElement> bodyElements = query.getBody().getBodyElements();
 
         StringJoiner joiner = new StringJoiner(" AND ");
 
-        IntStream.range(0, bodyElements.size())
+        IntStream.range(0, bodyElements.size()) // iterating over body elements
                 .forEach(i -> {
-                    if (bodyElements.get(i) instanceof Atom) {
-                        Atom a = (Atom) bodyElements.get(i);
-                        List<Term> terms = a.getTerms();
-                        IntStream.range((a instanceof IEAtom) ? 1 : 0, terms.size())
-                                .forEach(j -> {
-                                    Term t = terms.get(j);
-                                    if (t instanceof VarTerm && dbVars.containsKey(((VarTerm) terms.get(j)).getName())) {
-                                        VarTerm v = (VarTerm) t;
-                                        Variable var = dbVars.get((v).getName());
-                                        if (i != var.relIndex) {
-                                            joiner.add(maybeToSpanStart(v, resolveAttr(v, i)) + " = " + maybeToSpanStart(var.varTerm, resolveCanonicalAttr(var.varTerm)));
-                                        }
-                                    } else if (t instanceof StringConstExpr) {
-                                        joiner.add("R" + i + "." + t.getAttribute().getName() + " = '"
-                                                + ((StringConstExpr) t).getValue() + "'");
-//                                    } else if (t instanceof IntConstExpr) {
-//                                        joiner.add("R" + i + "." + t.getAttribute().getName() + " = '"
-//                                                + ((IntConstExpr) t).getValue() + "'");
-                                    } else if (t instanceof PlaceHolderTerm) {
-                                        return;
-                                    } else {
-                                        throw new UnsupportedOperationException(); // TODO remove exception
-                                    }
-                                });
-                    }
+                    BodyElement element = bodyElements.get(i);
+
+                    if (element instanceof Atom)
+                        generateWherePredicateForAtom((Atom) element, i, joiner);
+                    else if (element instanceof Condition)
+                        generateWherePredicateForCondition((Condition) element, joiner);
                 });
 
         return joiner.toString();
     }
+
+
 
     private String optionalClause(String prefix, String clause) {
         if (clause.isEmpty())
