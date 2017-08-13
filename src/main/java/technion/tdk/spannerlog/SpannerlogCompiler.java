@@ -4,10 +4,9 @@ package technion.tdk.spannerlog;
 import technion.tdk.spannerlog.utils.match.PatternMatching;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static technion.tdk.spannerlog.utils.match.ClassPattern.inCaseOf;
 import static technion.tdk.spannerlog.utils.match.OtherwisePattern.otherwise;
@@ -23,12 +22,19 @@ class SpannerlogCompiler {
     }
 
 
-    List<Map<String, String>> compile(Program program) throws IOException {
+    Map<String, List<CompiledStmt>> compile(Program program) throws IOException {
         return program.getStatements()
                 .stream()
                 .map(this::compile)
-                .filter(map -> !map.isEmpty())
-                .collect(Collectors.toList());
+                .filter(c -> c != null && c.getKey() != null)
+                .collect(Collectors.toMap(CompiledStmt::getKey, s -> {
+                    ArrayList<CompiledStmt> l = new ArrayList<>();
+                    l.add(s);
+                    return l;
+                }, (l1, l2) -> {
+                    l1.addAll(l2);
+                    return l1;
+                }));
     }
 
 
@@ -44,34 +50,57 @@ class SpannerlogCompiler {
                 + ".";
     }
 
-    @SuppressWarnings("unchecked")
-    private Map<String, String> compile(Statement statement) {
-        return (Map<String, String>) new PatternMatching(
+    private CompiledStmt compile(Statement statement) {
+        return (CompiledStmt) new PatternMatching(
                 inCaseOf(ExtractionRule.class, this::compile),
                 inCaseOf(SupervisionRule.class, this::compile),
                 inCaseOf(InferenceRule.class, this::compile),
-                otherwise(stmt -> new HashMap<>())
+                otherwise(stmt -> null)
         ).matchFor(statement);
 
     }
 
-    private Map<String, String> compile(ExtractionRule rule) {
-        Map<String, String> cqBlock = new HashMap<>();
-        cqBlock.put("extraction_rule", compile(rule.getHead()) + " *:- " + compile(rule.getBody()) + ".");
-        return cqBlock;
+    private CompiledStmt compile(ExtractionRule rule) {
+        CompiledExtractionRule compiledRule = new CompiledExtractionRule();
+
+        compiledRule.setKey(rule.getHead().getSchemaName());
+        List<BodyElement> bodyElements = rule.getBody().getBodyElements();
+        if (bodyElements.stream().anyMatch(e -> e instanceof IEAtom)) {
+            compiledRule.setValue(new QueryCompiler(rule, this).generateSQL());
+            compiledRule.setTarget("sql");
+        }
+        else
+            compiledRule.setValue(compile(rule.getHead()) + " *:- " + compile(rule.getBody()) + ".");
+
+        return compiledRule;
     }
 
-    private Map<String, String> compile(SupervisionRule rule) {
-        Map<String, String> cqBlock = new HashMap<>();
-        cqBlock.put("supervision_rule", compile(rule.getHead()) + " = " + compile(rule.getSupervisionExpr())
+    private CompiledStmt compile(SupervisionRule rule) {
+        CompiledSupervisionRule compiledRule = new CompiledSupervisionRule();
+        compiledRule.setKey(rule.getHead().getSchemaName());
+        compiledRule.setValue(compile(rule.getHead())
+                + " = if " + compile(rule.getPosCond()) + " then TRUE"
+                + " else if " + compile(rule.getNegCond()) + " then FALSE"
+                + " else NULL end"
                 + " :- " + compile(rule.getBody()) + ".");
-        return cqBlock;
+        return compiledRule;
     }
 
-    private Map<String, String> compile(InferenceRule rule) {
-        Map<String, String> cqBlock = new HashMap<>();
-        cqBlock.put("inference_rule", "@weight(\"?\")\n" + compile(rule.getHead()) + " :- " + compile(rule.getBody()) + ".");
-        return cqBlock;
+    private CompiledStmt compile(InferenceRule rule) {
+        CompiledInferenceRule compiledRule = new CompiledInferenceRule();
+        compiledRule.setValue("@weight(" + compile(rule.getWeight()) + ")\n" + compile(rule.getHead()) + " :- " + compile(rule.getBody()) + ".");
+        return compiledRule;
+    }
+
+    private String compile(FactorWeight weight) {
+        Float value = weight.getValue();
+        String featureVar = weight.getFeatureVariable();
+
+        if (value != null)
+            return Float.toString(value);
+        if (featureVar != null)
+            return featureVar; // TODO check if variable is bound
+        return "\"?\"";
     }
 
     private String compile(InferenceRuleHead head) {
@@ -126,7 +155,7 @@ class SpannerlogCompiler {
                 inCaseOf(SpanConstExpr.class, e -> String.valueOf(e.getStart())),
                 inCaseOf(VarTerm.class, e -> {
                     if (e.getType() != null && e.getType().equals("span")) // TODO fix in the case of spans in "IF-ELSE" statements.
-                        return e.getVarName() + "_start";
+                        return e.getName() + "_start";
                     return compile((ExprTerm) e);
                 }),
                 otherwise(e -> compile((ExprTerm) e))
@@ -159,9 +188,13 @@ class SpannerlogCompiler {
                 .collect(Collectors.joining(", "));
     }
 
-    private String compile(Term term) {
+    String compile(Term term) {
         return (String) new PatternMatching(
-                inCaseOf(PlaceHolderTerm.class, t -> "_"),
+                inCaseOf(PlaceHolderTerm.class, t -> {
+                    if (t.getAttribute().getType().equals("span")) // TODO continue from here; run SpouseTests.compileAggregationFunction; look for setAttribute and figure out problem.
+                        return "_, _";
+                    return "_";
+                }),
                 inCaseOf(ExprTerm.class, this::compile)
         ).matchFor(term);
     }
@@ -170,7 +203,7 @@ class SpannerlogCompiler {
         if (exprTerm instanceof StringTerm) {
             List<SpanTerm> spans = ((StringTerm) exprTerm).getSpans();
             if (exprTerm instanceof VarTerm && !spans.isEmpty() && !((VarTerm) exprTerm).getType().equals("text"))
-                throw new SpanAppliedToNonStringTypeAttributeException(((VarTerm) exprTerm).getVarName());
+                throw new SpanAppliedToNonStringTypeAttributeException(((VarTerm) exprTerm).getName());
             if (!spans.isEmpty()) {
                 SpanTerm spanTerm = spans.get(spans.size() - 1);
                 spans.remove(spans.size() - 1);
@@ -181,14 +214,13 @@ class SpannerlogCompiler {
         return (String) new PatternMatching(
                 inCaseOf(ConstExprTerm.class, this::compile),
                 inCaseOf(VarTerm.class, this::compile),
-                inCaseOf(IfThenElseExpr.class, this::compile),
                 inCaseOf(FuncExpr.class, this::compile),
                 inCaseOf(BinaryOpExpr.class, e -> compileBinaryOp(e.getLhs(), e.getRhs(), e.getOp())),
-                inCaseOf(DotFuncExpr.class, this::compile)
+                inCaseOf(DotFuncExpr.class, e -> String.join(", ", compile(e)))
         ).matchFor(exprTerm);
     }
 
-    private String compile(DotFuncExpr e) {
+    List<String> compile(DotFuncExpr e) {
         VarTerm t = e.getVarTerm();
         switch (e.getFunction()) {
             case "equalsIgnoreCase":
@@ -197,34 +229,22 @@ class SpannerlogCompiler {
                 VarTerm s1 = (VarTerm) e.getArgs().get(0); // TODO handle constants
                 if (!t.getType().equals(s1.getType()))
                     throw new IllegalArgumentException("Illegal argument in '" + e.getFunction() + "': incompatible data types");
-                return "lower(" + compile((ExprTerm) t) + ") = lower(" + compile((ExprTerm) s1) + ")";
+                return Collections.singletonList("lower(" + compile((ExprTerm) t) + ") = lower(" + compile((ExprTerm) s1) + ")");
             case "contains":
                 if (e.getArgs().size() != 1)
                     throw new IllegalArgumentException("Illegal argument in '" + e.getFunction() + "': illegal number of arguments");
                 VarTerm s2 = (VarTerm) e.getArgs().get(0); // TODO handle constants
                 if (!t.getType().equals("span") || !s2.getType().equals("span"))
                     throw new IllegalArgumentException("Illegal argument in '" + e.getFunction() + "': arguments must be of type 'span'");
-                String tn = t.getVarName();
-                String sn = s2.getVarName();
-                return "(" + tn + "_start - 1) < " + sn + "_start, (" + tn + "_end + 1) > " + sn + "_end" ;
+                String tn = t.getName();
+                String sn = s2.getName();
+                return Arrays.asList("(" + tn + "_start - 1) < " + sn + "_start", "(" + tn + "_end + 1) > " + sn + "_end");
         }
         throw new UnknownFunctionException(e.getFunction());
     }
 
     private String compile(FuncExpr e) {
         return e.getFunction() + "(" + e.getArgs().stream().map(this::compile).collect(Collectors.joining(", ")) + ")";
-    }
-
-    private String compile(IfThenElseExpr e) {
-        return "if " + compile(e.getCond()) +
-                " then " + compile(e.getExpr()) +
-                e.getElseIfExprs().stream().map(this::compile).collect(Collectors.joining()) +
-                ((e.getElseExpr() != null) ? " else " + compile(e.getElseExpr()) : "") +
-                " end";
-    }
-
-    private String compile(ElseIfExpr elif) {
-        return " else if " + compile(elif.getCond()) + " then " + compile(elif.getExpr());
     }
 
     private String compile(ExprTerm exprTerm, SpanTerm spanTerm) {
@@ -235,7 +255,7 @@ class SpannerlogCompiler {
     }
 
     private String compile(ExprTerm exprTerm, VarTerm varTerm) {
-        String varName = varTerm.getVarName();
+        String varName = varTerm.getName();
 
         String block = "substr(" +
                 compile(exprTerm) +
@@ -278,11 +298,261 @@ class SpannerlogCompiler {
 
     private String compile(VarTerm varTerm) {
         if (varTerm.getType() != null && varTerm.getType().equals("span"))
-            return varTerm.getVarName() + "_start, " + varTerm.getVarName() + "_end";
+            return varTerm.getName() + "_start, " + varTerm.getName() + "_end";
 
-        return varTerm.getVarName();
+        return varTerm.getName();
     }
 }
+
+class QueryCompiler {
+    private RuleWithConjunctiveQuery query;
+    private Map<String, Variable> dbVars = new HashMap<>();
+    private SpannerlogCompiler compiler;
+
+    private class Variable {
+        int attrIndex;
+        int relIndex;
+        VarTerm varTerm;
+    }
+
+    QueryCompiler(RuleWithConjunctiveQuery query, SpannerlogCompiler compiler) {
+        this.query = query;
+        this.compiler = compiler;
+        generateCanonicalDBVarMap();
+    }
+
+    // Maps each variable name to a canonical version of itself (first occurrence in body in left-to-right order)
+    // This is useful to translate to SQL (join conditions, select, etc.)
+    private void generateCanonicalDBVarMap() {
+
+        List<BodyElement> bodyElements = query.getBody().getBodyElements();
+
+        IntStream.range(0, bodyElements.size())
+                .forEach( i -> {
+                    if (bodyElements.get(i) instanceof Atom) {
+                        Atom a = (Atom) bodyElements.get(i);
+                        List<Term> terms = a.getTerms();
+                        IntStream.range((a instanceof IEAtom) ? 1 : 0, terms.size())
+                                .filter(j -> terms.get(j) instanceof VarTerm)
+                                .forEach(j -> {
+                                    VarTerm v = (VarTerm) terms.get(j);
+                                    if (!dbVars.containsKey(v.getName())) {
+                                        Variable var = new Variable();
+                                        var.varTerm = v;
+                                        var.relIndex = i;
+                                        var.attrIndex = j;
+                                        dbVars.put(v.getName(), var);
+                                    }
+                                });
+                    }
+                });
+    }
+
+    String generateSQL() {
+        String head = generateSQLHead();
+        String body = generateSQLBody();
+
+        return head + body; // TODO support union of CQs.
+
+    }
+
+    private String generateSQLHead() {
+        List<Term> terms = ((ExtractionRule) query).getHead().getTerms();
+        if (terms.isEmpty()) {
+            return "SELECT TRUE";
+        }
+        StringJoiner joiner = new StringJoiner(", ");
+        List<Attribute> attrs = ((ExtractionRule) query).getHead().getSchema().getAttrs();
+        IntStream.range(0, terms.size()).forEach( i -> {
+            Term t = terms.get(i);
+
+            String attrName = attrs.get(i).getName();
+
+            if (t instanceof VarTerm) {
+                ((VarTerm) t).setName(resolveCanonicalAttr(t));
+            }
+
+            if (t instanceof VarTerm && ((VarTerm) t).getType().equals("span")) {
+                joiner.add(((VarTerm) t).getName() + "_start AS " + attrName + "_start, " + ((VarTerm) t).getName() + "_end AS " + attrName + "_end");
+            } else {
+                String compiledTerm = compiler.compile(t);
+                joiner.add(compiledTerm + " AS " + attrName);
+            }
+        });
+
+        return "SELECT " + joiner;
+    }
+
+    private String maybeToSpanStart(VarTerm t, String compiledAttr) {
+        if (t.getType().equals("span"))
+            return compiledAttr + "_start";
+        return compiledAttr;
+    }
+
+    private String maybeToSpanEnd(VarTerm t, String compiledAttr) {
+        if (t.getType().equals("span"))
+            return compiledAttr + "_end";
+        return compiledAttr;
+    }
+
+    private String generateSQLBody() {
+
+        return " FROM " + generateFromClause() + optionalClause(" WHERE", generateWhereClause());
+    }
+
+    private void generateWherePredicateForAtom(Atom atom, int idx, StringJoiner joiner) {
+        List<Term> terms = atom.getTerms();
+        IntStream.range((atom instanceof IEAtom) ? 1 : 0, terms.size()) // iterating over terms of a body element
+            .forEach(j -> {
+                Term t = terms.get(j);
+                if (t instanceof VarTerm && dbVars.containsKey(((VarTerm) terms.get(j)).getName())) { // term is variable
+                    VarTerm v = (VarTerm) t;
+                    Variable var = dbVars.get(v.getName());
+                    if (idx != var.relIndex) {
+                        joiner.add(maybeToSpanStart(v, resolveAttr(v, idx)) + " = " + maybeToSpanStart(var.varTerm, resolveCanonicalAttr(var.varTerm)));
+                    }
+                } else if (t instanceof StringConstExpr) { // term is string constant
+                    joiner.add("R" + idx + "." + t.getAttribute().getName() + " = '"
+                            + ((StringConstExpr) t).getValue() + "'");
+//                                    } else if (t instanceof IntConstExpr) {
+//                                        joiner.add("R" + i + "." + t.getAttribute().getName() + " = '"
+//                                                + ((IntConstExpr) t).getValue() + "'");
+                } else if (!(t instanceof PlaceHolderTerm)) { // term is irrelevant ("_")
+                    throw new UnsupportedOperationException();
+                }
+            });
+    }
+
+    private void generateWherePredicateForCondition(Condition element, StringJoiner joiner) {
+        if (!(element instanceof ExprCondition))
+            return; // TODO handle other conditions than ExprCondition
+
+        ExprTerm expr = ((ExprCondition) element).getExpr();
+        if (expr instanceof DotFuncExpr) {
+            DotFuncExpr dotFuncTerm = (DotFuncExpr) expr;
+
+            VarTerm varTerm = dotFuncTerm.getVarTerm();
+            varTerm.setName(resolveCanonicalAttr(varTerm));
+
+            dotFuncTerm.getArgs().forEach(arg -> {
+                if (!(arg instanceof VarTerm))
+                    throw new UnsupportedOperationException(); // TODO handle the general case
+                VarTerm v = (VarTerm) arg;
+                v.setName(resolveCanonicalAttr(v));
+            });
+
+            compiler.compile((DotFuncExpr) expr).forEach(joiner::add);
+        } else
+            joiner.add(this.compiler.compile(expr));
+    }
+
+    private String generateWhereClause() {
+
+        List<BodyElement> bodyElements = query.getBody().getBodyElements();
+
+        StringJoiner joiner = new StringJoiner(" AND ");
+
+        IntStream.range(0, bodyElements.size()) // iterating over body elements
+                .forEach(i -> {
+                    BodyElement element = bodyElements.get(i);
+
+                    if (element instanceof Atom)
+                        generateWherePredicateForAtom((Atom) element, i, joiner);
+                    else if (element instanceof Condition)
+                        generateWherePredicateForCondition((Condition) element, joiner);
+                });
+
+        return joiner.toString();
+    }
+
+
+
+    private String optionalClause(String prefix, String clause) {
+        if (clause.isEmpty())
+            return "";
+        return prefix + " " + clause;
+    }
+
+    private String generateFromClause() {
+
+        StringJoiner relationsJoiner = new StringJoiner(", ");
+
+        // Handle DB atoms
+        List<Atom> atoms = query.getBody().getBodyElements()
+                .stream()
+                .filter(e -> e instanceof Atom)
+                .map(e -> (Atom) e)
+                .collect(Collectors.toList());
+
+        IntStream.range(0, atoms.size())
+                .forEach(i ->
+                    new PatternMatching(
+                        inCaseOf(DBAtom.class, a -> relationsJoiner.add(atoms.get(i).getSchemaName() + " R" + i)),
+                        inCaseOf(IEAtom.class, a -> relationsJoiner.add(atoms.get(i).getSchemaName() + "("
+                                  + resolveCanonicalAttr(((IEAtom) atoms.get(i)).getInputTerm()) + ") R" + i)
+                        )
+                    ).matchFor(atoms.get(i))
+                );
+
+        return relationsJoiner.toString();
+    }
+
+    private String resolveAttr(Term t, int i) {
+        if (t instanceof VarTerm) {
+            return "R" + i + "." + t.getAttribute().getName();
+        }
+
+        throw new UnsupportedOperationException(); // TODO remove exception
+    }
+
+    private String resolveCanonicalAttr(Term t) {
+        if (t instanceof VarTerm) {
+            VarTerm v = (VarTerm) t;
+            if (dbVars.containsKey(v.getName())) {
+                Variable var = dbVars.get(v.getName());
+                return resolveAttr(var.varTerm, var.relIndex);
+            } else
+                throw new UndefinedInputVariableException(v.getName());
+        }
+
+        throw new UnsupportedOperationException(); // TODO remove exception
+    }
+}
+
+class CompiledStmt {
+    private String key;
+    private String value;
+    private String target = "ddlog";
+
+    String getTarget() {
+        return target;
+    }
+
+    void setTarget(String target) {
+        this.target = target;
+    }
+
+    String getKey() {
+        return key;
+    }
+
+    void setKey(String key) {
+        this.key = key;
+    }
+
+    String getValue() {
+        return value;
+    }
+
+    void setValue(String value) {
+        this.value = value;
+    }
+}
+
+class CompiledExtractionRule extends CompiledStmt {}
+class CompiledSupervisionRule extends CompiledStmt {}
+class CompiledInferenceRule extends CompiledStmt {}
+
 
 class SpanAppliedToNonStringTypeAttributeException extends RuntimeException {
     SpanAppliedToNonStringTypeAttributeException(String varName) {
@@ -293,5 +563,11 @@ class SpanAppliedToNonStringTypeAttributeException extends RuntimeException {
 class UnknownFunctionException extends RuntimeException {
     UnknownFunctionException(String functionName) {
         super("The function '" + functionName + "' is unknown");
+    }
+}
+
+class UndefinedInputVariableException extends RuntimeException {
+    UndefinedInputVariableException(String varName) {
+        super("The variable '" + varName + "' is undefined");
     }
 }

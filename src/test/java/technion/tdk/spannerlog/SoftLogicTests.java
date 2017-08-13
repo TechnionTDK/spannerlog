@@ -18,7 +18,7 @@ public class SoftLogicTests {
     @Ignore
     @Test
     public void compileSimpleSoftRule() {
-        String splogSrc = "R(x) <~ S(x, _).";
+        String splogSrc = "_ * [ R(x) ] <- S(x, _).";
         String edbSchema = "{\"S\":{\"column1\":\"text\",\"column2\":\"text\"}}";
 
         assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
@@ -28,14 +28,13 @@ public class SoftLogicTests {
     public void RigidSoftConflictShouldSucceed() {
         String splogSrc = "R(x) <- S(x, _).\n" +
                           "R?.\n" +
-                          "R(x) <~ S(_, x).";
+                          "_ * [ R(x) ] <- S(_, x).";
         String edbSchema = "{\"S\":{\"column1\":\"text\",\"column2\":\"text\"}}";
 
         JsonObject jsonTree = compileToJson(splogSrc, edbSchema, null);
-        JsonObject rSchema = jsonTree.getAsJsonArray("schema").get(0).getAsJsonObject();
-        assertEquals("R", rSchema.get("name").getAsString());
-        assertNotNull(rSchema.get("predict_var"));
-        assertEquals(true, rSchema.get("predict_var").getAsBoolean());
+        JsonObject rSchema = jsonTree.getAsJsonObject("schema").getAsJsonArray("idb").get(0).getAsJsonObject();
+        assertEquals("r", rSchema.get("name").getAsString());
+        assertEquals(rSchema.get("variable_type").getAsString(), "boolean");
 
 //        printJsonTree(jsonTree);
     }

@@ -28,7 +28,7 @@ public class ParsingTests {
             ExtractionRule cq = (ExtractionRule) statements.get(0);
 
             DBAtom head = cq.getHead();
-            assertEquals(head.getSchemaName(), "Q");
+            assertEquals(head.getSchemaName(), "q");
             assertEquals(0, head.getTerms().size());
 
             List<Atom> body = cq.getBody().getBodyElements()
@@ -39,7 +39,7 @@ public class ParsingTests {
 
             assertEquals(1, body.size());
             DBAtom atomR = (DBAtom) body.get(0);
-            assertEquals(atomR.getSchemaName(), "R");
+            assertEquals(atomR.getSchemaName(), "r");
             List<Term> terms = atomR.getTerms();
             assertEquals(1, terms.size());
             ExprTerm exprTerm = (ExprTerm) terms.get(0);
@@ -134,17 +134,17 @@ public class ParsingTests {
             // First regex
             rgx = (Regex) bodyAtoms.get(1);
             VarTerm varTerm = (VarTerm) rgx.getInputTerm();
-            assertEquals("s", varTerm.getVarName());
+            assertEquals("s", varTerm.getName());
             assertTrue(varTerm.getSpans().isEmpty());
             assertEquals("x{a*}y{b*}", rgx.getRegexString());
 
             // Second regex
             rgx = (Regex) bodyAtoms.get(2);
             varTerm = (VarTerm) rgx.getInputTerm();
-            assertEquals("s", varTerm.getVarName());
+            assertEquals("s", varTerm.getName());
             List<SpanTerm> spans = varTerm.getSpans();
             assertEquals(2, spans.size());
-            assertEquals("y", ((VarTerm) spans.get(0)).getVarName());
+            assertEquals("y", ((VarTerm) spans.get(0)).getName());
             SpanConstExpr spanConstExpr = (SpanConstExpr) spans.get(1);
             assertEquals(0, spanConstExpr.getStart());
             assertEquals(5, spanConstExpr.getEnd());

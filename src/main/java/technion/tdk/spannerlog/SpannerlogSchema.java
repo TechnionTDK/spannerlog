@@ -3,7 +3,7 @@ package technion.tdk.spannerlog;
 
 import com.google.gson.stream.JsonReader;
 import org.apache.commons.lang3.ObjectUtils;
-import technion.tdk.spannerlog.utils.dependencies.DependenciesGraph;
+import technion.tdk.spannerlog.utils.graph.DiGraph;
 import technion.tdk.spannerlog.utils.match.PatternMatching;
 
 import java.io.IOException;
@@ -26,24 +26,21 @@ class SpannerlogSchema {
 
     static class Builder {
         private SpannerlogSchema spannerlogSchema = new SpannerlogSchema();
-        private Program program;
 
         Builder readSchemaFromJson(Reader reader, RelationSchemaBuilder builder) throws IOException {
             spannerlogSchema.readSchemaFromJson(reader, builder);
             return this;
         }
 
-        Builder extractRelationSchemas(Program program) {
+        SpannerlogSchema build(Program program) {
+//            spannerlogSchema.includeBuiltInIEFSchemas();
             spannerlogSchema.extractRelationSchemas(program);
-            this.program = program;
-            return this;
-        }
-
-        SpannerlogSchema build() {
             spannerlogSchema.validate();
+            spannerlogSchema.linkTermsToAttributes(program); // TODO This function was created before inferAttributeTypes, setVariablesType and setPredictionVariables. See if can be used in them for a clearer code.
             spannerlogSchema.inferAttributeTypes(program);
             spannerlogSchema.setVariablesType(program);
             spannerlogSchema.setPredictionVariables(program);
+//            spannerlogSchema.buildExecutionPlan(program);
             return spannerlogSchema;
         }
     }
@@ -61,19 +58,38 @@ class SpannerlogSchema {
 
             jsonReader.beginObject();
             while (jsonReader.hasNext()) {
-                String name = jsonReader.nextName();
+                String name = jsonReader.nextName().toLowerCase();
                 List<Attribute> attrs = readAttributes(jsonReader);
 
                 relationSchemas.add(builder.build(name, attrs));
 
-                if (builder.getType() ==  RelationSchemaType.IEFUNCTION)
+                if (builder.getType() ==  RelationSchemaType.IEFUNCTION) {
+                    if (BuiltInIefManager.getInstance().isBuiltInIef(name)) {
+                        throw new BuiltIeFunctionNameConflict(name);
+                    }
                     iefSchemaNames.add(name);
+                }
             }
             jsonReader.endObject();
 
             mergeRelationSchemas(relationSchemas);
         }
     }
+
+//    private void includeBuiltInIEFSchemas() {
+//        List<RelationSchema> relationSchemas = new ArrayList<>();
+//        RelationSchemaBuilder rsBuilder = RelationSchema.builder().type(RelationSchemaType.IEFUNCTION);
+//
+//        // NER
+//        String name = "ner";
+//        List<Attribute> attrs = new ArrayList<>();
+//        attrs.add(new Attribute("input", "text"));
+//        attrs.add(new Attribute("entity", "span"));
+//        attrs.add(new Attribute("category", "text"));
+//        relationSchemas.add(rsBuilder.build(name, attrs));
+//
+//        mergeRelationSchemas(relationSchemas);
+//    }
 
     private List<Attribute> readAttributes(JsonReader jsonReader) throws IOException {
         List<Attribute> attrs = new ArrayList<>();
@@ -103,11 +119,19 @@ class SpannerlogSchema {
     @SuppressWarnings("unchecked")
     private RelationSchema mergeRelationSchemas(RelationSchema oldSchema, RelationSchema newSchema) {
 
-        if (
-                (!oldSchema.getClass().equals(newSchema.getClass()) && !(oldSchema instanceof AmbiguousRelationSchema) && !(newSchema instanceof AmbiguousRelationSchema)) // Checking if not comparing extensional schema with an intensional one.
-                        ||
-                        (oldSchema instanceof IEFunctionSchema && !(newSchema instanceof IEFunctionSchema)) || (!(oldSchema instanceof IEFunctionSchema) && newSchema instanceof IEFunctionSchema) // Checking that if one schema is of an IE-function, then the other is also.
-                ) {
+        /*
+        * Possible cases:
+        *   Intensional, Intensional
+        *   Intensional, Ambiguous
+        *   Extensional, Ambiguous
+        *   Ambiguous, Ambiguous
+        *   IEF, IEF
+        */
+
+        if ( (!oldSchema.getClass().equals(newSchema.getClass()) && !(oldSchema instanceof AmbiguousRelationSchema) && !(newSchema instanceof AmbiguousRelationSchema)) // Checking if not comparing extensional schema with an intensional one.
+             ||
+             (oldSchema instanceof IEFunctionSchema && !(newSchema instanceof IEFunctionSchema)) || (!(oldSchema instanceof IEFunctionSchema) && newSchema instanceof IEFunctionSchema) // Checking that if one schema is of an IE-function, then the other is also.
+           ) {
             throw new RelationSchemaNameConflictException();
         }
 
@@ -122,17 +146,25 @@ class SpannerlogSchema {
             coldSchema = newSchema;
         }
 
-        hotSchema.setAttrs(mergeAttributes(oldSchema.getAttrs(), newSchema.getAttrs(), hotSchema.getName()));
+        hotSchema.setAttrs(mergeAttributes(hotSchema.getAttrs(), coldSchema.getAttrs(), hotSchema.getName()));
         hotSchema.getAttrs().forEach(attr -> attr.setSchema(hotSchema));
         for (Atom atom : coldSchema.getAtoms())
             atom.setSchema(hotSchema);
 
-        if (hotSchema instanceof IEFunctionSchema) { // According to a previous check, if one schema is of an IE Function, then the other one is as well.
-            IEFunctionSchema coldIESchema = (IEFunctionSchema) newSchema;
+        if (hotSchema instanceof IEFunctionSchema) { // According to a previous check, if one schema is an IE Function schema, then the other one is as well.
+            IEFunctionSchema coldIESchema = (IEFunctionSchema) coldSchema;
             IEFunctionSchema hotIESchema = (IEFunctionSchema) hotSchema;
 
             hotIESchema.setInputTerm(ObjectUtils.firstNonNull(hotIESchema.getInputTerm(), coldIESchema.getInputTerm()));
             hotIESchema.setInputAtoms(ObjectUtils.firstNonNull(hotIESchema.getInputAtoms(), coldIESchema.getInputAtoms()));
+            hotIESchema.getAtoms().addAll(coldIESchema.getAtoms());
+
+            hotIESchema.setMaterialized(hotIESchema.isMaterialized() || coldIESchema.isMaterialized());
+        } else if (hotSchema instanceof IntensionalRelationSchema && coldSchema instanceof IntensionalRelationSchema) {
+            IntensionalRelationSchema coldISchema = (IntensionalRelationSchema) coldSchema;
+            IntensionalRelationSchema hotISchema = (IntensionalRelationSchema) hotSchema;
+
+            hotISchema.getInputSchemas().addAll(coldISchema.getInputSchemas());
         }
 
         return hotSchema;
@@ -159,7 +191,7 @@ class SpannerlogSchema {
         String newName = newAttr.getName();
 
         if (oldName != null && newName != null && !oldName.equals(newName)) {
-            throw new AttributeNameConflictException();
+            throw new AttributeNameConflictException(newAttr.getSchema().getName(), oldName, newName);
         }
 
         String oldType = oldAttr.getType();
@@ -189,7 +221,6 @@ class SpannerlogSchema {
     private List<RelationSchema> extractRelationSchemas(Statement statement) {
         return (List<RelationSchema>) new PatternMatching(
                 inCaseOf(ExtractionRule.class, this::extractRelationSchemas),
-                inCaseOf(SupervisionRule.class, this::extractRelationSchemas),
                 inCaseOf(InferenceRule.class, this::extractRelationSchemas),
                 otherwise(stmt -> new ArrayList<>())
         ).matchFor(statement);
@@ -198,14 +229,13 @@ class SpannerlogSchema {
     private List<RelationSchema> extractRelationSchemas(ExtractionRule rule) {
         ConjunctiveQueryBody body = rule.getBody();
         List<RelationSchema> relationSchemas = extractRelationSchemas(body);
-        relationSchemas.add(extractIntensionalRelationSchema(rule.getHead()));
-        return relationSchemas;
-    }
-
-    private List<RelationSchema> extractRelationSchemas(SupervisionRule rule) {
-        ConjunctiveQueryBody body = rule.getBody();
-        List<RelationSchema> relationSchemas = extractRelationSchemas(body);
-        relationSchemas.add(extractIntensionalRelationSchema(rule.getHead()));
+        IntensionalRelationSchema iSchema = extractIntensionalRelationSchema(rule.getHead());
+        iSchema.getInputSchemas().addAll(body.getBodyElements()
+                .stream()
+                .filter(be -> be instanceof Atom)
+                .map(be -> ((Atom) be).getSchemaName())
+                .collect(Collectors.toList()));
+        relationSchemas.add(iSchema);
         return relationSchemas;
     }
 
@@ -242,11 +272,22 @@ class SpannerlogSchema {
     }
 
     private RelationSchema extractRegexSchema(Regex regex, ConjunctiveQueryBody body) {
-        return new IEFunctionSchema(regex, body, extractAttributes(regex.getTerms()));
+        return new IEFunctionSchema(regex, body, extractAttributes(regex.getTerms()), regex.isMaterialized());
     }
 
     private RelationSchema extractIEFunctionSchema(IEAtom ieAtom, ConjunctiveQueryBody body) {
-        return new IEFunctionSchema(ieAtom, body, extractAttributes(ieAtom.getTerms()));
+//        if (BuiltInIefManager.getInstance().isBuiltInIef(ieAtom.getSchemaName()))
+//            return BuiltInIefManager.getInstance().getBuiltInIEF(ieAtom.getSchemaName());
+        boolean isBuiltIn = BuiltInIefManager.getInstance().isBuiltInIef(ieAtom.getSchemaName());
+        if (this.relationSchemas.stream().noneMatch(sch -> sch.getName().equalsIgnoreCase(ieAtom.getSchemaName()))
+                && !isBuiltIn)
+            throw new UndefinedRelationSchema(ieAtom.getSchemaName());
+
+        IEFunctionSchema sch = new IEFunctionSchema(ieAtom, body, extractAttributes(ieAtom.getTerms()), ieAtom.isMaterialized());
+        if (isBuiltIn)
+            BuiltInIefManager.getInstance().setAttrsNames(sch.getName(), sch.getAttrs());
+
+        return sch;
     }
 
     private RelationSchema extractRelationSchema(DBAtom dbAtom) {
@@ -254,7 +295,7 @@ class SpannerlogSchema {
         return new AmbiguousRelationSchema(dbAtom, extractAttributes(dbAtom.getTerms()));
     }
 
-    private RelationSchema extractIntensionalRelationSchema(DBAtom dbAtom) {
+    private IntensionalRelationSchema extractIntensionalRelationSchema(DBAtom dbAtom) {
         return new IntensionalRelationSchema(dbAtom,
                 extractAttributesAndGenColumnNames(dbAtom.getTerms()));
     }
@@ -322,14 +363,14 @@ class SpannerlogSchema {
     private void inferAttributeTypes(Program program) {
 
         Map<Attribute, Set<Attribute>> dependenciesMap = createDependenciesMap(program);
-        DependenciesGraph<Attribute> depGraph = new DependenciesGraph<>(dependenciesMap);
+        DiGraph<Attribute> depGraph = new DiGraph<>(dependenciesMap);
         Set<Attribute> rootAttrs = dependenciesMap.keySet()
                 .stream()
                 .filter(attr -> attr.getType() == null)
                 .collect(Collectors.toSet());
 
         for (Attribute rootAttr : rootAttrs) {
-            List<String> possibleTypes = depGraph.getDependencies(rootAttr)
+            List<String> possibleTypes = depGraph.getReachables(rootAttr)
                     .stream()
                     .filter(attr -> attr.getType() != null)
                     .map(Attribute::getType)
@@ -347,17 +388,14 @@ class SpannerlogSchema {
     private Map<Attribute, Set<Attribute>> createDependenciesMap(Program program) {
         List<RuleWithConjunctiveQuery> rules = program.getStatements()
                 .stream()
-                .filter(stmt -> stmt instanceof ExtractionRule || stmt instanceof SupervisionRule)
+                .filter(stmt -> stmt instanceof ExtractionRule)
                 .map(stmt -> (RuleWithConjunctiveQuery) stmt)
                 .collect(Collectors.toList());
 
         Map<Attribute, Set<Attribute>> dependenciesMap = new HashMap<>();
 
         for (RuleWithConjunctiveQuery rule : rules) {
-            DBAtom headAtom = (DBAtom) new PatternMatching(
-                    inCaseOf(ExtractionRule.class, ExtractionRule::getHead),
-                    inCaseOf(SupervisionRule.class, SupervisionRule::getHead)
-                ).matchFor(rule); // TODO handle the InferenceRule case
+            DBAtom headAtom = ((ExtractionRule) rule).getHead(); // TODO handle the InferenceRule case
             List<Atom> bodyAtoms = rule.getBody().getBodyElements()
                     .stream()
                     .filter(bodyElement -> bodyElement instanceof Atom)
@@ -377,7 +415,7 @@ class SpannerlogSchema {
                     continue;
                 List<Attribute> localDependencies = new ArrayList<>();
 
-                String headVarName = ((VarTerm) headTerm).getVarName();
+                String headVarName = ((VarTerm) headTerm).getName();
 
                 for (Atom bodyAtom : bodyAtoms) {
                     ListIterator<Term> it2 = bodyAtom.getTerms().listIterator();
@@ -385,7 +423,7 @@ class SpannerlogSchema {
                         Term bodyTerm = it2.next();
                         if (!(bodyTerm instanceof VarTerm))
                             continue;
-                        String bodyVarName = ((VarTerm) bodyTerm).getVarName();
+                        String bodyVarName = ((VarTerm) bodyTerm).getName();
                         if (headVarName.equals(bodyVarName)) {
                             Attribute bodyAttr = bodyAtom.getSchema().getAttrs().get(it2.previousIndex());
                             localDependencies.add(bodyAttr);
@@ -409,6 +447,35 @@ class SpannerlogSchema {
         return dependenciesMap;
     }
 
+    private void linkTermsToAttributes(Program program) {
+        List<RuleWithConjunctiveQuery> rules = program.getStatements()
+                .stream()
+                .filter(stmt -> stmt instanceof ExtractionRule)
+                .map(stmt -> (RuleWithConjunctiveQuery) stmt)
+                .collect(Collectors.toList());
+
+        for (RuleWithConjunctiveQuery rule : rules) {
+            List<Atom> bodyAtoms = rule.getBody().getBodyElements()
+                    .stream()
+                    .filter(bodyElement -> bodyElement instanceof Atom)
+                    .map(bodyElement -> (Atom) bodyElement)
+                    .collect(Collectors.toList());
+
+            for (Atom bodyAtom : bodyAtoms) {
+                ListIterator<Term> it = bodyAtom.getTerms().listIterator();
+                while (it.hasNext()) {
+                    it.next().setAttribute(bodyAtom.getSchema().getAttrs().get(it.previousIndex()));
+                }
+            }
+
+            DBAtom headAtom = ((ExtractionRule) rule).getHead(); // TODO handle the InferenceRule case
+            ListIterator<Term> it = headAtom.getTerms().listIterator();
+            while (it.hasNext()) {
+                it.next().setAttribute(headAtom.getSchema().getAttrs().get(it.previousIndex()));
+            }
+        }
+    }
+
     private void setPredictionVariables(Program program) {
         List<String> predVarNames = program.getStatements()
                 .stream()
@@ -422,7 +489,7 @@ class SpannerlogSchema {
                 .filter(sch -> sch instanceof IntensionalRelationSchema)
                 .map(sch -> (IntensionalRelationSchema) sch)
                 .filter(sch -> predVarNames.contains(sch.getName()))
-                .forEach(sch -> sch.setPredictionVariableSchema(true));
+                .forEach(IntensionalRelationSchema::setAsPredictionVariable);
     }
 
     private void validate() {
@@ -432,21 +499,14 @@ class SpannerlogSchema {
                 .map(RelationSchema::getName)
                 .collect(Collectors.toList());
 
-        List<String> UnambiguousSchemaNames = relationSchemas
-                .stream()
-                .filter(schema -> !(schema instanceof AmbiguousRelationSchema))
-                .map(RelationSchema::getName)
-                .collect(Collectors.toList());
-
-        AmbiguousSchemaNames.removeAll(UnambiguousSchemaNames);
-
         if (!AmbiguousSchemaNames.isEmpty())
             throw new UndefinedRelationSchema(AmbiguousSchemaNames.get(0));
 
         List<String> InferredIefSchemaNames = relationSchemas
                 .stream()
-                .filter(schema -> schema instanceof IEFunctionSchema)
+                .filter(schema -> schema instanceof IEFunctionSchema && !((IEFunctionSchema) schema).isRgx())
                 .map(RelationSchema::getName)
+                .filter(name -> !BuiltInIefManager.getInstance().isBuiltInIef(name))
                 .collect(Collectors.toList());
 
         InferredIefSchemaNames.removeAll(iefSchemaNames);
@@ -472,11 +532,7 @@ class SpannerlogSchema {
             if (rule instanceof InferenceRule) {
                 atoms.addAll(((InferenceRule) rule).getHead().getHeadAtoms());
             } else {
-                atoms.add((DBAtom) new PatternMatching(
-                        inCaseOf(ExtractionRule.class, ExtractionRule::getHead),
-                        inCaseOf(SupervisionRule.class, SupervisionRule::getHead)
-                    ).matchFor(rule)
-                );
+                atoms.add(((ExtractionRule) rule).getHead());
             }
 
             for (Atom atom : atoms) {
@@ -511,7 +567,7 @@ class SpannerlogSchema {
                     for (VarTerm condVar : condVars) {
                         List<String> possibleTypes = atomsVars
                                 .stream()
-                                .filter(atomVar -> atomVar.getVarName().equals(condVar.getVarName()))
+                                .filter(atomVar -> atomVar.getName().equals(condVar.getName()))
                                 .map(VarTerm::getType)
                                 .distinct()
                                 .collect(Collectors.toList());
@@ -627,6 +683,7 @@ class ExtensionalRelationSchema extends RelationSchema {
 
 class IntensionalRelationSchema extends RelationSchema {
     private boolean isPredictionVariableSchema;
+    private Set<String> inputSchemas = new HashSet<>();
 
     IntensionalRelationSchema(DBAtom dbAtom, List<Attribute> attrs) {
         super(dbAtom.getSchemaName(), attrs);
@@ -639,14 +696,20 @@ class IntensionalRelationSchema extends RelationSchema {
         return isPredictionVariableSchema;
     }
 
-    void setPredictionVariableSchema(boolean predictionVariableSchema) {
-        isPredictionVariableSchema = predictionVariableSchema;
+    void setAsPredictionVariable() {
+        isPredictionVariableSchema = true;
+    }
+
+    Set<String> getInputSchemas() {
+        return inputSchemas;
     }
 }
 
-class IEFunctionSchema extends ExtensionalRelationSchema {
+class IEFunctionSchema extends RelationSchema {
     private List<Atom> inputAtoms;
     private Term inputTerm;
+    private boolean isMaterialized;
+    private boolean isRgx = false;
 
     Term getInputTerm() {
         return inputTerm;
@@ -664,24 +727,27 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
         this.inputAtoms = inputAtoms;
     }
 
-    IEFunctionSchema(String name, List<Attribute> attrs) {
+    IEFunctionSchema(String name, List<Attribute> attrs, boolean isMaterialized) {
         super(name, attrs);
+        this.isMaterialized = isMaterialized;
     }
 
-    IEFunctionSchema(Regex regex, ConjunctiveQueryBody body, List<Attribute> attrs) {
-        this((IEAtom) regex, body, attrs);
+    IEFunctionSchema(Regex regex, ConjunctiveQueryBody body, List<Attribute> attrs, boolean isMaterialized) {
+        this((IEAtom) regex, body, attrs, isMaterialized);
 
-        attrs.get(0).setName("s");
+        attrs.get(0).setName("input");
         attrs.get(0).setType("text");
         int n = getAttrs().size();
         for (int i = 1; i < n; i++) { // skipping the input term (always the first term)
             Attribute attr = getAttrs().get(i);
             attr.setType("span");
-            attr.setName(((VarTerm) regex.getTerms().get(i)).getVarName());
+            attr.setName(((VarTerm) regex.getTerms().get(i)).getName());
         }
+
+        isRgx = true;
     }
 
-    IEFunctionSchema(IEAtom ieAtom, ConjunctiveQueryBody body, List<Attribute> attrs) {
+    IEFunctionSchema(IEAtom ieAtom, ConjunctiveQueryBody body, List<Attribute> attrs, boolean isMaterialized) {
         super(ieAtom.getSchemaName(), attrs);
         getAttrs().forEach(attr -> attr.setSchema(this));
         inputTerm = ieAtom.getInputTerm();
@@ -689,6 +755,19 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
         determineInputAtoms(body, ieAtom);
         ieAtom.setSchema(this);
         getAtoms().add(ieAtom);
+        this.isMaterialized = isMaterialized;
+    }
+
+    boolean isRgx() {
+        return isRgx;
+    }
+
+    boolean isMaterialized() {
+        return isMaterialized;
+    }
+
+    void setMaterialized(boolean materialized) {
+        isMaterialized = materialized;
     }
 
     private void validateInputTerm(IEAtom ieAtom, ConjunctiveQueryBody body) {
@@ -704,13 +783,13 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
                 .filter(atom -> atom != ieAtom)
                 .flatMap(atom -> atom.getTerms().stream())
                 .filter(term -> term instanceof VarTerm)
-                .map(term -> ((VarTerm) term).getVarName())
+                .map(term -> ((VarTerm) term).getName())
                 .collect(Collectors.toList());
 
         List<String> spanVarNames = spans
                 .stream()
                 .filter(spanTerm -> spanTerm instanceof VarTerm)
-                .map(spanTerm -> ((VarTerm) spanTerm).getVarName())
+                .map(spanTerm -> ((VarTerm) spanTerm).getName())
                 .collect(Collectors.toList());
 
         spanVarNames.removeAll(bodyVarNames);
@@ -726,21 +805,21 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
                 .map(bodyElement -> (Atom) bodyElement)
                 .collect(Collectors.toList());
 
-        DependenciesGraph<Integer> depGraph = createDependenciesGraph(bodyAtoms);
-        List<Integer> dependencies = depGraph.getDependencies(bodyAtoms.indexOf(ieAtom));
+        DiGraph<Integer> depGraph = createDependenciesGraph(bodyAtoms);
+        List<Integer> dependencies = depGraph.getReachables(bodyAtoms.indexOf(ieAtom));
         inputAtoms = dependencies
                 .stream()
                 .map(bodyAtoms::get)
                 .collect(Collectors.toList());
     }
 
-    private DependenciesGraph<Integer> createDependenciesGraph(List<Atom> bodyAtoms) {
+    private DiGraph<Integer> createDependenciesGraph(List<Atom> bodyAtoms) {
         Map<Integer, Set<Integer>> adjacencyMap =
                 IntStream.range(0, bodyAtoms.size())
                         .boxed()
                         .collect(Collectors.toMap(i -> i, i -> calcDependencies(i, bodyAtoms)));
 
-        return new DependenciesGraph<>(adjacencyMap);
+        return new DiGraph<>(adjacencyMap);
     }
 
     private Set<Integer> calcDependencies(int idx, List<Atom> bodyAtoms) {
@@ -809,7 +888,7 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
     @SuppressWarnings("unchecked")
     private List<String> getVars(ExprTerm exprTerm) {
         List<String> vars = (List<String>) new PatternMatching(
-                inCaseOf(VarTerm.class, varTerm -> Stream.of(varTerm.getVarName()).collect(Collectors.toList())),
+                inCaseOf(VarTerm.class, varTerm -> Stream.of(varTerm.getName()).collect(Collectors.toList())),
                 otherwise(t -> new ArrayList<>())
         ).matchFor(exprTerm);
 
@@ -827,7 +906,7 @@ class IEFunctionSchema extends ExtensionalRelationSchema {
     @SuppressWarnings("unchecked")
     private List<String> getVars(SpanTerm spanTerm) {
         return (List<String>) new PatternMatching(
-                inCaseOf(VarTerm.class, varTerm -> Stream.of(varTerm.getVarName()).collect(Collectors.toList())),
+                inCaseOf(VarTerm.class, varTerm -> Stream.of(varTerm.getName()).collect(Collectors.toList())),
                 otherwise(t -> new ArrayList<>())
         ).matchFor(spanTerm);
     }
@@ -854,7 +933,7 @@ class RelationSchemaBuilder {
                 relationSchema = new ExtensionalRelationSchema(name, attrs);
                 break;
             case IEFUNCTION:
-                relationSchema = new IEFunctionSchema(name, attrs);
+                relationSchema = new IEFunctionSchema(name, attrs, false);
                 break;
             default:
                 throw new IllegalArgumentException();
@@ -938,6 +1017,51 @@ class Attribute {
     }
 }
 
+class BuiltInIefManager {
+    private static BuiltInIefManager ourInstance = new BuiltInIefManager();
+
+    static BuiltInIefManager getInstance() {
+        return ourInstance;
+    }
+
+    private BuiltInIefManager() {
+        builtInIefs = new HashSet<>();
+        builtInIefs.add("ner");
+        builtInIefs.add("ssplit");
+    }
+
+    private static Set<String> builtInIefs;
+
+    boolean isBuiltInIef(String schemaName) {
+        return builtInIefs.contains(schemaName);
+    }
+
+    void setAttrsNames(String schemaName, List<Attribute> attrs) {
+        // TODO initialize in a smarter way?
+        // NER
+        if (schemaName.equals("ner")) {
+            attrs.get(0).setName("input");
+            attrs.get(0).setType("text");
+
+            attrs.get(1).setName("entity");
+            attrs.get(1).setType("span");
+
+            attrs.get(2).setName("category");
+            attrs.get(2).setType("text");
+
+        } else if (schemaName.equals("ssplit")) {
+            attrs.get(0).setName("input");
+            attrs.get(0).setType("text");
+
+            attrs.get(1).setName("sentence_index");
+            attrs.get(1).setType("int");
+
+            attrs.get(2).setName("sentence");
+            attrs.get(2).setType("span");
+        }
+    }
+}
+
 class AttributeTypeConflictException extends RuntimeException {
     AttributeTypeConflictException(Attribute attr1, Attribute attr2) {
         super("The attribute '" + ObjectUtils.firstNonNull(attr1.getName(), attr2.getName()) + "' in '"
@@ -947,12 +1071,22 @@ class AttributeTypeConflictException extends RuntimeException {
 }
 
 class AttributeNameConflictException extends RuntimeException {
+    AttributeNameConflictException(String schemaName, String oldName, String newName) {
+        super("In schema '" + schemaName + "' the attributes '" + oldName + "' and '" + newName + "' are in conflict");
+    }
+}
+
+class BuiltIeFunctionNameConflict extends RuntimeException {
+    BuiltIeFunctionNameConflict(String schemaName) {
+        super("In schema '" + schemaName + "' is already being used as a built-in IE function");
+    }
 }
 
 class NumberOfAttributesInSchemaConflictException extends RuntimeException {
     NumberOfAttributesInSchemaConflictException(String schemaName) {
         super("The number of attributes in schema '" + schemaName + "' is inconsistent throughout the program");
     }
+
 }
 
 class RelationSchemaNameConflictException extends RuntimeException {
@@ -966,7 +1100,7 @@ class AttributeTypeCannotBeInferredException extends RuntimeException {
 
 class VariableTypeCannotBeInferredException extends RuntimeException {
     VariableTypeCannotBeInferredException(VarTerm varTerm) {
-        super("The type of the variable '" + varTerm.getVarName() + "' cannot be inferred");
+        super("The type of the variable '" + varTerm.getName() + "' cannot be inferred");
     }
 }
 
@@ -977,8 +1111,8 @@ class UnboundVariableException extends RuntimeException {
 }
 
 class UndefinedRelationSchema extends RuntimeException {
-    UndefinedRelationSchema(String message) {
-        super("The relation schema for '" + message + "' is undefined");
+    UndefinedRelationSchema(String schemaName) {
+        super("The relation schema for '" + schemaName + "' is undefined");
     }
 }
 

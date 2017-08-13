@@ -21,7 +21,7 @@ class SpannerlogDesugarRewriter {
 
         int cnt = 1;
         for (Regex regex : RegexList) {
-            String name = "rgx_gen_" + (cnt++);
+            String name = "rgx" + (cnt++);
             regex.setSchemaName(name);
 
             Rgx rgx = new Rgx(regex.getRegexString());

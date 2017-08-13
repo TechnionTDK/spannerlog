@@ -20,15 +20,15 @@ ruleWithConjunctiveQuery
     ;
 
 extractionRule
-    : dbAtom RigidSeparator conjunctiveQueryBody '.'
+    : dbAtom Separator conjunctiveQueryBody '.'
     ;
 
 supervisionRule
-    : dbAtom Equal supervisionExpr RigidSeparator conjunctiveQueryBody '.'
+    : dbAtom Equal supervisionExpr Separator conjunctiveQueryBody '.'
     ;
 
 inferenceRule
-    : inferenceRuleHead SoftSeparator conjunctiveQueryBody '.'
+    : weight '*' LBRACK inferenceRuleHead RBRACK Separator conjunctiveQueryBody '.'
     ;
 
 inferenceRuleHead
@@ -36,6 +36,13 @@ inferenceRuleHead
     | dbAtom (',' dbAtom)* '=>' dbAtom     # Imply
     | dbAtom ('v' dbAtom)+                 # Or
     | dbAtom ('^' dbAtom)+                 # And
+    ;
+
+weight
+    : placeHolder                      # UnknownWeight
+    | placeHolder '(' variable ')'     # UnknownWeightWithFeature
+    | integerLiteral                   # IntegerWeight
+    | floatingPointLiteral             # FloatWeight
     ;
 
 conjunctiveQueryBody
@@ -71,8 +78,12 @@ dbAtom
     ;
 
 ieAtom
-    : relationSchemaName LANGLE varExpr RANGLE termClause    # IEFunction
-    | ('RGX')? LANGLE varExpr RANGLE Regex                   # Rgx
+    : materialized? relationSchemaName LANGLE varExpr RANGLE termClause    # IEFunction
+    | materialized? ('RGX')? LANGLE varExpr RANGLE Regex                   # Rgx
+    ;
+
+materialized
+    : AT 'materialized'
     ;
 
 termClause
@@ -122,20 +133,11 @@ functionName
     ;
 
 supervisionExpr
-    : nullExpr
-    | ifThenElseExpr
+    : '{' PosLabel ':' condition ';' NegLabel ':' condition '}'
     ;
 
 nullExpr
     : NullLiteral
-    ;
-
-ifThenElseExpr
-    : 'if' condition 'then' expr elseIfExpr* ('else' expr)? 'end'
-    ;
-
-elseIfExpr
-    : 'else if' condition 'then' expr
     ;
 
 stringExpr
@@ -200,16 +202,20 @@ BooleanLiteral
     | 'False'
     ;
 
+PosLabel
+    : 'POS'
+    ;
+
+NegLabel
+    : 'NEG'
+    ;
+
 NullLiteral
     : 'NULL'
     ;
 
-RigidSeparator
+Separator
     : '<-'
-    ;
-
-SoftSeparator
-    : '<~'
     ;
 
 Equal
@@ -252,6 +258,10 @@ RANGLE
     : '>'
     ;
 
+AT
+    : '@'
+    ;
+
 Regex
     :  LRGX RegexElememt* RRGX
     ;
@@ -292,7 +302,7 @@ LetterOrDigit
 
 fragment
 RegexElememt
-    : [a-zA-Z0-9] | [ \t\r\n] | '{' | '}' | '+' | '*' | '.' | '"' | '|' | '(' | ')' | '-' | '\\'
+    : [a-zA-Z0-9] | [ \t\r\n] | '{' | '}' | '+' | '*' | '.' | '"' | '|' | '(' | ')' | '-' | '\\' | '[' | ']'
     ;
 
 fragment

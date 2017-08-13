@@ -19,6 +19,35 @@ regexElementry
     | anyChar
     | captureClause
     | chars
+    | set
+    ;
+
+set
+    : positiveSet
+    | negativeSet
+    ;
+
+positiveSet
+    : '[' setItems ']'
+    ;
+
+negativeSet
+    : '[^' setItems ']'
+    ;
+
+setItems
+    : setItem+
+    ;
+
+setItem
+    : chars
+    | range
+    ;
+
+range
+    : UppercaseLetter RangeChar UppercaseLetter
+    | LowercaseLetter RangeChar LowercaseLetter
+    | Digit RangeChar Digit
     ;
 
 group
@@ -34,33 +63,30 @@ captureClause
     ;
 
 identifier
-    : BeginsWithLetter
+    : (UppercaseLetter | LowercaseLetter) (UppercaseLetter | LowercaseLetter | Digit | CharEscapeSeq)*
     ;
 
 chars
-    : BeginsWithNonLetter
-    | BeginsWithLetter
+    : (Digit | CharEscapeSeq) (UppercaseLetter | LowercaseLetter | Digit | CharEscapeSeq)*
+    | (UppercaseLetter | LowercaseLetter) (UppercaseLetter | LowercaseLetter | Digit | CharEscapeSeq)*
     ;
 
-BeginsWithLetter
-    : Letter (Letter | Digit | CharEscapeSeq)*
+UppercaseLetter
+    : [A-Z]
     ;
 
-BeginsWithNonLetter
-    : (Digit | CharEscapeSeq) (Letter | Digit | CharEscapeSeq)*
+LowercaseLetter
+    : [a-z]
     ;
 
-fragment
-Letter
-    : [a-zA-Z] | '"' | '|' | '-'
-    ;
-
-fragment
 Digit
     : [0-9]
     ;
 
-fragment
+RangeChar
+    : '-'
+    ;
+
 CharEscapeSeq
     : '\\' ('b' | 't' | 'n' | 'f' | 'r' | 's' | '"' | '\'' | '\\')
     ;

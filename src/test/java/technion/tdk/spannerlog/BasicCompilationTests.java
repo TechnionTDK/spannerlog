@@ -153,16 +153,7 @@ public class BasicCompilationTests {
                             "}" +
                         "}";
 
-        String iefSchema =
-                "{" +
-                        "\"ner\": {" +
-                                "\"input\":\"text\"," +
-                                "\"entity\":\"span\"," +
-                                "\"category\":\"text\"" +
-                            "}" +
-                        "}";
-
-        assertTrue(checkCompilation(splogSrc, edbSchema, iefSchema, true));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
     }
 
     @Test(expected = UndefinedInputVariableException.class)
@@ -171,8 +162,8 @@ public class BasicCompilationTests {
                 "married(id, x, y) <-" +
                         "       articles(id, c)," +
                         "       <c1>\\[.* x{ [A-Z][a-z]*(\\s[A-Z][a-z]*)* } .* \\s married \\s .* y{ [A-Z][a-z]*(\\s[A-Z][a-z]*)* } .* ]\\," +
-                        "       ner<c>(x, \"PERSON\")," +
-                        "       ner<c>(y, \"PERSON\").\n";
+                        "       NER<c>(x, \"PERSON\")," +
+                        "       NER<c>(y, \"PERSON\").\n";
 
         String edbSchema =
                 "{" +
@@ -180,17 +171,9 @@ public class BasicCompilationTests {
                         "\"id\":\"text\"," +
                         "\"content\":\"text\"" +
                         "}" +
-                        "}";
+                "}";
 
-        String iefSchema =
-                "{" +
-                        "\"ner\": {" +
-                        "\"input\":\"text\"," +
-                        "\"entity\":\"span\"," +
-                        "\"category\":\"text\"" +
-                        "}" +
-                        "}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, iefSchema, false));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 }

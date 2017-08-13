@@ -1,6 +1,7 @@
 package technion.tdk.spannerlog;
 
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.InputStream;
@@ -10,59 +11,95 @@ import static technion.tdk.spannerlog.Utils.checkCompilation;
 
 public class SpouseTests {
 
+
+    @Test
+    public void compilePersonMentionOld() {
+        String splogSrc =
+                "person_mention(content[sentence_span][ner_span], doc_id, sentence_span, ner_span) <- \n" +
+                    "articles(doc_id, content),\n" +
+                    "ssplit<content>(_, sentence_span)," +
+                    "ner<content[sentence_span]>(ner_span, \"PERSON\").";
+
+        String edbSchema =
+                "{\"articles\":" +
+                        "{" +
+                            "\"column1\":\"text\"," +
+                            "\"column2\":\"text\"" +
+                        "}" +
+                "}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+    }
+
     @Test
     public void compileSentences() {
-        String splogSrc = "sentences(doc_id, sentence_index, sentence_text, tokens, pos_tags, ner_tags) <- \n" +
-                          "          articles(doc_id, content),\n" +
-                          "nlp_markup<content>(sentence_index, sentence_text, tokens, pos_tags, ner_tags).";
-        String edbSchema = "{\"articles\":{\"column1\":\"text\",\"column2\":\"text\"}}";
-        String udfSchema = "{\"nlp_markup\":{\"content\":\"text\",\"sentence_index\":\"int\",\"sentence_text\":\"text\"," +
-                            "\"tokens\":\"text[]\",\"pos_tags\":\"text[]\",\"ner_tags\":\"text[]\"}}";
-
-        assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema, false));
-    }
-
-    @Test
-    public void applySpanInIDBAtomShouldSucceed() {
-        String splogSrc = "sentences(doc_id, sentence_index, sentence_text) <- \n" +
-                          "    articles(doc_id, s), ssplit<s>(sentence_index, sentence_text).\n" +
-
-                          "person_mention(sentence_text[span], doc_id, sentence_index, span) <-\n" +
-                          "    sentences(doc_id, sentence_index, sentence_text), ner<sentence_text>(span, \"PERSON\").\n";
-
-        String edbSchema = "{\"articles\":{\"column1\":\"text\",\"column2\":\"text\"}}";
-
-        String udfSchema = "{\"ssplit\":{\"content\":\"text\",\"sentence_index\":\"int\",\"sentence_text\":\"text\"}," +
-                           "\"ner\":{\"content\":\"text\",\"span\":\"span\",\"ner_tag\":\"text\"}}";
-
-        assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema, false));
-    }
-
-    @Test
-    public void compileProgramWithCondition() {
-        String splogSrc =
-                "spouse_candidate(doc_id, sentence_span, person_span1, person_span2) <-\n" +
-                "   person_mention(name1, doc_id, sentence_span, person_span1),\n" +
-                "   person_mention(name2, doc_id, sentence_span, person_span2),\n" +
-                "   name1 != name2,\n" +
-                "   person_span1 != person_span2.";
+        String splogSrc = "sentences(doc_id, sentence, content[sentence]) <-\n" +
+                "\tarticles(doc_id, content),\n" +
+                "\tssplit<content>(_, sentence).";
 
         String edbSchema =
                 "{" +
-                    "\"person_mention\": {" +
-                        "\"name\":\"text\"," +
-                        "\"doc_id\":\"text\"," +
-                        "\"sentence\":\"span\"," +
-                        "\"person\":\"span\"" +
-                    "}" +
+                        "\"articles\": {" +
+                            "\"column1\":\"text\"," +
+                            "\"column2\":\"text\"" +
+                        "}" +
                 "}";
 
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
+    }
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+    @Test
+    public void compilePersonMention() {
+        String splogSrc =
+                "person_mention(doc_id, sentence, entity) <-\n" +
+                        "\tsentences(doc_id, sentence, content),\n" +
+                        "\tner<content>(entity, \"PERSON\").";
 
-//        JsonObject jsonTree = compileToJson(splogSrc, edbSchema, null);
-//        printJsonTree(jsonTree);
+        String edbSchema =
+                "{" +
+                        "\"articles\": {" +
+                            "\"column1\":\"text\"," +
+                            "\"column2\":\"text\"" +
+                        "}," +
+                        "\"sentences\": {" +
+                            "\"column1\": \"text\"," +
+                            "\"column2\": \"span\"," +
+                            "\"column3\": \"text\"" +
+                        "}" +
+                "}";
 
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
+    }
+
+    @Test
+    public void compileSpouseCandidate() {
+        String splogSrc =
+                "spouse_candidate(doc_id, sentence, entity1, name1, entity2, name2) <-\n" +
+                        "\tperson_mention(doc_id, sentence, entity1, name1),\n" +
+                        "\tperson_mention(doc_id, sentence, entity2, name2),\n" +
+                        "\tname1 != name2,\n" +
+                        "\tentity1 < entity2.";
+
+        String edbSchema =
+                "{" +
+                        "\"articles\":\n" +
+                            "{\n" +
+                                "\"column1\":\"text\",\n" +
+                                "\"column2\":\"text\"\n" +
+                            "},\n" +
+                        "\"person_mention\":" +
+                            "{\n" +
+                        "          \"column1\": \"text\",\n" +
+                        "          \"column2\": \"span\",\n" +
+                        "          \"column3\": \"span\",\n" +
+                        "          \"column4\": \"text\"\n" +
+                        "        }\n" +
+                "}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
+
+        //        JsonObject jsonTree = compileToJson(splogSrc, edbSchema, null);
+        //        printJsonTree(jsonTree);
     }
 
     @Test
@@ -71,7 +108,7 @@ public class SpouseTests {
             "spouse_label(doc_id, sentence_span, person_span1, person_span2, 1, \"from_dbpedia\") <-\n" +
             "   spouse_candidate(doc_id, sentence_span, person_span1, person_span2),\n" +
             "   spouses_dbpedia(n1, n2),\n" +
-            "   articles_prep(doc_id, content),\n" +
+            "   articles(doc_id, content),\n" +
             "   n1.equalsIgnoreCase(content[sentence_span][person_span1]),\n" +
             "   n2.equalsIgnoreCase(content[sentence_span][person_span2]).";
 
@@ -87,7 +124,7 @@ public class SpouseTests {
                         "\"name1\":\"text\"," +
                         "\"name2\":\"text\"" +
                     "}," +
-                    "\"articles_prep\": {" +
+                    "\"articles\": {" +
                         "\"doc_id\":\"text\"," +
                         "\"content\":\"text\"" +
                     "}" +
@@ -96,6 +133,7 @@ public class SpouseTests {
         assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
+    @Ignore
     @Test
     public void compileProgramWithLabelRule1() {
         String splogSrc =
@@ -121,9 +159,10 @@ public class SpouseTests {
                     "}" +
                 "}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
+    @Ignore
     @Test
     public void compileProgramWithLabelRule2() {
         String splogSrc =
@@ -162,63 +201,67 @@ public class SpouseTests {
     @Test
     public void compileProgramWithLabelRule3() {
         String splogSrc =
-                "spouse_label(doc_id, sentence_span, person_span1, person_span2, 1, \"pos:wife_husband_between\") <-\n" +
-                        "\tspouse_candidate(doc_id, sentence_span, person_span1, person_span2),\n" +
-                        "\tarticles_prep(doc_id, content),\n" +
-                        "\t<content[sentence_span]>\\[x{ .* } \\s (wife|husband) \\s y{ .* }]\\,\n" +
-                        "\tx.contains(person_span1),\n" +
-                        "\ty.contains(person_span2).";
+                "spouse_label(doc_id, sentence, entity1, name1, entity2, name2, -1, \"neg:familial_between\") <-\n" +
+                        "\tspouse_candidate(doc_id, sentence, entity1, name1, entity2, name2),\n" +
+                        "\tarticles(doc_id, content),\n" +
+                        "\t<content[sentence]>\\[x{ .* } \\s (mother|father|sister|brother) \\s y{ .* } ]\\,\n" +
+                        "\tx.contains(entity1),\n" +
+                        "\ty.contains(entity2).";
 
         String edbSchema =
                 "{" +
-                        "\"spouse_candidate\": {" +
-                        "\"doc_id\":\"text\"," +
-                        "\"sentence\":\"span\"," +
-                        "\"person1\":\"span\"," +
-                        "\"person2\":\"span\"" +
-                        "}," +
-                        "\"articles_prep\": {" +
-                        "\"doc_id\":\"text\"," +
-                        "\"content\":\"text\"" +
-                        "}," +
-                        "\"person_mention\": {" +
-                        "\"name\":\"text\"," +
-                        "\"doc_id\":\"text\"," +
-                        "\"sentence\":\"span\"," +
-                        "\"person\":\"span\"" +
-                        "}" +
+                        "\"spouse_candidate\": {\n" +
+                        "          \"column1\": \"text\",\n" +
+                        "          \"column2\": \"span\",\n" +
+                        "          \"column3\": \"span\",\n" +
+                        "          \"column4\": \"text\",\n" +
+                        "          \"column5\": \"span\",\n" +
+                        "          \"column6\": \"text\"\n" +
+                        "        }," +
+                        "\"articles\": {\n" +
+                        "          \"column1\": \"text\",\n" +
+                        "          \"column2\": \"text\"\n" +
+                        "        }," +
+                        "\"person_mention\": {\n" +
+                        "          \"column1\": \"text\",\n" +
+                        "          \"column2\": \"span\",\n" +
+                        "          \"column3\": \"span\",\n" +
+                        "          \"column4\": \"text\"\n" +
+                        "        }" +
                         "}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
     }
 
     @Test
     public void compileAggregationFunction() {
         String splogSrc =
-                "spouse_label_resolved(doc_id, sentence_span, person_span1, person_span2, SUM(vote)) <-\n" +
-                "   spouse_label(doc_id, sentence_span, person_span1, person_span2, vote, rule_id).";
+                "spouse_label_resolved(name1, name2, SUM(vote)) <-\n" +
+                        "\tspouse_label(_, _, _, name1, _, name2, vote, _).";
         String edbSchema =
                 "{" +
-                    "\"spouse_label\": {" +
-                        "\"doc_id\":\"text\"," +
-                        "\"sentence\":\"span\"," +
-                        "\"person1\":\"span\"," +
-                        "\"person2\":\"span\"," +
-                        "\"vote\":\"int\"," +
-                        "\"rule_id\":\"text\"" +
-                    "}" +
+                    "\"spouse_label\": {\n" +
+                        "          \"column1\": \"text\",\n" +
+                        "          \"column2\": \"span\",\n" +
+                        "          \"column3\": \"span\",\n" +
+                        "          \"column4\": \"text\",\n" +
+                        "          \"column5\": \"span\",\n" +
+                        "          \"column6\": \"text\",\n" +
+                        "          \"column7\": \"int\",\n" +
+                        "          \"column8\": \"text\"\n" +
+                        "        }" +
                 "}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
     }
 
     @Test
     public void compileIfStatement() {
         String splogSrc =
-                "has_spouse(doc_id, sentence_span, person_span1, person_span2) = " +
-                "   if l > 0 then TRUE\n" +
-                "   else if l < 0 then FALSE\n" +
-                "   else NULL end <- spouse_label_resolved(doc_id, sentence_span, person_span1, person_span2, l).";
+                "has_spouse(doc_id, sentence_span, person_span1, person_span2) = {" +
+                "   POS: l > 0;\n" +
+                "   NEG: l < 0\n" +
+                "   } <- spouse_label_resolved(doc_id, sentence_span, person_span1, person_span2, l).";
 
         String edbSchema =
                 "{" +
@@ -238,7 +281,7 @@ public class SpouseTests {
     public void compileInferenceRule() {
         String splogSrc =
                 "has_spouse(doc_id, sentence_span, person_span1, person_span2) <- spouse_label_resolved(doc_id, sentence_span, person_span1, person_span2, l).\n" +
-                "has_spouse(doc_id, sentence_span, person_span1, person_span2) => has_spouse(doc_id, sentence_span, person_span2, person_span1) <~\n" +
+                "4 * [has_spouse(doc_id, sentence_span, person_span1, person_span2) => has_spouse(doc_id, sentence_span, person_span2, person_span1) ] <-\n" +
                 "    spouse_candidate(doc_id, sentence_span, person_span1, person_span2).";
 
         String edbSchema =
@@ -261,13 +304,27 @@ public class SpouseTests {
         assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
+
+
+    @Ignore
     @Test
     public void compileEntireProgram() {
-        InputStream splogSrc = SyntaxTests.class.getClassLoader().getResourceAsStream("spouse.splog");
+        InputStream splogSrc = BasicSyntaxTests.class.getClassLoader().getResourceAsStream("spouse-inline.splog");
 
         String edbSchema =
                 "{\n" +
+                "    \"anchor\": {\n" +
+                "        \"column1\": \"int\"\n" +
+                "    },\n" +
                 "    \"articles\": {\n" +
+                "        \"column1\": \"text\",\n" +
+                "        \"column2\": \"text\"\n" +
+                "    },\n" +
+                "    \"articles_2\": {\n" +
+                "        \"column1\": \"text\",\n" +
+                "        \"column2\": \"text\"\n" +
+                "    },\n" +
+                "    \"articles_3\": {\n" +
                 "        \"column1\": \"text\",\n" +
                 "        \"column2\": \"text\"\n" +
                 "    },\n" +
@@ -277,22 +334,6 @@ public class SpouseTests {
                 "    }\n" +
                 "}\n";
 
-        String udfSchema =
-                "{\n" +
-                "    \"ner\": {\n" +
-                "        \"content\": \"text\",\n" +
-                "        \"span\": \"span\",\n" +
-                "        \"ner_tag\": \"text\"\n" +
-                "    },\n" +
-                "    \"ssplit\": {\n" +
-                "        \"content\": \"text\",\n" +
-                "        \"sentence_index\": \"int\",\n" +
-                "        \"sentence_span\": \"span\"\n" +
-                "    }\n" +
-                "}\n";
-
-
-
-        assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema, true));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
     }
 }

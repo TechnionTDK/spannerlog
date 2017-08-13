@@ -140,7 +140,7 @@ public class CompilationTests {
 
     @Test(expected = UndefinedRelationSchema.class)
     public void compileExampleQueryWithIefSchemaMissing() {
-        String splogSrc = "Q(s[x]) <- Articles(s,_,_,_,_,_), NER<s>(x, \"ORG\").";
+        String splogSrc = "Q(s[x]) <- Articles(s,_,_,_,_,_), MyNer<s>(x, \"ORG\").";
         String edbSchema = "{\n" +
                 "    \"Articles\": {\n" +
                 "        \"column1\": \"text\",\n" +
@@ -158,6 +158,16 @@ public class CompilationTests {
 
     @Test(expected = UndefinedRelationSchema.class)
     public void compileExampleQueryWithEdbSchemaMissing() {
+        String splogSrc = "Q(s[x]) <- Articles(s,_,_,_,_,_), NER<s>(x, \"ORG\").";
+        String edbSchema = "{\n" +
+                "}\n";
+//        String udfSchema = "{\"NER\":{\"s\":\"text\", \"x\":\"span\",\"y\":\"text\"}}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+    }
+
+    @Test(expected = BuiltIeFunctionNameConflict.class)
+    public void compileExampleQueryWithIefSchemaConflict() {
         String splogSrc = "Q(s[x]) <- Articles(s,_,_,_,_,_), NER<s>(x, \"ORG\").";
         String edbSchema = "{\n" +
                 "}\n";

@@ -56,35 +56,69 @@ class ExtractionRule extends RuleWithConjunctiveQuery {
     }
 }
 
-class SupervisionRule extends RuleWithConjunctiveQuery {
-    private DBAtom head;
-    private ExprTerm supervisionExpr;
+class SupervisionRule extends ExtractionRule {
+    private Condition posCond;
+    private Condition negCond;
 
-    SupervisionRule(DBAtom head, ExprTerm supervisionExpr, ConjunctiveQueryBody body) {
-        super(body);
-        this.head = head;
-        this.supervisionExpr = supervisionExpr;
+    SupervisionRule(DBAtom head, ConjunctiveQueryBody body, Condition posCond, Condition negCond) {
+        super(head, body);
+        this.posCond = posCond;
+        this.negCond = negCond;
     }
 
-    DBAtom getHead() {
-        return head;
+    Condition getPosCond() {
+        return posCond;
     }
 
-    ExprTerm getSupervisionExpr() {
-        return supervisionExpr;
+    Condition getNegCond() {
+        return negCond;
     }
 }
 
 class InferenceRule extends RuleWithConjunctiveQuery {
     private InferenceRuleHead head;
+    private FactorWeight weight;
 
-    InferenceRule(InferenceRuleHead head, ConjunctiveQueryBody body) {
+    InferenceRule(InferenceRuleHead head, ConjunctiveQueryBody body, FactorWeight weight) {
         super(body);
         this.head = head;
+        this.weight = weight;
     }
 
     InferenceRuleHead getHead() {
         return head;
+    }
+
+    FactorWeight getWeight() {
+        return weight;
+    }
+}
+
+class FactorWeight {
+    private Float value;
+    private String FeatureVariable;
+
+    FactorWeight(Float value) {
+        this.value = value;
+    }
+
+    FactorWeight(int value) {
+        this.value = (float) value;
+    }
+
+    FactorWeight(String featureVariable) {
+        this.FeatureVariable = featureVariable;
+    }
+
+    FactorWeight() {
+    }
+
+    Float getValue() {
+        return value;
+    }
+
+    String getFeatureVariable() {
+        return FeatureVariable;
     }
 }
 
@@ -203,14 +237,20 @@ class DBAtom extends Atom {
 
 class IEAtom extends Atom {
     private Term inputTerm;
+    private boolean isMaterialized;
 
-    IEAtom(String schemaName, List<Term> terms, Term inputTerm) {
+    IEAtom(String schemaName, List<Term> terms, Term inputTerm, boolean isMaterialized) {
         super(schemaName, terms);
         this.inputTerm = inputTerm;
+        this.isMaterialized = isMaterialized;
     }
 
     Term getInputTerm() {
         return inputTerm;
+    }
+
+    boolean isMaterialized() {
+        return isMaterialized;
     }
 }
 
@@ -219,8 +259,8 @@ class Regex extends IEAtom {
     private String regexString;
     private String compiledRegexString;
 
-    Regex(String schemaName, List<Term> terms, Term inputTerm, String regexString) {
-        super(schemaName, terms, inputTerm);
+    Regex(String schemaName, List<Term> terms, Term inputTerm, String regexString, boolean isMaterialized) {
+        super(schemaName, terms, inputTerm, isMaterialized);
         this.regexString = regexString;
     }
 
@@ -238,6 +278,15 @@ class Regex extends IEAtom {
 }
 
 abstract class Term {
+    private Attribute attr;
+
+    void setAttribute(Attribute attr) {
+        this.attr = attr;
+    }
+
+    Attribute getAttribute() {
+        return attr;
+    }
 }
 
 class PlaceHolderTerm extends Term { // singleton
@@ -255,21 +304,25 @@ abstract class ExprTerm extends Term {
 }
 
 class VarTerm extends ExprTerm implements StringTerm, SpanTerm {
-    private String varName;
+    private String name;
     private List<SpanTerm> spans;
     private String type;
 
-    VarTerm(String varName) {
-        this.varName = varName;
+    VarTerm(String name) {
+        this.name = name;
     }
 
-    VarTerm(String varName, List<SpanTerm> spans) {
-        this.varName = varName;
+    VarTerm(String name, List<SpanTerm> spans) {
+        this.name = name;
         this.spans = spans;
     }
 
-    String getVarName() {
-        return varName;
+    String getName() {
+        return name;
+    }
+
+    void setName(String name) {
+        this.name = name;
     }
 
     @Override
@@ -383,54 +436,6 @@ class SpanConstExpr extends ConstExprTerm implements SpanTerm {
 }
 
 class NullExpr extends ConstExprTerm {
-}
-
-class IfThenElseExpr extends ExprTerm {
-    private Condition cond;
-    private ExprTerm expr;
-    private ExprTerm elseExpr;
-    private List<ElseIfExpr> elseIfExprs;
-
-    IfThenElseExpr(Condition cond, ExprTerm expr, ExprTerm elseExpr, List<ElseIfExpr> elseIfExprs) {
-        this.cond = cond;
-        this.expr = expr;
-        this.elseExpr = elseExpr;
-        this.elseIfExprs = elseIfExprs;
-    }
-
-    Condition getCond() {
-        return cond;
-    }
-
-    ExprTerm getExpr() {
-        return expr;
-    }
-
-    ExprTerm getElseExpr() {
-        return elseExpr;
-    }
-
-    List<ElseIfExpr> getElseIfExprs() {
-        return elseIfExprs;
-    }
-}
-
-class ElseIfExpr {
-    private Condition cond;
-    private ExprTerm expr;
-
-    ElseIfExpr(Condition cond, ExprTerm expr) {
-        this.cond = cond;
-        this.expr = expr;
-    }
-
-    Condition getCond() {
-        return cond;
-    }
-
-    ExprTerm getExpr() {
-        return expr;
-    }
 }
 
 class FuncExpr extends ExprTerm {

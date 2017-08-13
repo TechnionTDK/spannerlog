@@ -49,7 +49,7 @@ class SpannerlogInputParser {
     private class StatementVisitor extends SpannerlogBaseVisitor<Statement> {
         @Override
         public Statement visitPredictionVariableDeclaration(SpannerlogParser.PredictionVariableDeclarationContext ctx) {
-            return new PredVarDec(ctx.relationSchemaName().getText());
+            return new PredVarDec(ctx.relationSchemaName().getText().toLowerCase());
         }
 
         @Override
@@ -62,10 +62,12 @@ class SpannerlogInputParser {
 
         @Override
         public Statement visitSupervisionRule(SpannerlogParser.SupervisionRuleContext ctx) {
+            ConditionVisitor conditionVisitor = new ConditionVisitor();
             return new SupervisionRule(
                     ctx.dbAtom().accept(new DBAtomVisitor()),
-                    ctx.supervisionExpr().accept(new ExprVisitor()),
-                    ctx.conjunctiveQueryBody().accept(new ConjunctiveQueryBodyVisitor())
+                    ctx.conjunctiveQueryBody().accept(new ConjunctiveQueryBodyVisitor()),
+                    ctx.supervisionExpr().condition(0).accept(conditionVisitor),
+                    ctx.supervisionExpr().condition(1).accept(conditionVisitor)
             );
         }
 
@@ -73,8 +75,31 @@ class SpannerlogInputParser {
         public Statement visitInferenceRule(SpannerlogParser.InferenceRuleContext ctx) {
             return new InferenceRule(
                     ctx.inferenceRuleHead().accept(new InferenceRuleHeadVisitor()),
-                    ctx.conjunctiveQueryBody().accept(new ConjunctiveQueryBodyVisitor())
+                    ctx.conjunctiveQueryBody().accept(new ConjunctiveQueryBodyVisitor()),
+                    ctx.weight().accept(new FactorWeightVisitor())
             );
+        }
+    }
+
+    private class FactorWeightVisitor extends SpannerlogBaseVisitor<FactorWeight> {
+        @Override
+        public FactorWeight visitUnknownWeight(SpannerlogParser.UnknownWeightContext ctx) {
+            return new FactorWeight();
+        }
+
+        @Override
+        public FactorWeight visitUnknownWeightWithFeature(SpannerlogParser.UnknownWeightWithFeatureContext ctx) {
+            return new FactorWeight(ctx.variable().getText());
+        }
+
+        @Override
+        public FactorWeight visitIntegerWeight(SpannerlogParser.IntegerWeightContext ctx) {
+            return new FactorWeight(Integer.parseInt(ctx.integerLiteral().getText()));
+        }
+
+        @Override
+        public FactorWeight visitFloatWeight(SpannerlogParser.FloatWeightContext ctx) {
+            return new FactorWeight(Float.parseFloat(ctx.floatingPointLiteral().getText()));
         }
     }
 
@@ -183,7 +208,7 @@ class SpannerlogInputParser {
     private class IEAtomVisitor extends SpannerlogBaseVisitor<IEAtom> {
         @Override
         public IEAtom visitIEFunction(SpannerlogParser.IEFunctionContext ctx) {
-            String relationSchemaName = ctx.relationSchemaName().getText();
+            String relationSchemaName = ctx.relationSchemaName().getText().toLowerCase();
             Term inputTerm = ctx.varExpr().accept(new VarExprVisitor());
             TermVisitor termVisitor = new TermVisitor();
             List<Term> terms = ctx.termClause().term()
@@ -191,7 +216,8 @@ class SpannerlogInputParser {
                     .map(term -> term.accept(termVisitor))
                     .collect(Collectors.toList());
             terms.add(0, inputTerm);
-            return new IEAtom(relationSchemaName, terms, inputTerm);
+            boolean isMaterialized = ctx.materialized() != null;
+            return new IEAtom(relationSchemaName, terms, inputTerm, isMaterialized);
         }
 
     }
@@ -203,14 +229,15 @@ class SpannerlogInputParser {
             String regex = ctx.Regex().getText();
             List<Term> terms = new ArrayList<>();
             terms.add(inputTerm);
-            return new Regex(null, terms, inputTerm, regex.substring(2, regex.length() - 2));
+            boolean isMaterialized = ctx.materialized() != null;
+            return new Regex(null, terms, inputTerm, regex.substring(2, regex.length() - 2), isMaterialized);
         }
     }
 
     private class DBAtomVisitor extends SpannerlogBaseVisitor<DBAtom> {
         @Override
         public DBAtom visitDbAtom(SpannerlogParser.DbAtomContext ctx) {
-            String relationSchemaName = ctx.relationSchemaName().getText();
+            String relationSchemaName = ctx.relationSchemaName().getText().toLowerCase();
             TermVisitor termVisitor = new TermVisitor();
             List<Term> terms = ctx.termClause().term()
                     .stream()
@@ -317,19 +344,6 @@ class SpannerlogInputParser {
         @Override
         public ExprTerm visitNullExpr(SpannerlogParser.NullExprContext ctx) {
             return new NullExpr();
-        }
-
-        @Override
-        public ExprTerm visitIfThenElseExpr(SpannerlogParser.IfThenElseExprContext ctx) {
-            return new IfThenElseExpr(
-                    ctx.condition().accept(new ConditionVisitor()),
-                    ctx.expr(0).accept(this),
-                    (ctx.expr().size() == 2) ? ctx.expr(1).accept(this) : null,
-                    (ctx.elseIfExpr()
-                            .stream()
-                            .map(elif -> new ElseIfExpr(elif.condition().accept(new ConditionVisitor()), visit(elif.expr())))
-                            .collect(Collectors.toList()))
-            );
         }
 
         @Override

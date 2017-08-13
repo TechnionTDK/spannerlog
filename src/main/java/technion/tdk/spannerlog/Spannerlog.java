@@ -2,15 +2,21 @@ package technion.tdk.spannerlog;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.apache.commons.cli.*;
+import technion.tdk.spannerlog.utils.graph.DiGraph;
+import technion.tdk.spannerlog.utils.match.PatternMatching;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.lang.System.exit;
+import static technion.tdk.spannerlog.utils.match.ClassPattern.inCaseOf;
 
 public class Spannerlog {
 
@@ -22,48 +28,126 @@ public class Spannerlog {
         new SpannerlogDesugarRewriter().derive(program);
 
         // build schema
-        SpannerlogSchema.Builder builder = SpannerlogSchema
-                .builder();
+        SpannerlogSchema.Builder builder = SpannerlogSchema.builder();
         if (edbReader != null)
             builder.readSchemaFromJson(edbReader, RelationSchema.builder().type(RelationSchemaType.EXTENSIONAL));
         if (udfReader != null)
             builder.readSchemaFromJson(udfReader, RelationSchema.builder().type(RelationSchemaType.IEFUNCTION));
-        SpannerlogSchema schema = builder
-                .extractRelationSchemas(program)
-                .build();
+        SpannerlogSchema schema = builder.build(program);
 
         // compile
         SpannerlogCompiler compiler = new SpannerlogCompiler();
         Map<String, String> iefDeclarationsBlocks = compiler.compile(schema);
-        List<Map<String, String>> cqBlocks = compiler.compile(program);
+        Map<String, List<CompiledStmt>> compiledStmts = compiler.compile(program);
 
-        return export(schema, iefDeclarationsBlocks, cqBlocks);
+        // build execution plan
+        List<String> planOrder = BuildExecutionPlan(schema);
+
+        return export(schema, iefDeclarationsBlocks, planOrder, compiledStmts);
     }
 
-    private JsonObject export(SpannerlogSchema schema, Map<String, String> iefDeclarationsBlocks,
-                              List<Map<String, String>> cqBlocks) {
+    private List<String> BuildExecutionPlan(SpannerlogSchema schema) {
+
+        // Getting the names of intensional relations
+        List<String> iSchemasNames = schema.getRelationSchemas()
+                .stream()
+                .filter(sch -> sch instanceof IntensionalRelationSchema)
+                .map(RelationSchema::getName)
+                .collect(Collectors.toList());
+
+        // Constructing the dependency graph
+        DiGraph.Builder<String> builder = new DiGraph.Builder<>();
+        schema.getRelationSchemas()
+                .stream()
+                .filter(sch -> sch instanceof IntensionalRelationSchema)
+                .map(sch -> (IntensionalRelationSchema) sch)
+                .forEach(sch -> {
+                    builder.addNode(sch.getName());
+                    sch.getInputSchemas()
+                            .stream()
+                            .filter(iSchemasNames::contains)
+                            .forEach(iSch -> {if (!iSch.equals(sch.getName())) builder.addEdge(iSch, sch.getName());});
+                });
+
+        return builder.build().sortTopologically();
+    }
+
+    private JsonObject export(SpannerlogSchema schema, Map<String, String> iefDeclarationsBlocks, List<String> planOrder, Map<String, List<CompiledStmt>> compiledStmts) {
 
         JsonObject jsonTree = new JsonObject();
         Gson gson = new GsonBuilder().serializeNulls().create();
 
-        jsonTree.add("schema", gson.toJsonTree(schema.getRelationSchemas()
-                .stream()
-                .sorted((s1, s2) -> String.CASE_INSENSITIVE_ORDER.compare(s1.getName(), s2.getName()))
-                .map(this::toJson)
-                .collect(Collectors.toList()))
+        List<JsonObject> edbSchemas = new ArrayList<>();
+        List<JsonObject> iefSchemas = new ArrayList<>();
+        List<JsonObject> idbSchemas = new ArrayList<>();
+
+        PatternMatching pattern = new PatternMatching(
+                inCaseOf(ExtensionalRelationSchema.class, s -> edbSchemas.add(toJson(s, gson))),
+                inCaseOf(IEFunctionSchema.class, s -> iefSchemas.add(toJson(s, gson))),
+                inCaseOf(IntensionalRelationSchema.class, s -> idbSchemas.add(toJson(s, gson)))
         );
 
-        jsonTree.add("ie_functions", gson.toJsonTree(schema.getRelationSchemas()
+        schema.getRelationSchemas().forEach(pattern::matchFor);
+
+        JsonObject schemaObject = new JsonObject();
+        schemaObject.add("edb", gson.toJsonTree(edbSchemas));
+        schemaObject.add("ief", gson.toJsonTree(iefSchemas));
+        schemaObject.add("idb", gson.toJsonTree(idbSchemas));
+
+        jsonTree.add("schema", schemaObject);
+
+        JsonObject iefs = new JsonObject();
+        iefs.add("rgx", gson.toJsonTree(schema.getRelationSchemas()
                 .stream()
-                .filter(s -> s instanceof IEFunctionSchema)
+                .filter(s -> s instanceof IEFunctionSchema && s.getAtoms().get(0) instanceof Regex)
                 .sorted((s1, s2) -> String.CASE_INSENSITIVE_ORDER.compare(s1.getName(), s2.getName()))
                 .map(s -> toJson((IEFunctionSchema) s, iefDeclarationsBlocks))
-                .collect(Collectors.toList()))
+                .collect(Collectors.toList())));
+
+
+        iefs.add("udf", gson.toJsonTree(schema.getRelationSchemas()
+                .stream()
+                .filter(s -> s instanceof IEFunctionSchema && !(s.getAtoms().get(0) instanceof Regex))
+                .sorted((s1, s2) -> String.CASE_INSENSITIVE_ORDER.compare(s1.getName(), s2.getName()))
+                .map(s -> toJson((IEFunctionSchema) s, iefDeclarationsBlocks))
+                .collect(Collectors.toList())));
+
+
+        jsonTree.add("ief", gson.toJsonTree(iefs));
+
+//        jsonTree.add("rules", gson.toJsonTree(cqBlocks));
+
+
+        // Constructing the execution plan object
+        JsonObject execution = new JsonObject();
+
+        // Prefixing the plan with all the extensional relations
+        List<JsonElement> edbSchemasNames = edbSchemas.stream().map(jsonObject -> jsonObject.get("name")).collect(Collectors.toList());
+        execution.add("edb", gson.toJsonTree(edbSchemasNames));
+
+        // Associating the execution code to each relation in the relation order
+        LinkedHashMap<String, List<JsonObject>> idbPlan = new LinkedHashMap<>();
+        planOrder.forEach(sch ->
+                idbPlan.put(sch,
+                        compiledStmts.get(sch)
+                                .stream()
+                                .map(cs -> toJson(cs, gson))
+                                .collect(Collectors.toList())
+                )
         );
 
-        jsonTree.add("rules", gson.toJsonTree(cqBlocks));
+
+        execution.add("idb", gson.toJsonTree(idbPlan));
+        jsonTree.add("execution", execution);
 
         return jsonTree;
+    }
+
+    private JsonObject toJson(CompiledStmt cs, Gson gson) {
+        JsonObject executionStep = new JsonObject();
+        executionStep.addProperty("cmd", cs.getValue());
+        executionStep.addProperty("target", cs.getTarget());
+        return executionStep;
     }
 
     private JsonObject toJson(IEFunctionSchema schema, Map<String, String> iefDeclarationsBlocks) {
@@ -78,16 +162,23 @@ public class Spannerlog {
             schemaJsonObject.addProperty("regex", ((Regex) atoms.get(0)).getCompiledRegexString());
         }
 
+        if (schema.isMaterialized())
+            schemaJsonObject.addProperty("materialized", true);
+
         return schemaJsonObject;
     }
 
-    private JsonObject toJson(RelationSchema schema) {
+    private JsonObject toJson(RelationSchema schema, Gson gson) {
         JsonObject schemaJsonObject = new JsonObject();
         schemaJsonObject.addProperty("name", schema.getName());
 
-        if (schema instanceof IntensionalRelationSchema
-                && ((IntensionalRelationSchema) schema).isPredictionVariableSchema()) {
-            schemaJsonObject.addProperty("predict_var", true);
+        if (schema instanceof IntensionalRelationSchema) {
+            IntensionalRelationSchema iSchema = (IntensionalRelationSchema) schema;
+
+            schemaJsonObject.add("input_schemas", gson.toJsonTree(iSchema.getInputSchemas()));
+
+            if (iSchema.isPredictionVariableSchema())
+                schemaJsonObject.addProperty("variable_type", "boolean"); // TODO support categorical variables
         }
 
         JsonObject attributesJsonObject = new JsonObject();
@@ -106,7 +197,7 @@ public class Spannerlog {
 
             InputStream programInputStream = new FileInputStream(line.getOptionValue("program"));
             Reader edbReader = line.hasOption("edb") ? new FileReader(line.getOptionValue("edb")) : null;
-            Reader udfReader = line.hasOption("udf") ? new FileReader(line.getOptionValue("udf")) : null;
+            Reader udfReader = line.hasOption("ief") ? new FileReader(line.getOptionValue("ief")) : null;
 
             JsonObject jsonTree = new Spannerlog().init(programInputStream, edbReader, udfReader);
 
@@ -154,10 +245,10 @@ public class Spannerlog {
                 .build());
 
         options.addOption(Option
-                .builder("udf")
+                .builder("ief")
                 .hasArg()
                 .numberOfArgs(1)
-                .desc("the UDF schemas (required if UDFs are used)")
+                .desc("the ief schemas (required if IEFs are used)")
                 .build());
 
         options.addOption(Option

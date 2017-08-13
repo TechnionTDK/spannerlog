@@ -21,13 +21,13 @@ class Utils {
         System.out.println(gson.toJson(jsonTree));
     }
 
-    static boolean checkCompilation(InputStream inputStream, String edbSchema, String udfSchema, boolean print) {
+    static boolean checkCompilation(InputStream inputStream, String edbSchema, String iefSchema, boolean print) {
         JsonObject jsonTree;
 
         try {
 
             Reader edbReader = !StringUtils.isEmpty(edbSchema) ? new StringReader(edbSchema) : null;
-            Reader udfReader = !StringUtils.isEmpty(udfSchema) ? new StringReader(udfSchema) : null;
+            Reader udfReader = !StringUtils.isEmpty(iefSchema) ? new StringReader(iefSchema) : null;
 
             jsonTree = new Spannerlog().init(inputStream, edbReader, udfReader);
 
