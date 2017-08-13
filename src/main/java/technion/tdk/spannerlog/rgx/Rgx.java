@@ -1,7 +1,7 @@
 package technion.tdk.spannerlog.rgx;
 
 
-import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -32,7 +32,7 @@ public class Rgx {
     }
 
     private String compile(String regex) {
-        RgxLexer lexer = new RgxLexer(new ANTLRInputStream(regex));
+        RgxLexer lexer = new RgxLexer(CharStreams.fromString(regex));
         lexer.addErrorListener(ExceptionThrowerListener.getInstance());
 
         RgxParser parser = new RgxParser(new CommonTokenStream(lexer));

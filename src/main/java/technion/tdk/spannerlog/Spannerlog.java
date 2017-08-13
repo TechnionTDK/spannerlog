@@ -121,6 +121,7 @@ public class Spannerlog {
                 System.out.println(gson.toJson(jsonTree));
             }
         } catch (Exception e) {
+            e.printStackTrace();
             System.err.println(e.getClass().getSimpleName());
             System.err.println(e.getMessage());
             exit(1);

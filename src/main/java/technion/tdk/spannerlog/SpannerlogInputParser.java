@@ -1,6 +1,6 @@
 package technion.tdk.spannerlog;
 
-import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import technion.tdk.spannerlog.grammar.SpannerlogBaseVisitor;
@@ -21,8 +21,7 @@ import static technion.tdk.spannerlog.FuncExpr.AGGREGATION_FUNCTIONS;
 class SpannerlogInputParser {
 
     Program parseProgram(InputStream is) throws IOException {
-        ANTLRInputStream input = new ANTLRInputStream(is);
-        SpannerlogLexer lexer = new SpannerlogLexer(input);
+        SpannerlogLexer lexer = new SpannerlogLexer(CharStreams.fromStream(is));
         lexer.removeErrorListeners();
         lexer.addErrorListener(ExceptionThrowerListener.getInstance());
 

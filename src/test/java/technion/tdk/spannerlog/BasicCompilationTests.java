@@ -1,15 +1,13 @@
 package technion.tdk.spannerlog;
 
 
-import org.junit.Ignore;
 import org.junit.Test;
-import technion.tdk.spannerlog.utils.dependencies.CircularDependencyException;
 
 import static org.junit.Assert.assertTrue;
 import static technion.tdk.spannerlog.Utils.checkCompilation;
 
 
-public class CompilationTests {
+public class BasicCompilationTests {
 
     @Test(expected = UndefinedRelationSchema.class)
     public void programWithUndefinedSchemaShouldFail() {
@@ -139,30 +137,60 @@ public class CompilationTests {
     }
 
     @Test(expected = UndefinedRelationSchema.class)
-    public void compileExampleQueryWithIefSchemaMissing() {
-        String splogSrc = "Q(s[x]) <- Articles(s,_,_,_,_,_), NER<s>(x, \"ORG\").";
-        String edbSchema = "{\n" +
-                "    \"Articles\": {\n" +
-                "        \"column1\": \"text\",\n" +
-                "        \"column2\": \"text\",\n" +
-                "        \"column3\": \"text\",\n" +
-                "        \"column4\": \"text\",\n" +
-                "        \"column5\": \"text\",\n" +
-                "        \"column6\": \"text\"\n" +
-                "    }\n" +
-                "}\n";
-//        String udfSchema = "{\"rgx1\":{\"s\":\"text\",\"x\":\"span\",\"y\":\"span\"},\"rgx2\":{\"s\":\"text\",\"x\":\"span\"}}";
+    public void usingUndefinedIEFShouldFail() {
+        String splogSrc =
+                "married(id, x, y) <-" +
+                        "       articles(id, c)," +
+                        "       <c>\\[.* x{ [A-Z][a-z]*(\\s[A-Z][a-z]*)* } .* \\s married \\s .* y{ [A-Z][a-z]*(\\s[A-Z][a-z]*)* } .* ]\\," +
+                        "       ner<c>(x, \"PERSON\")," +
+                        "       ner2<c>(y, \"PERSON\").\n";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+        String edbSchema =
+                "{" +
+                        "\"articles\": {" +
+                                "\"id\":\"text\"," +
+                                "\"content\":\"text\"" +
+                            "}" +
+                        "}";
+
+        String iefSchema =
+                "{" +
+                        "\"ner\": {" +
+                                "\"input\":\"text\"," +
+                                "\"entity\":\"span\"," +
+                                "\"category\":\"text\"" +
+                            "}" +
+                        "}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, iefSchema, true));
     }
 
-    @Test(expected = UndefinedRelationSchema.class)
-    public void compileExampleQueryWithEdbSchemaMissing() {
-        String splogSrc = "Q(s[x]) <- Articles(s,_,_,_,_,_), NER<s>(x, \"ORG\").";
-        String edbSchema = "{\n" +
-                "}\n";
-        String udfSchema = "{\"NER\":{\"s\":\"text\", \"x\":\"span\",\"y\":\"text\"}}";
+    @Test(expected = UndefinedInputVariableException.class)
+    public void usingUndefinedInputTermShouldFail() {
+        String splogSrc =
+                "married(id, x, y) <-" +
+                        "       articles(id, c)," +
+                        "       <c1>\\[.* x{ [A-Z][a-z]*(\\s[A-Z][a-z]*)* } .* \\s married \\s .* y{ [A-Z][a-z]*(\\s[A-Z][a-z]*)* } .* ]\\," +
+                        "       ner<c>(x, \"PERSON\")," +
+                        "       ner<c>(y, \"PERSON\").\n";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema, false));
+        String edbSchema =
+                "{" +
+                        "\"articles\": {" +
+                        "\"id\":\"text\"," +
+                        "\"content\":\"text\"" +
+                        "}" +
+                        "}";
+
+        String iefSchema =
+                "{" +
+                        "\"ner\": {" +
+                        "\"input\":\"text\"," +
+                        "\"entity\":\"span\"," +
+                        "\"category\":\"text\"" +
+                        "}" +
+                        "}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, iefSchema, false));
     }
 }

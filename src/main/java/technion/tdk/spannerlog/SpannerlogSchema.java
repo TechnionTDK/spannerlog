@@ -20,6 +20,10 @@ import static technion.tdk.spannerlog.utils.match.OtherwisePattern.otherwise;
 
 class SpannerlogSchema {
 
+    private HashSet<String> iefSchemaNames = new HashSet<>();
+    private List<RelationSchema> relationSchemas = new ArrayList<>();
+
+
     static class Builder {
         private SpannerlogSchema spannerlogSchema = new SpannerlogSchema();
         private Program program;
@@ -47,8 +51,6 @@ class SpannerlogSchema {
     private SpannerlogSchema() {
     }
 
-    private List<RelationSchema> relationSchemas = new ArrayList<>();
-
     static Builder builder() {
         return new Builder();
     }
@@ -63,6 +65,9 @@ class SpannerlogSchema {
                 List<Attribute> attrs = readAttributes(jsonReader);
 
                 relationSchemas.add(builder.build(name, attrs));
+
+                if (builder.getType() ==  RelationSchemaType.IEFUNCTION)
+                    iefSchemaNames.add(name);
             }
             jsonReader.endObject();
 
@@ -437,6 +442,17 @@ class SpannerlogSchema {
 
         if (!AmbiguousSchemaNames.isEmpty())
             throw new UndefinedRelationSchema(AmbiguousSchemaNames.get(0));
+
+        List<String> InferredIefSchemaNames = relationSchemas
+                .stream()
+                .filter(schema -> schema instanceof IEFunctionSchema)
+                .map(RelationSchema::getName)
+                .collect(Collectors.toList());
+
+        InferredIefSchemaNames.removeAll(iefSchemaNames);
+
+        if (!InferredIefSchemaNames.isEmpty())
+            throw new UndefinedRelationSchema(InferredIefSchemaNames.get(0));
     }
 
     private void setVariablesType(Program program) {
@@ -848,6 +864,10 @@ class RelationSchemaBuilder {
     }
 
     private class SchemaBuilderHasNoTypeException extends RuntimeException {
+    }
+
+    RelationSchemaType getType() {
+        return type;
     }
 }
 
