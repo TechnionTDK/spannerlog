@@ -356,6 +356,8 @@ interface SpanTerm {
 }
 
 abstract class ConstExprTerm extends ExprTerm {
+
+    abstract String getValueAsString();
 }
 
 class StringConstExpr extends ConstExprTerm implements StringTerm {
@@ -379,6 +381,11 @@ class StringConstExpr extends ConstExprTerm implements StringTerm {
     public List<SpanTerm> getSpans() {
         return spans;
     }
+
+    @Override
+    String getValueAsString() {
+        return value;
+    }
 }
 
 class IntConstExpr extends ConstExprTerm {
@@ -390,6 +397,11 @@ class IntConstExpr extends ConstExprTerm {
 
     int getValue() {
         return value;
+    }
+
+    @Override
+    String getValueAsString() {
+        return Integer.toString(value);
     }
 }
 
@@ -403,6 +415,11 @@ class BooleanConstExpr extends ConstExprTerm {
     boolean getValue() {
         return value;
     }
+
+    @Override
+    String getValueAsString() {
+        return Boolean.toString(value);
+    }
 }
 
 class FloatConstExpr extends ConstExprTerm {
@@ -414,6 +431,11 @@ class FloatConstExpr extends ConstExprTerm {
 
     float getValue() {
         return value;
+    }
+
+    @Override
+    String getValueAsString() {
+        return Float.toString(value);
     }
 }
 
@@ -433,9 +455,18 @@ class SpanConstExpr extends ConstExprTerm implements SpanTerm {
     int getEnd() {
         return end;
     }
+
+    @Override
+    String getValueAsString() {
+        throw new UnsupportedOperationException();
+    }
 }
 
 class NullExpr extends ConstExprTerm {
+    @Override
+    String getValueAsString() {
+        return "NULL";
+    }
 }
 
 class FuncExpr extends ExprTerm {

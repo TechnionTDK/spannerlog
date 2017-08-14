@@ -15,7 +15,7 @@ public class ParsingTests {
 
     @Test
     public void valuesCheckForQueryWithBooleanLiteral() {
-        SpannerlogInputParser parser = new SpannerlogInputParser();
+        InputParser parser = new InputParser();
 
         try {
             String splogSrc = "Q() <- R(True).";
@@ -53,7 +53,7 @@ public class ParsingTests {
 
     @Test
     public void valuesCheckForQueryWithLiterals() {
-        SpannerlogInputParser parser = new SpannerlogInputParser();
+        InputParser parser = new InputParser();
 
         try {
             String splogSrc = "Q() <- R(False, \"Hello\", 4, -2, 0.01, - 1.0,  [3,4]).";
@@ -112,7 +112,7 @@ public class ParsingTests {
 
     @Test
     public void valuesCheckForQueryWithRegex() {
-        SpannerlogInputParser parser = new SpannerlogInputParser();
+        InputParser parser = new InputParser();
 
         try {
             String splogSrc = "Out() <- Doc(s), RGX<s>\\[x{a*}y{b*}]\\, <s[y][0,5]>\\[x{b*}]\\.";

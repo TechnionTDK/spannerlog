@@ -15,7 +15,7 @@ public class DatalogTests {
 
     @Test
     public void parseGraphProgram() {
-        SpannerlogInputParser parser = new SpannerlogInputParser();
+        InputParser parser = new InputParser();
 
         try {
             parser.parseProgram(BasicSyntaxTests.class.getClassLoader().getResourceAsStream("graph.splog"));
@@ -27,7 +27,7 @@ public class DatalogTests {
 
     @Test
     public void valuesCheckForQueryWithBooleanLiteral() {
-        SpannerlogInputParser parser = new SpannerlogInputParser();
+        InputParser parser = new InputParser();
 
         try {
             String splogSrc = "Q() <- R(True).";
@@ -65,7 +65,7 @@ public class DatalogTests {
 
     @Test
     public void valuesCheckForQueryWithLiterals() {
-        SpannerlogInputParser parser = new SpannerlogInputParser();
+        InputParser parser = new InputParser();
 
         try {
             String splogSrc = "Q() <- R(False, \"Hello\", 4, -2, 0.01, - 1.0,  [3,4]).";

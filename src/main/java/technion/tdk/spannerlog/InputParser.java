@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 import static technion.tdk.spannerlog.FuncExpr.AGGREGATION_FUNCTIONS;
 
 
-class SpannerlogInputParser {
+class InputParser {
 
     Program parseProgram(InputStream is) throws IOException {
         SpannerlogLexer lexer = new SpannerlogLexer(CharStreams.fromStream(is));

@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets;
 public class SyntaxTests {
     @Test
     public void parseDatalog() {
-        SpannerlogInputParser parser = new SpannerlogInputParser();
+        InputParser parser = new InputParser();
 
         try {
             parser.parseProgram(SyntaxTests.class.getClassLoader().getResourceAsStream("graph.splog"));
@@ -22,7 +22,7 @@ public class SyntaxTests {
 
     @Test
     public void parseRulesWithRegexFormulas() {
-        SpannerlogInputParser parser = new SpannerlogInputParser();
+        InputParser parser = new InputParser();
         String src;
 
         try {
@@ -45,7 +45,7 @@ public class SyntaxTests {
 
     @Test
     public void parseRulesWithSpans() {
-        SpannerlogInputParser parser = new SpannerlogInputParser();
+        InputParser parser = new InputParser();
         String src;
 
         try {

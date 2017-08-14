@@ -1,6 +1,7 @@
 package technion.tdk.spannerlog;
 
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
@@ -95,6 +96,7 @@ public class BasicCompilationTests {
     }
 
 
+    @Ignore
     @Test
     public void compileQueryWithLiterals() {
         String splogSrc = "Q() <- R(False, \"Hello\", 4, -2, 0.01, - 1.0,  [3,4]).";

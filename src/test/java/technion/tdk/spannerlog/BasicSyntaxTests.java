@@ -15,7 +15,7 @@ import static org.junit.Assert.assertTrue;
 public class BasicSyntaxTests {
     @Test
     public void parseRulesWithRegexFormulas() {
-        SpannerlogInputParser parser = new SpannerlogInputParser();
+        InputParser parser = new InputParser();
         String src;
 
         try {
@@ -38,7 +38,7 @@ public class BasicSyntaxTests {
 
     @Test
     public void parseRulesWithSpans() {
-        SpannerlogInputParser parser = new SpannerlogInputParser();
+        InputParser parser = new InputParser();
         String src;
 
         try {
@@ -55,7 +55,7 @@ public class BasicSyntaxTests {
 
     @Test
     public void valuesCheckForQueryWithRegex() {
-        SpannerlogInputParser parser = new SpannerlogInputParser();
+        InputParser parser = new InputParser();
 
         try {
             String splogSrc = "Out() <- Doc(s), RGX<s>\\[x{a*}y{b*}]\\, <s[y][0,5]>\\[x{b*}]\\.";

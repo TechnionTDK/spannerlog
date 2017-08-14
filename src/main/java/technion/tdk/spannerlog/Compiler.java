@@ -57,7 +57,6 @@ class SpannerlogCompiler {
                 inCaseOf(InferenceRule.class, this::compile),
                 otherwise(stmt -> null)
         ).matchFor(statement);
-
     }
 
     private CompiledStmt compile(ExtractionRule rule) {
@@ -65,12 +64,16 @@ class SpannerlogCompiler {
 
         compiledRule.setKey(rule.getHead().getSchemaName());
         List<BodyElement> bodyElements = rule.getBody().getBodyElements();
-        if (bodyElements.stream().anyMatch(e -> e instanceof IEAtom)) {
-            compiledRule.setValue(new QueryCompiler(rule, this).generateSQL());
-            compiledRule.setTarget("sql");
-        }
-        else
-            compiledRule.setValue(compile(rule.getHead()) + " *:- " + compile(rule.getBody()) + ".");
+
+        compiledRule.setValue(new QueryCompiler(rule, this).generateSQL());
+        compiledRule.setTarget("sql");
+
+//        if (bodyElements.stream().anyMatch(e -> e instanceof IEAtom)) {
+//            compiledRule.setValue(new QueryCompiler(rule, this).generateSQL());
+//            compiledRule.setTarget("sql");
+//        }
+//        else
+//            compiledRule.setValue(compile(rule.getHead()) + " *:- " + compile(rule.getBody()) + ".");
 
         return compiledRule;
     }
@@ -411,9 +414,11 @@ class QueryCompiler {
                     if (idx != var.relIndex) {
                         joiner.add(maybeToSpanStart(v, resolveAttr(v, idx)) + " = " + maybeToSpanStart(var.varTerm, resolveCanonicalAttr(var.varTerm)));
                     }
-                } else if (t instanceof StringConstExpr) { // term is string constant
+                } else if (t instanceof SpanConstExpr) { // term is irrelevant ("_")
+                    throw new UnsupportedOperationException();
+                } else if (t instanceof ConstExprTerm) { // term is string constant
                     joiner.add("R" + idx + "." + t.getAttribute().getName() + " = '"
-                            + ((StringConstExpr) t).getValue() + "'");
+                            + ((ConstExprTerm) t).getValueAsString() + "'");
 //                                    } else if (t instanceof IntConstExpr) {
 //                                        joiner.add("R" + i + "." + t.getAttribute().getName() + " = '"
 //                                                + ((IntConstExpr) t).getValue() + "'");
@@ -522,7 +527,7 @@ class QueryCompiler {
 class CompiledStmt {
     private String key;
     private String value;
-    private String target = "ddlog";
+    private String target;
 
     String getTarget() {
         return target;

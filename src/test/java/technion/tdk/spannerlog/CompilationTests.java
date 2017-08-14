@@ -96,14 +96,6 @@ public class CompilationTests {
         assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema, false));
     }
 
-
-    @Test
-    public void compileQueryWithLiterals() {
-        String splogSrc = "Q() <- R(False, \"Hello\", 4, -2, 0.01, - 1.0,  [3,4]).";
-        String edbSchema = "{\"R\":{\"a1\":\"boolean\", \"a2\":\"text\", \"a3\":\"int\", \"a4\":\"int\", \"a5\":\"float8\", \"a6\":\"float8\", \"a7\":\"span\"}}";
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
-    }
-
     @Test
     public void compileQueryWithSpans() {
         String splogSrc = "Q(\"Hello World\"[1,6][2,4], s[t]) <- R(s,t).";
@@ -174,5 +166,22 @@ public class CompilationTests {
         String udfSchema = "{\"NER\":{\"s\":\"text\", \"x\":\"span\",\"y\":\"text\"}}";
 
         assertTrue(checkCompilation(splogSrc, edbSchema, udfSchema, false));
+    }
+
+    @Test
+    public void compileExampleQuery() {
+        String splogSrc = "Q(s[x]) <- Articles(s,_,_,_,_,_), NER<s>(x, \"ORG\").";
+        String edbSchema = "{\n" +
+                "    \"Articles\": {\n" +
+                "        \"column1\": \"text\",\n" +
+                "        \"column2\": \"text\",\n" +
+                "        \"column3\": \"text\",\n" +
+                "        \"column4\": \"text\",\n" +
+                "        \"column5\": \"text\",\n" +
+                "        \"column6\": \"text\"\n" +
+                "    }\n" +
+                "}\n";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 }

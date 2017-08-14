@@ -22,10 +22,10 @@ public class Spannerlog {
 
     JsonObject init(InputStream programInputStream, Reader edbReader, Reader udfReader) throws IOException {
         // parse program
-        Program program = new SpannerlogInputParser().parseProgram(programInputStream);
+        Program program = new InputParser().parseProgram(programInputStream);
 
         // desugar
-        new SpannerlogDesugarRewriter().derive(program);
+        new DesugarRewriter().derive(program);
 
         // build schema
         SpannerlogSchema.Builder builder = SpannerlogSchema.builder();
@@ -43,6 +43,7 @@ public class Spannerlog {
         // build execution plan
         List<String> planOrder = BuildExecutionPlan(schema);
 
+//        System.out.println(planOrder);
         return export(schema, iefDeclarationsBlocks, planOrder, compiledStmts);
     }
 
