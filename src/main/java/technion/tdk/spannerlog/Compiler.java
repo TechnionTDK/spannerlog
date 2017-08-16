@@ -378,9 +378,16 @@ class QueryCompiler {
             if (t instanceof VarTerm && ((VarTerm) t).getType().equals("span")) {
                 joiner.add(((VarTerm) t).getName() + "_start AS " + attrName + "_start, " + ((VarTerm) t).getName() + "_end AS " + attrName + "_end");
             } else {
+                if (t instanceof StringTerm) {
+                    for (SpanTerm spanTerm : ((StringTerm) t).getSpans()) {
+                        if (spanTerm instanceof VarTerm)
+                            ((VarTerm) spanTerm).setName(resolveCanonicalAttr((VarTerm) spanTerm));
+                    }
+                }
                 String compiledTerm = compiler.compile(t);
                 joiner.add(compiledTerm + " AS " + attrName);
             }
+
         });
 
         return "SELECT " + joiner;

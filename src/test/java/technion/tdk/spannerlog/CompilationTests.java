@@ -182,6 +182,6 @@ public class CompilationTests {
                 "    }\n" +
                 "}\n";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
     }
 }

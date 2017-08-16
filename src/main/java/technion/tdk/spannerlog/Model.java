@@ -344,19 +344,28 @@ class VarTerm extends ExprTerm implements StringTerm, SpanTerm {
     }
 }
 
-/* A term class that implements this interface can act as a string term, and therefore may have span terms. For more details, see section 4 in http://dl.acm.org/citation.cfm?doid=2932194.2932200 */
+/*
+   A term class that implements this interface can
+   act as a string term, and therefore may have
+   span terms. For more details, see section 4 in
+   http://dl.acm.org/citation.cfm?doid=2932194.2932200
+*/
 interface StringTerm {
     void setSpans(List<SpanTerm> spans);
 
     List<SpanTerm> getSpans();
 }
 
-/* A term class that implements this interface can act as a span term. For more details, see section 4 in http://dl.acm.org/citation.cfm?doid=2932194.2932200 */
+/*
+   A term class that implements this interface can
+   act as a span term. For more details, see
+   section 4 in
+   http://dl.acm.org/citation.cfm?doid=2932194.2932200
+*/
 interface SpanTerm {
 }
 
 abstract class ConstExprTerm extends ExprTerm {
-
     abstract String getValueAsString();
 }
 

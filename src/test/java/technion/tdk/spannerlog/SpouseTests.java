@@ -45,7 +45,7 @@ public class SpouseTests {
                         "}" +
                 "}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
     @Test
@@ -68,7 +68,7 @@ public class SpouseTests {
                         "}" +
                 "}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
     @Test
@@ -96,7 +96,7 @@ public class SpouseTests {
                         "        }\n" +
                 "}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
 
         //        JsonObject jsonTree = compileToJson(splogSrc, edbSchema, null);
         //        printJsonTree(jsonTree);
@@ -230,7 +230,7 @@ public class SpouseTests {
                         "        }" +
                         "}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
     @Test
@@ -252,7 +252,7 @@ public class SpouseTests {
                         "        }" +
                 "}";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
     @Test
@@ -334,6 +334,6 @@ public class SpouseTests {
                 "    }\n" +
                 "}\n";
 
-        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 }
