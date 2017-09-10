@@ -626,7 +626,7 @@ abstract class RelationSchema {
         return atoms;
     }
 
-    public String getName() {
+    String getName() {
         return name;
     }
 
@@ -967,27 +967,27 @@ class Attribute {
         this.type = type;
     }
 
-    public String getName() {
+    String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    void setName(String name) {
         this.name = name;
     }
 
-    public String getType() {
+    String getType() {
         return type;
     }
 
-    public void setType(String type) {
+    void setType(String type) {
         this.type = type;
     }
 
-    public RelationSchema getSchema() {
+    RelationSchema getSchema() {
         return schema;
     }
 
-    public void setSchema(RelationSchema schema) {
+    void setSchema(RelationSchema schema) {
         this.schema = schema;
     }
 
@@ -1027,7 +1027,8 @@ class BuiltInIefManager {
     private BuiltInIefManager() {
         builtInIefs = new HashSet<>();
         builtInIefs.add("ner");
-        builtInIefs.add("ssplit");
+        builtInIefs.add("sentence");
+        builtInIefs.add("lowercase");
     }
 
     private static Set<String> builtInIefs;
@@ -1039,25 +1040,35 @@ class BuiltInIefManager {
     void setAttrsNames(String schemaName, List<Attribute> attrs) {
         // TODO initialize in a smarter way?
         // NER
-        if (schemaName.equals("ner")) {
-            attrs.get(0).setName("input");
-            attrs.get(0).setType("text");
+        switch (schemaName) {
+            case "ner":
+                attrs.get(0).setName("input");
+                attrs.get(0).setType("text");
 
-            attrs.get(1).setName("entity");
-            attrs.get(1).setType("span");
+                attrs.get(1).setName("entity");
+                attrs.get(1).setType("span");
 
-            attrs.get(2).setName("category");
-            attrs.get(2).setType("text");
+                attrs.get(2).setName("category");
+                attrs.get(2).setType("text");
 
-        } else if (schemaName.equals("ssplit")) {
-            attrs.get(0).setName("input");
-            attrs.get(0).setType("text");
+                break;
+            case "sentence":
+                attrs.get(0).setName("input");
+                attrs.get(0).setType("text");
 
-            attrs.get(1).setName("sentence_index");
-            attrs.get(1).setType("int");
+                attrs.get(1).setName("sentence_index");
+                attrs.get(1).setType("int");
 
-            attrs.get(2).setName("sentence");
-            attrs.get(2).setType("span");
+                attrs.get(2).setName("sentence");
+                attrs.get(2).setType("span");
+                break;
+            case "lowercase":
+                attrs.get(0).setName("input");
+                attrs.get(0).setType("text");
+
+                attrs.get(1).setName("lower");
+                attrs.get(1).setType("text");
+                break;
         }
     }
 }

@@ -28,11 +28,11 @@ set
     ;
 
 positiveSet
-    : '[' setItems ']'
+    : LBRACK setItems RBRACK
     ;
 
 negativeSet
-    : '[^' setItems ']'
+    : LBRACK Neg setItems RBRACK
     ;
 
 setItems
@@ -51,11 +51,11 @@ range
     ;
 
 group
-    : '(' regex ')'
+    : LPAREN regex RPAREN
     ;
 
 anyChar
-    : '.'
+    : Dot
     ;
 
 captureClause
@@ -67,7 +67,7 @@ identifier
     ;
 
 chars
-    : (Digit | CharEscapeSeq) (UppercaseLetter | LowercaseLetter | Digit | CharEscapeSeq)*
+    : (Digit | CharEscapeSeq | Dot) (UppercaseLetter | LowercaseLetter | Digit | CharEscapeSeq | Dot)*
     | (UppercaseLetter | LowercaseLetter) (UppercaseLetter | LowercaseLetter | Digit | CharEscapeSeq)*
     ;
 
@@ -83,12 +83,36 @@ Digit
     : [0-9]
     ;
 
+CharEscapeSeq
+    : '\\' ('b' | 't' | 'n' | 'f' | 'r' | 's' | '"' | '\'' | '\\' | Dot)
+    ;
+
+Dot
+    : '.'
+    ;
+
 RangeChar
     : '-'
     ;
 
-CharEscapeSeq
-    : '\\' ('b' | 't' | 'n' | 'f' | 'r' | 's' | '"' | '\'' | '\\')
+Neg
+    : '^'
+    ;
+
+LBRACK
+    : '['
+    ;
+
+RBRACK
+    : ']'
+    ;
+
+LPAREN
+    : '('
+    ;
+
+RPAREN
+    : '('
     ;
 
 WS

@@ -390,7 +390,7 @@ class QueryCompiler {
 
         });
 
-        return "SELECT " + joiner;
+        return "SELECT DISTINCT " + joiner;
     }
 
     private String maybeToSpanStart(VarTerm t, String compiledAttr) {
@@ -500,8 +500,17 @@ class QueryCompiler {
                 .forEach(i ->
                     new PatternMatching(
                         inCaseOf(DBAtom.class, a -> relationsJoiner.add(atoms.get(i).getSchemaName() + " R" + i)),
-                        inCaseOf(IEAtom.class, a -> relationsJoiner.add(atoms.get(i).getSchemaName() + "("
-                                  + resolveCanonicalAttr(((IEAtom) atoms.get(i)).getInputTerm()) + ") R" + i)
+                        inCaseOf(IEAtom.class, a -> {
+                            Term inputTerm = ((IEAtom) atoms.get(i)).getInputTerm();
+                            if (inputTerm instanceof VarTerm)
+                                ((VarTerm) inputTerm).setName(resolveCanonicalAttr(inputTerm));
+                            for (SpanTerm spanTerm : ((StringTerm) inputTerm).getSpans()) {
+                                if (spanTerm instanceof VarTerm)
+                                    ((VarTerm) spanTerm).setName(resolveCanonicalAttr((VarTerm) spanTerm));
+                            }
+                            return relationsJoiner.add(atoms.get(i).getSchemaName() + "("
+                                   + compiler.compile(inputTerm) + ") R" + i);
+                                }
                         )
                     ).matchFor(atoms.get(i))
                 );

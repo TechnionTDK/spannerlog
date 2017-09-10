@@ -91,6 +91,11 @@ public class Rgx {
         }
 
         @Override
+        public String visitNegativeSet(RgxParser.NegativeSetContext ctx) {
+            return ctx.getText();
+        }
+
+        @Override
         public String visitChars(RgxParser.CharsContext ctx) {
             return ctx.getText();
         }

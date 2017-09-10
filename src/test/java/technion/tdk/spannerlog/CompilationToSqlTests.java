@@ -29,4 +29,23 @@ public class CompilationToSqlTests {
         assertTrue(checkCompilation(splogSrc, edbSchema, null, false));
     }
 
+    @Test
+    public void compileBasicQueryToSQL2() {
+        String splogSrc =
+                "q(l) <-" +
+                        "       articles(id, c)," +
+                        "       <c>\\[.*x{\\b[A-Za-z0-9]+\\b\\s\\b[A-Za-z0-9]+\\b}\\sphosphorylates[^.]p53.*]\\," +
+                        "       lowercase<c[x]>(l).\n";
+
+        String edbSchema =
+                "{" +
+                        "\"articles\": {" +
+                            "\"id\":\"text\"," +
+                            "\"content\":\"text\"" +
+                        "}" +
+                "}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
+    }
+
 }
