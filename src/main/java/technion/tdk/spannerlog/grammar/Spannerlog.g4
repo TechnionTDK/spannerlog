@@ -194,7 +194,7 @@ operator
     ;
 
 compareOperator
-    : Equal | NotEqual | LANGLE | RANGLE
+    : Equal | NotEqual | LANGLE | RANGLE | LANGLE Equal | RANGLE Equal
     ;
 
 BooleanLiteral

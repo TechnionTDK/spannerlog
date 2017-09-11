@@ -372,7 +372,7 @@ class QueryCompiler {
             String attrName = attrs.get(i).getName();
 
             if (t instanceof VarTerm) {
-                ((VarTerm) t).setName(resolveCanonicalAttr(t));
+                resolveCanonicalAttr(t);
             }
 
             if (t instanceof VarTerm && ((VarTerm) t).getType().equals("span")) {
@@ -381,7 +381,7 @@ class QueryCompiler {
                 if (t instanceof StringTerm) {
                     for (SpanTerm spanTerm : ((StringTerm) t).getSpans()) {
                         if (spanTerm instanceof VarTerm)
-                            ((VarTerm) spanTerm).setName(resolveCanonicalAttr((VarTerm) spanTerm));
+                            resolveCanonicalAttr((VarTerm) spanTerm);
                     }
                 }
                 String compiledTerm = compiler.compile(t);
@@ -393,8 +393,8 @@ class QueryCompiler {
         return "SELECT DISTINCT " + joiner;
     }
 
-    private String maybeToSpanStart(VarTerm t, String compiledAttr) {
-        if (t.getType().equals("span"))
+    private String maybeToSpanStart(String type, String compiledAttr) {
+        if (type.equals("span"))
             return compiledAttr + "_start";
         return compiledAttr;
     }
@@ -418,9 +418,18 @@ class QueryCompiler {
                 if (t instanceof VarTerm && dbVars.containsKey(((VarTerm) terms.get(j)).getName())) { // term is variable
                     VarTerm v = (VarTerm) t;
                     Variable var = dbVars.get(v.getName());
+                    resolveCanonicalAttr(v);
+//                    resolveCanonicalAttr(var.varTerm);
                     if (idx != var.relIndex) {
-                        joiner.add(maybeToSpanStart(v, resolveAttr(v, idx)) + " = " + maybeToSpanStart(var.varTerm, resolveCanonicalAttr(var.varTerm)));
+                        joiner.add(maybeToSpanStart(v.getType(), resolveAttr(v, idx))
+                                + " = " + maybeToSpanStart(var.varTerm.getType(), var.varTerm.getName()));
                     }
+//                    VarTerm v = (VarTerm) t;
+//                    Variable var = dbVars.get(v.getName());
+//                    if (idx != var.relIndex) {
+//                        joiner.add(maybeToSpanStart(v, resolveAttr(v, idx))
+//                                + " = " + maybeToSpanStart(var.varTerm, resolveCanonicalAttr(var.varTerm)));
+//                    }
                 } else if (t instanceof SpanConstExpr) { // term is irrelevant ("_")
                     throw new UnsupportedOperationException();
                 } else if (t instanceof ConstExprTerm) { // term is string constant
@@ -440,22 +449,12 @@ class QueryCompiler {
             return; // TODO handle other conditions than ExprCondition
 
         ExprTerm expr = ((ExprCondition) element).getExpr();
+        resolveCanonicalAttr(expr);
         if (expr instanceof DotFuncExpr) {
-            DotFuncExpr dotFuncTerm = (DotFuncExpr) expr;
-
-            VarTerm varTerm = dotFuncTerm.getVarTerm();
-            varTerm.setName(resolveCanonicalAttr(varTerm));
-
-            dotFuncTerm.getArgs().forEach(arg -> {
-                if (!(arg instanceof VarTerm))
-                    throw new UnsupportedOperationException(); // TODO handle the general case
-                VarTerm v = (VarTerm) arg;
-                v.setName(resolveCanonicalAttr(v));
-            });
-
             compiler.compile((DotFuncExpr) expr).forEach(joiner::add);
-        } else
+        } else {
             joiner.add(this.compiler.compile(expr));
+        }
     }
 
     private String generateWhereClause() {
@@ -503,10 +502,10 @@ class QueryCompiler {
                         inCaseOf(IEAtom.class, a -> {
                             Term inputTerm = ((IEAtom) atoms.get(i)).getInputTerm();
                             if (inputTerm instanceof VarTerm)
-                                ((VarTerm) inputTerm).setName(resolveCanonicalAttr(inputTerm));
+                                resolveCanonicalAttr(inputTerm);
                             for (SpanTerm spanTerm : ((StringTerm) inputTerm).getSpans()) {
                                 if (spanTerm instanceof VarTerm)
-                                    ((VarTerm) spanTerm).setName(resolveCanonicalAttr((VarTerm) spanTerm));
+                                    resolveCanonicalAttr((VarTerm) spanTerm);
                             }
                             return relationsJoiner.add(atoms.get(i).getSchemaName() + "("
                                    + compiler.compile(inputTerm) + ") R" + i);
@@ -526,17 +525,28 @@ class QueryCompiler {
         throw new UnsupportedOperationException(); // TODO remove exception
     }
 
-    private String resolveCanonicalAttr(Term t) {
+    private void resolveCanonicalAttr(Term t) {
         if (t instanceof VarTerm) {
             VarTerm v = (VarTerm) t;
             if (dbVars.containsKey(v.getName())) {
                 Variable var = dbVars.get(v.getName());
-                return resolveAttr(var.varTerm, var.relIndex);
+                v.setName(resolveAttr(var.varTerm, var.relIndex));
             } else
                 throw new UndefinedInputVariableException(v.getName());
-        }
+        } else if (t instanceof DotFuncExpr) {
+            DotFuncExpr dotFuncTerm = (DotFuncExpr) t;
+            resolveCanonicalAttr(dotFuncTerm.getVarTerm());
 
-        throw new UnsupportedOperationException(); // TODO remove exception
+            dotFuncTerm.getArgs().forEach(this::resolveCanonicalAttr);
+        } else if (t instanceof BinaryOpExpr) {
+            BinaryOpExpr binaryOpExpr = (BinaryOpExpr) t;
+            resolveCanonicalAttr(binaryOpExpr.getLhs());
+            resolveCanonicalAttr(binaryOpExpr.getRhs());
+        } else if (t instanceof ConstExprTerm) {
+
+        } else {
+            throw new UnsupportedOperationException(); // TODO remove exception
+        }
     }
 }
 

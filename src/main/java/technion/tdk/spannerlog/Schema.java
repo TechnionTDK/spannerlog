@@ -1029,6 +1029,7 @@ class BuiltInIefManager {
         builtInIefs.add("ner");
         builtInIefs.add("sentence");
         builtInIefs.add("lowercase");
+        builtInIefs.add("sentiment");
     }
 
     private static Set<String> builtInIefs;
@@ -1068,6 +1069,19 @@ class BuiltInIefManager {
 
                 attrs.get(1).setName("lower");
                 attrs.get(1).setType("text");
+                break;
+            case "sentiment":
+                attrs.get(0).setName("input");
+                attrs.get(0).setType("text");
+
+                attrs.get(1).setName("sentence");
+                attrs.get(1).setType("span");
+
+                attrs.get(2).setName("label");
+                attrs.get(2).setType("text");
+
+                attrs.get(3).setName("value");
+                attrs.get(3).setType("int");
                 break;
         }
     }

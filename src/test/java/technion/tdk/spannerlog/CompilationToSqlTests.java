@@ -48,4 +48,45 @@ public class CompilationToSqlTests {
         assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
     }
 
+    @Test
+    public void compileQueryToSQLWithConditions() {
+        String splogSrc =
+                "q(x) <-" +
+                        "      articles(id,s)," +
+                        "      ner<s>(x, \"ORGANIZATION\")," +
+                        "      ner<s>(y, \"ORGANIZATION\")," +
+                        "      ner<s>(z, \"MONEY\")," +
+                        "      x < y," +
+                        "      x != y.\n";
+
+        String edbSchema =
+                "{" +
+                        "\"articles\": {" +
+                            "\"id\":\"text\"," +
+                            "\"content\":\"text\"" +
+                        "}" +
+                "}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
+    }
+
+    @Test
+    public void compileQueryToSQLWithConditionLeq() {
+        String splogSrc =
+                "q(label) <-" +
+                        "      articles(id,text)," +
+                        "      sentiment<text>(sentence, label, value)," +
+                        "      value <= 1.\n";
+
+        String edbSchema =
+                "{" +
+                        "\"articles\": {" +
+                            "\"id\":\"text\"," +
+                            "\"content\":\"text\"" +
+                        "}" +
+                "}";
+
+        assertTrue(checkCompilation(splogSrc, edbSchema, null, true));
+    }
+
 }

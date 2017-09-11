@@ -112,7 +112,7 @@ LPAREN
     ;
 
 RPAREN
-    : '('
+    : ')'
     ;
 
 WS
